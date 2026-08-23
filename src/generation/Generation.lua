@@ -108,10 +108,10 @@ function Generation:WriteDump(Content: string): string
 end
 
 function Generation:LoadParser(ModuleUrl: string)
-	local Ok, Result = pcall(function()
-		return loadstring(game:HttpGet(ModuleUrl), "Parser")()
-	end)
-	if not Ok or not Result then
+	local function Fallback(Reason: string?)
+		if Reason then
+			warn("[Sigma Spy] Parser load error:", Reason)
+		end
 		warn("[Sigma Spy] Failed to load parser from:", ModuleUrl)
 		warn("[Sigma Spy] Script generation formatting may be limited.")
 		ParserModule = {
@@ -148,9 +148,51 @@ function Generation:LoadParser(ModuleUrl: string)
 				}
 			end,
 		}
+	end
+
+	if not ModuleUrl or #ModuleUrl == 0 then
+		Fallback("ParserUrl is empty")
 		return
 	end
+
+	-- Fetch source
+	local FetchOk, Source = pcall(function()
+		return game:HttpGet(ModuleUrl)
+	end)
+	if not FetchOk or typeof(Source) ~= "string" or #Source < 100 then
+		-- Alternate URL style (main vs refs/heads/main)
+		local Alt = ModuleUrl:gsub("/refs/heads/main/", "/main/")
+		if Alt ~= ModuleUrl then
+			FetchOk, Source = pcall(function()
+				return game:HttpGet(Alt)
+			end)
+		end
+	end
+	if not FetchOk or typeof(Source) ~= "string" or #Source < 100 then
+		Fallback(`HttpGet failed or empty body ({typeof(Source)})`)
+		return
+	end
+
+	-- Compile
+	local Chunk, CompileErr = loadstring(Source, "Parser")
+	if not Chunk then
+		Fallback(`compile error: {CompileErr}`)
+		return
+	end
+
+	-- Execute
+	local RunOk, Result = pcall(Chunk)
+	if not RunOk then
+		Fallback(`runtime error: {Result}`)
+		return
+	end
+	if not Result or typeof(Result) ~= "table" or not Result.New then
+		Fallback("parser did not return a valid module table")
+		return
+	end
+
 	ParserModule = Result
+	print("[Sigma Spy] Parser loaded OK")
 end
 
 function Generation:MakeValueSwapsTable(): table
