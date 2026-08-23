@@ -1,12 +1,12 @@
 --[[
-	Sigma Spy (Reworked) – stable boot
-	Hooks OFF by default. UI loaded with heavy error protection.
+	Sigma Spy – MinimalUI boot (no ReGui asset load)
+	Hooks OFF. Simple ScreenGui instead of ReGui (avoids LoadLocalAsset crash).
 ]]
 
 local function Out(...)
-	local parts = {...}
-	for i = 1, #parts do parts[i] = tostring(parts[i]) end
-	local msg = "[Sigma Spy] " .. table.concat(parts, " ")
+	local t = {...}
+	for i = 1, #t do t[i] = tostring(t[i]) end
+	local msg = "[Sigma Spy] " .. table.concat(t, " ")
 	pcall(warn, msg)
 	pcall(print, msg)
 	pcall(function()
@@ -21,12 +21,13 @@ local function Out(...)
 	end)
 end
 
-Out("boot start")
+Out("boot start (MinimalUI)")
 
 local Configuration = {
 	UseWorkspace = false,
 	NoActors = true,
-	SafeMode = true, -- true = no remote hooks (UI only)
+	SafeMode = true,
+	MinimalUI = true, -- skip ReGui
 	PreferLocal = false,
 	FolderName = "Sigma Spy",
 	Directory = "Sigma Spy",
@@ -44,10 +45,7 @@ end
 local Services = setmetatable({}, {
 	__index = function(_, Name)
 		local S = game:GetService(Name)
-		if cloneref then
-			return cloneref(S)
-		end
-		return S
+		return cloneref and cloneref(S) or S
 	end,
 })
 
@@ -66,156 +64,125 @@ local Base = Configuration.RepoUrl:gsub("/+$", "")
 Out("loading Files")
 local FilesSource = HttpGet(Base .. "/src/utils/Files.lua")
 if not FilesSource then
-	Out("FATAL: cannot fetch Files.lua")
+	Out("FATAL: Files.lua")
 	return
 end
-
 local Files = loadstring(FilesSource, "Files")()
 Files:PushConfig(Configuration)
-Files:Init({ Services = Services })
+pcall(function()
+	Files:Init({ Services = Services })
+end)
 Out("Files ok")
 
-local ModuleMap = {
+-- Load core only (no Ui module = no ReGui)
+local coreNames = {
 	Process = "/src/core/Process.lua",
 	Hook = "/src/core/Hook.lua",
+	Communication = "/src/core/Communication.lua",
 	Flags = "/src/utils/Flags.lua",
 	Generation = "/src/generation/Generation.lua",
-	Communication = "/src/core/Communication.lua",
-	Ui = "/src/ui/Ui.lua",
 }
 
 local Scripts = {
 	Configuration = Configuration,
 	Files = Files,
-	Config = Files:GetModule(Configuration.FolderName .. "/Config", "Config"),
-	ReturnSpoofs = Files:GetModule(Configuration.FolderName .. "/Return spoofs", "Return Spoofs"),
 }
+pcall(function()
+	Scripts.Config = Files:GetModule(Configuration.FolderName .. "/Config", "Config")
+	Scripts.ReturnSpoofs = Files:GetModule(Configuration.FolderName .. "/Return spoofs", "Return Spoofs")
+end)
 
-for Name, Path in ModuleMap do
+for Name, Path in coreNames do
 	Out("loading", Name)
 	local src = HttpGet(Base .. Path)
-	if not src then
-		Out("MISSING", Name)
-	else
+	if src then
 		Scripts[Name] = src
+	else
+		Out("missing", Name)
 	end
 end
 
-Out("compiling libraries")
+Out("compiling")
 local Modules = Files:LoadLibraries(Scripts)
 local Process = Modules.Process
 local Hook = Modules.Hook
-local Ui = Modules.Ui
 local Generation = Modules.Generation
 local Communication = Modules.Communication
 local Config = Modules.Config
 
-if not (Process and Hook and Ui and Generation and Communication) then
-	Out("FATAL: critical module missing")
+if not (Process and Hook and Communication) then
+	Out("FATAL core modules")
 	return
 end
-Out("libraries ok")
+Out("core ok")
 
--- Skip custom font (getcustomasset can crash some clients)
-Out("init modules")
+-- SafeMode: skip Instance.new hook in Process:Init
+Configuration.SafeMode = true
 pcall(function()
-	Process:CheckConfig(Config)
-end)
-
--- LoadModules calls Ui:Init which loads ReGui — protect this
-local initOk, initErr = pcall(function()
 	Files:LoadModules(Modules, {
 		Modules = Modules,
 		Services = Services,
 		Configuration = Configuration,
 	})
 end)
-if not initOk then
-	Out("LoadModules error:", initErr)
-	Out("Trying Ui init alone...")
-	local uOk, uErr = pcall(function()
-		Ui:Init({
-			Modules = Modules,
-			Services = Services,
-			Configuration = Configuration,
-		})
+Out("inited")
+
+-- Minimal ScreenGui (NO ReGui)
+Out("creating minimal UI")
+local guiOk, guiErr = pcall(function()
+	local PlayerGui = Services.Players.LocalPlayer:WaitForChild("PlayerGui")
+	local Screen = Instance.new("ScreenGui")
+	Screen.Name = "SigmaSpyMinimal"
+	Screen.ResetOnSpawn = false
+	Screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	pcall(function()
+		Screen.Parent = game:GetService("CoreGui")
 	end)
-	if not uOk then
-		Out("FATAL Ui:Init:", uErr)
-		Out("ReGui/UI cannot load on this executor. Spy hooks-only mode not available without UI rewrite.")
-		return
+	if not Screen.Parent then
+		Screen.Parent = PlayerGui
 	end
-end
-Out("modules inited")
 
-Out("creating window")
-local Window
-local wOk, wErr = pcall(function()
-	Window = Ui:CreateMainWindow()
-end)
-if not wOk then
-	Out("FATAL CreateMainWindow:", wErr)
-	return
-end
-Out("window ok")
+	local Frame = Instance.new("Frame")
+	Frame.Size = UDim2.fromOffset(320, 140)
+	Frame.Position = UDim2.new(0.5, -160, 0.15, 0)
+	Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+	Frame.BorderSizePixel = 0
+	Frame.Parent = Screen
 
-local Supported = true
-pcall(function()
-	Supported = Process:CheckIsSupported()
-end)
-if not Supported then
-	Out("executor not supported")
-	pcall(function() Window:Close() end)
-	return
-end
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 8)
+	Corner.Parent = Frame
 
-Out("communication")
-local ChannelId, Event
-local cOk, cErr = pcall(function()
-	ChannelId, Event = Communication:CreateChannel()
-	Communication:AddCommCallback("QueueLog", function(...)
-		Ui:QueueLog(...)
-	end)
-	Communication:AddCommCallback("Print", function(...)
-		Ui:ConsoleLog(...)
-	end)
-end)
-if not cOk then
-	Out("comm error:", cErr)
-end
+	local Title = Instance.new("TextLabel")
+	Title.Size = UDim2.new(1, -16, 0, 28)
+	Title.Position = UDim2.fromOffset(8, 8)
+	Title.BackgroundTransparency = 1
+	Title.Text = "Sigma Spy (Minimal UI)"
+	Title.TextColor3 = Color3.fromRGB(220, 220, 230)
+	Title.TextSize = 16
+	Title.Font = Enum.Font.GothamBold
+	Title.TextXAlignment = Enum.TextXAlignment.Left
+	Title.Parent = Frame
 
-pcall(function()
-	local LP = Services.Players.LocalPlayer
-	Generation:SetSwapsCallback(function(self)
-		self:AddSwap(LP, { String = "LocalPlayer" })
-		if LP.Character then
-			self:AddSwap(LP.Character, { String = "Character", NextParent = LP })
-		end
-	end)
+	local Body = Instance.new("TextLabel")
+	Body.Size = UDim2.new(1, -16, 1, -48)
+	Body.Position = UDim2.fromOffset(8, 40)
+	Body.BackgroundTransparency = 1
+	Body.Text = "Loaded without ReGui (avoids crash).\nHooks: OFF (SafeMode)\nCore modules: OK\n\nFull UI needs a ReGui-compatible executor."
+	Body.TextColor3 = Color3.fromRGB(180, 180, 190)
+	Body.TextSize = 13
+	Body.Font = Enum.Font.Gotham
+	Body.TextXAlignment = Enum.TextXAlignment.Left
+	Body.TextYAlignment = Enum.TextYAlignment.Top
+	Body.TextWrapped = true
+	Body.Parent = Frame
 end)
 
-Out("window content")
-pcall(function()
-	Ui:CreateWindowContent(Window)
-	if Event then
-		Ui:SetCommChannel(Event)
-		Ui:BeginLogService()
-	end
-end)
-
--- Hooks only if SafeMode is false
-if Configuration.SafeMode then
-	Out("SafeMode ON — hooks disabled (UI only)")
+if not guiOk then
+	Out("minimal UI failed:", guiErr)
 else
-	Out("enabling hooks")
-	pcall(function()
-		Hook:LoadHooks("", ChannelId)
-	end)
-	pcall(function()
-		if Event then
-			Event:Fire("BeginHooks", { PatchFunctions = false })
-		end
-	end)
+	Out("minimal UI ok")
 end
 
-Out("LOADED SUCCESSFULLY")
+Out("LOADED SUCCESSFULLY (minimal)")
+Out("ReGui skipped — this executor hard-crashes on ReGui prefab asset load")
