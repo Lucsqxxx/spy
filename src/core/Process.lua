@@ -120,13 +120,25 @@ function Process:Init(Data)
     Communication = Modules.Communication
     ReturnSpoofs = Modules.ReturnSpoofs
 
-    local OldInstancenew; OldInstancenew = hookfunction(getrenv().Instance.new, newcclosure(function(...)
-        local Inst = OldInstancenew(...)
-        if typeof(Inst) == "Instance" and Process.RemoteClassData[Inst.ClassName] then
-            InstanceCreatedRemotes[Inst :: Event] = true
-        end
-        return Inst
-    end))
+    -- Instance.new hook can destabilize some executors/games — only enable when not in SafeMode
+    local Configuration = Modules.Configuration
+    if Configuration and Configuration.SafeMode then
+        return
+    end
+
+    local Ok, Err = pcall(function()
+        local OldInstancenew
+        OldInstancenew = hookfunction(getrenv().Instance.new, newcclosure(function(...)
+            local Inst = OldInstancenew(...)
+            if typeof(Inst) == "Instance" and Process.RemoteClassData[Inst.ClassName] then
+                InstanceCreatedRemotes[Inst :: Event] = true
+            end
+            return Inst
+        end))
+    end)
+    if not Ok then
+        warn("[Sigma Spy] Instance.new hook skipped:", Err)
+    end
 end
 
 --// Communication
