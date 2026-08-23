@@ -403,28 +403,56 @@ end
 
 function Hook:LoadReceiveHooks()
 	local NoReceiveHooking = Config.NoReceiveHooking
-	local BlackListedServices = Config.BlackListedServices
+	local BlackListedServices = Config.BlackListedServices or {}
 
 	if NoReceiveHooking then return end
 
-	--// Remote added
-	game.DescendantAdded:Connect(function(Remote) -- TODO
-		self:ConnectClientRecive(Remote)
+	--// Remote added (safe – only new instances)
+	pcall(function()
+		game.DescendantAdded:Connect(function(Remote)
+			pcall(function()
+				self:ConnectClientRecive(Remote)
+			end)
+		end)
 	end)
 
 	--// Collect remotes with nil parents
-	self:MultiConnect(getnilinstances())
+	pcall(function()
+		if getnilinstances then
+			self:MultiConnect(getnilinstances())
+		end
+	end)
 
-	--// Search for remotes
-	for _, Service in next, game:GetChildren() do
-		if table.find(BlackListedServices, Service.ClassName) then continue end
-		self:MultiConnect(Service:GetDescendants())
+	--// Search for remotes (limited services – full GetDescendants on everything can freeze/crash)
+	local Preferred = {
+		"ReplicatedStorage",
+		"ReplicatedFirst",
+		"Players",
+		"Workspace",
+	}
+	for _, ServiceName in Preferred do
+		pcall(function()
+			local Service = game:GetService(ServiceName)
+			if table.find(BlackListedServices, Service.ClassName) then return end
+			self:MultiConnect(Service:GetDescendants())
+		end)
 	end
 end
 
 function Hook:LoadHooks(ActorCode: string, ChannelId: number)
-	self:LoadMetaHooks(ActorCode, ChannelId)
-	self:LoadReceiveHooks()
+	local Ok, Err = pcall(function()
+		self:LoadMetaHooks(ActorCode, ChannelId)
+	end)
+	if not Ok then
+		warn("[Sigma Spy] LoadMetaHooks error:", Err)
+	end
+
+	Ok, Err = pcall(function()
+		self:LoadReceiveHooks()
+	end)
+	if not Ok then
+		warn("[Sigma Spy] LoadReceiveHooks error:", Err)
+	end
 end
 
 return Hook
