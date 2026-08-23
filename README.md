@@ -1,4 +1,4 @@
-# Sigma Spy (Reworked)
+# spy
 
 A modern, cleaned-up remote spy for Roblox executors.
 
