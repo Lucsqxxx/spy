@@ -11,7 +11,8 @@
 --// Base Configuration (override via first argument)
 local Configuration = {
 	UseWorkspace = false,
-	NoActors = false,
+	-- Actors: injecting into every actor can crash large games. Keep off unless needed.
+	NoActors = true,
 	FolderName = "Sigma Spy",
 	Directory = "Sigma Spy",
 
@@ -219,26 +220,50 @@ Ui:CreateWindowContent(Window)
 Ui:SetCommChannel(Event)
 Ui:BeginLogService()
 
---// Actor script + hooks
-local ActorCode = Files:MakeActorScript(Scripts, ChannelId)
-Hook:LoadHooks(ActorCode, ChannelId)
+--// Actor script + hooks (NoActors=true by default to avoid crashes)
+local ActorCode = ""
+if not Configuration.NoActors then
+	local Ok, Result = pcall(function()
+		return Files:MakeActorScript(Scripts, ChannelId)
+	end)
+	if Ok then
+		ActorCode = Result
+	else
+		warn("[Sigma Spy] MakeActorScript failed:", Result)
+	end
+end
 
---// Optional function patches prompt
-local EnablePatches = Ui:AskUser({
-	Title = "Enable function patches?",
-	Content = {
-		"On some executors, function patches can reduce common detections.",
-		"Enabling this MAY trigger hook detections in certain games.",
-		"If something breaks, rejoin and choose No.",
-		"",
-		"(Does not change normal game functionality)",
-	},
-	Options = { "Yes", "No" },
-}) == "Yes"
+local OkHooks, HooksErr = pcall(function()
+	Hook:LoadHooks(ActorCode, ChannelId)
+end)
+if not OkHooks then
+	warn("[Sigma Spy] LoadHooks failed:", HooksErr)
+end
+
+--// Function patches default OFF (patching pcall/getfenv can crash some executors)
+local EnablePatches = false
+local AskOk, AskResult = pcall(function()
+	return Ui:AskUser({
+		Title = "Enable function patches?",
+		Content = {
+			"Usually leave this as No.",
+			"On some executors, patches can reduce detections.",
+			"On others, they can freeze or crash Roblox.",
+			"",
+			"Recommended: No",
+		},
+		Options = { "No", "Yes" },
+	})
+end)
+if AskOk and AskResult == "Yes" then
+	EnablePatches = true
+end
 
 --// Start hooks
-Event:Fire("BeginHooks", {
-	PatchFunctions = EnablePatches,
-})
+pcall(function()
+	Event:Fire("BeginHooks", {
+		PatchFunctions = EnablePatches,
+	})
+end)
 
 print("[Sigma Spy] Loaded successfully.")
