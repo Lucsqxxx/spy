@@ -1,10 +1,12 @@
 --[[
-	Sigma Spy – MinimalUI boot (no ReGui asset load)
-	Hooks OFF. Simple ScreenGui instead of ReGui (avoids LoadLocalAsset crash).
+	Sigma Spy for executor "Real"
+	- No ReGui (crashes Real via LoadLocalAsset)
+	- Simple log UI
+	- Hooks ON, NoActors, no function patches
 ]]
 
 local function Out(...)
-	local t = {...}
+	local t = { ... }
 	for i = 1, #t do t[i] = tostring(t[i]) end
 	local msg = "[Sigma Spy] " .. table.concat(t, " ")
 	pcall(warn, msg)
@@ -21,13 +23,12 @@ local function Out(...)
 	end)
 end
 
-Out("boot start (MinimalUI)")
+Out("boot (Real / simple UI)")
 
 local Configuration = {
 	UseWorkspace = false,
 	NoActors = true,
-	SafeMode = true,
-	MinimalUI = true, -- skip ReGui
+	SafeMode = false, -- hooks enabled
 	PreferLocal = false,
 	FolderName = "Sigma Spy",
 	Directory = "Sigma Spy",
@@ -72,10 +73,8 @@ Files:PushConfig(Configuration)
 pcall(function()
 	Files:Init({ Services = Services })
 end)
-Out("Files ok")
 
--- Load core only (no Ui module = no ReGui)
-local coreNames = {
+local core = {
 	Process = "/src/core/Process.lua",
 	Hook = "/src/core/Hook.lua",
 	Communication = "/src/core/Communication.lua",
@@ -92,7 +91,7 @@ pcall(function()
 	Scripts.ReturnSpoofs = Files:GetModule(Configuration.FolderName .. "/Return spoofs", "Return Spoofs")
 end)
 
-for Name, Path in coreNames do
+for Name, Path in core do
 	Out("loading", Name)
 	local src = HttpGet(Base .. Path)
 	if src then
@@ -109,15 +108,19 @@ local Hook = Modules.Hook
 local Generation = Modules.Generation
 local Communication = Modules.Communication
 local Config = Modules.Config
+local Flags = Modules.Flags
 
 if not (Process and Hook and Communication) then
-	Out("FATAL core modules")
+	Out("FATAL core")
 	return
 end
 Out("core ok")
 
--- SafeMode: skip Instance.new hook in Process:Init
-Configuration.SafeMode = true
+-- Process:Init hooks Instance.new — keep it (needed for remote tracking)
+-- Do not set SafeMode true or Instance.new hook is skipped
+pcall(function()
+	Process:CheckConfig(Config)
+end)
 pcall(function()
 	Files:LoadModules(Modules, {
 		Modules = Modules,
@@ -127,62 +130,201 @@ pcall(function()
 end)
 Out("inited")
 
--- Minimal ScreenGui (NO ReGui)
-Out("creating minimal UI")
-local guiOk, guiErr = pcall(function()
-	local PlayerGui = Services.Players.LocalPlayer:WaitForChild("PlayerGui")
-	local Screen = Instance.new("ScreenGui")
-	Screen.Name = "SigmaSpyMinimal"
+---------------------------------------------------------------------
+-- Simple UI
+---------------------------------------------------------------------
+local LogLines = {}
+local MaxLogs = 80
+local ListFrame
+
+local function AddLogLine(text)
+	text = tostring(text)
+	table.insert(LogLines, 1, text)
+	while #LogLines > MaxLogs do
+		table.remove(LogLines)
+	end
+	if not ListFrame then
+		return
+	end
+	-- refresh labels (simple)
+	for _, child in ListFrame:GetChildren() do
+		if child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+	for i, line in ipairs(LogLines) do
+		if i > 25 then
+			break
+		end
+		local Lab = Instance.new("TextLabel")
+		Lab.Size = UDim2.new(1, -8, 0, 18)
+		Lab.BackgroundTransparency = 1
+		Lab.Text = line
+		Lab.TextColor3 = Color3.fromRGB(200, 200, 210)
+		Lab.TextSize = 12
+		Lab.Font = Enum.Font.Code
+		Lab.TextXAlignment = Enum.TextXAlignment.Left
+		Lab.TextTruncate = Enum.TextTruncate.AtEnd
+		Lab.LayoutOrder = i
+		Lab.Parent = ListFrame
+	end
+end
+
+local Screen
+local uiOk, uiErr = pcall(function()
+	local LP = Services.Players.LocalPlayer
+	Screen = Instance.new("ScreenGui")
+	Screen.Name = "SigmaSpyReal"
 	Screen.ResetOnSpawn = false
 	Screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	pcall(function()
 		Screen.Parent = game:GetService("CoreGui")
 	end)
 	if not Screen.Parent then
-		Screen.Parent = PlayerGui
+		Screen.Parent = LP:WaitForChild("PlayerGui")
 	end
 
-	local Frame = Instance.new("Frame")
-	Frame.Size = UDim2.fromOffset(320, 140)
-	Frame.Position = UDim2.new(0.5, -160, 0.15, 0)
-	Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-	Frame.BorderSizePixel = 0
-	Frame.Parent = Screen
-
-	local Corner = Instance.new("UICorner")
-	Corner.CornerRadius = UDim.new(0, 8)
-	Corner.Parent = Frame
+	local Main = Instance.new("Frame")
+	Main.Name = "Main"
+	Main.Size = UDim2.fromOffset(420, 320)
+	Main.Position = UDim2.new(0.5, -210, 0.2, 0)
+	Main.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	Main.BorderSizePixel = 0
+	Main.Active = true
+	Main.Draggable = true
+	Main.Parent = Screen
+	Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
 
 	local Title = Instance.new("TextLabel")
-	Title.Size = UDim2.new(1, -16, 0, 28)
-	Title.Position = UDim2.fromOffset(8, 8)
+	Title.Size = UDim2.new(1, -80, 0, 32)
+	Title.Position = UDim2.fromOffset(12, 4)
 	Title.BackgroundTransparency = 1
-	Title.Text = "Sigma Spy (Minimal UI)"
-	Title.TextColor3 = Color3.fromRGB(220, 220, 230)
+	Title.Text = "Sigma Spy  |  Real"
+	Title.TextColor3 = Color3.fromRGB(230, 230, 240)
 	Title.TextSize = 16
 	Title.Font = Enum.Font.GothamBold
 	Title.TextXAlignment = Enum.TextXAlignment.Left
-	Title.Parent = Frame
+	Title.Parent = Main
 
-	local Body = Instance.new("TextLabel")
-	Body.Size = UDim2.new(1, -16, 1, -48)
-	Body.Position = UDim2.fromOffset(8, 40)
-	Body.BackgroundTransparency = 1
-	Body.Text = "Loaded without ReGui (avoids crash).\nHooks: OFF (SafeMode)\nCore modules: OK\n\nFull UI needs a ReGui-compatible executor."
-	Body.TextColor3 = Color3.fromRGB(180, 180, 190)
-	Body.TextSize = 13
-	Body.Font = Enum.Font.Gotham
-	Body.TextXAlignment = Enum.TextXAlignment.Left
-	Body.TextYAlignment = Enum.TextYAlignment.Top
-	Body.TextWrapped = true
-	Body.Parent = Frame
+	local Close = Instance.new("TextButton")
+	Close.Size = UDim2.fromOffset(28, 28)
+	Close.Position = UDim2.new(1, -36, 0, 4)
+	Close.BackgroundColor3 = Color3.fromRGB(50, 40, 40)
+	Close.Text = "X"
+	Close.TextColor3 = Color3.fromRGB(255, 200, 200)
+	Close.Font = Enum.Font.GothamBold
+	Close.Parent = Main
+	Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 6)
+	Close.MouseButton1Click:Connect(function()
+		Screen:Destroy()
+	end)
+
+	local Status = Instance.new("TextLabel")
+	Status.Name = "Status"
+	Status.Size = UDim2.new(1, -16, 0, 20)
+	Status.Position = UDim2.fromOffset(8, 36)
+	Status.BackgroundTransparency = 1
+	Status.Text = "Hooks: starting..."
+	Status.TextColor3 = Color3.fromRGB(140, 200, 140)
+	Status.TextSize = 12
+	Status.Font = Enum.Font.Gotham
+	Status.TextXAlignment = Enum.TextXAlignment.Left
+	Status.Parent = Main
+
+	local Scroll = Instance.new("ScrollingFrame")
+	Scroll.Size = UDim2.new(1, -16, 1, -70)
+	Scroll.Position = UDim2.fromOffset(8, 60)
+	Scroll.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+	Scroll.BorderSizePixel = 0
+	Scroll.ScrollBarThickness = 4
+	Scroll.CanvasSize = UDim2.fromOffset(0, 500)
+	Scroll.Parent = Main
+	Instance.new("UICorner", Scroll).CornerRadius = UDim.new(0, 6)
+
+	ListFrame = Instance.new("Frame")
+	ListFrame.Size = UDim2.new(1, -4, 1, 0)
+	ListFrame.BackgroundTransparency = 1
+	ListFrame.Parent = Scroll
+	local layout = Instance.new("UIListLayout")
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 2)
+	layout.Parent = ListFrame
+
+	AddLogLine("Ready. Waiting for remotes...")
 end)
 
-if not guiOk then
-	Out("minimal UI failed:", guiErr)
+if not uiOk then
+	Out("UI error:", uiErr)
 else
-	Out("minimal UI ok")
+	Out("UI ok")
 end
 
-Out("LOADED SUCCESSFULLY (minimal)")
-Out("ReGui skipped — this executor hard-crashes on ReGui prefab asset load")
+---------------------------------------------------------------------
+-- Communication + hooks
+---------------------------------------------------------------------
+Out("setting up communication")
+local ChannelId, Event
+local cOk, cErr = pcall(function()
+	ChannelId, Event = Communication:CreateChannel()
+	Communication:AddCommCallback("QueueLog", function(Data)
+		-- Data may be remote log table
+		local ok2, line = pcall(function()
+			if typeof(Data) == "table" then
+				local remote = Data.Remote
+				local method = Data.Method or "?"
+				local name = typeof(remote) == "Instance" and remote.Name or tostring(remote)
+				local recv = Data.IsReceive and "RECV" or "SEND"
+				return string.format("[%s] %s  %s", recv, method, name)
+			end
+			return tostring(Data)
+		end)
+		AddLogLine(ok2 and line or tostring(Data))
+	end)
+	Communication:AddCommCallback("Print", function(...)
+		local t = { ... }
+		for i = 1, #t do t[i] = tostring(t[i]) end
+		AddLogLine(table.concat(t, " "))
+	end)
+end)
+if not cOk then
+	Out("comm error:", cErr)
+end
+
+pcall(function()
+	local LP = Services.Players.LocalPlayer
+	if Generation and Generation.SetSwapsCallback then
+		Generation:SetSwapsCallback(function(self)
+			self:AddSwap(LP, { String = "LocalPlayer" })
+			if LP.Character then
+				self:AddSwap(LP.Character, { String = "Character", NextParent = LP })
+			end
+		end)
+	end
+end)
+
+Out("loading hooks (NoActors, no patches)")
+local hOk, hErr = pcall(function()
+	Hook:LoadHooks("", ChannelId)
+end)
+if not hOk then
+	Out("LoadHooks error:", hErr)
+	AddLogLine("LoadHooks error: " .. tostring(hErr))
+else
+	Out("LoadHooks ok")
+end
+
+pcall(function()
+	if Event then
+		Event:Fire("BeginHooks", { PatchFunctions = false })
+	end
+end)
+
+AddLogLine("Hooks active. Play the game to see remotes.")
+if Screen and Screen:FindFirstChild("Main") then
+	local st = Screen.Main:FindFirstChild("Status")
+	if st then
+		st.Text = "Hooks: ON  |  Actors: OFF  |  Patches: OFF"
+	end
+end
+
+Out("LOADED — hooks on, simple UI")
