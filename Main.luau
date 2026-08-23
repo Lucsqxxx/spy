@@ -11,18 +11,16 @@
 --// Base Configuration (override via first argument)
 local Configuration = {
 	UseWorkspace = false,
-	-- Actors: injecting into every actor can crash large games. Keep off unless needed.
+	-- Actors: injecting into every actor can crash large games.
 	NoActors = true,
+	-- SafeMode: UI only — no metamethod/remote hooks (prevents hard crashes).
+	-- Set to false once stable, or pass { SafeMode = false } when loading.
+	SafeMode = true,
 	FolderName = "Sigma Spy",
 	Directory = "Sigma Spy",
 
-	-- Primary source for modules (your GitHub)
 	RepoUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main",
-
-	-- Parser (bundled single-file on your repo)
 	ParserUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main/dist/Parser.luau",
-
-	-- Prefer local modules when running from a folder that supports readfile
 	PreferLocal = true,
 }
 
@@ -163,17 +161,23 @@ if not (Process and Hook and Ui and Generation and Communication) then
 	return
 end
 
---// Custom font (optional)
-local FontContent = Files:GetAsset("ProggyClean.ttf", true)
-if FontContent then
-	local FontJsonFile = Files:CreateFont("ProggyClean", FontContent)
-	if FontJsonFile then
-		Ui:SetFontFile(FontJsonFile)
-	end
+--// Custom font (optional — skip in SafeMode; getcustomasset can crash some clients)
+if not Configuration.SafeMode then
+	pcall(function()
+		local FontContent = Files:GetAsset("ProggyClean.ttf", true)
+		if FontContent then
+			local FontJsonFile = Files:CreateFont("ProggyClean", FontContent)
+			if FontJsonFile then
+				Ui:SetFontFile(FontJsonFile)
+			end
+		end
+	end)
 end
 
 --// Initialize modules
-Process:CheckConfig(Config)
+pcall(function()
+	Process:CheckConfig(Config)
+end)
 Files:LoadModules(Modules, {
 	Modules = Modules,
 	Services = Services,
@@ -181,12 +185,19 @@ Files:LoadModules(Modules, {
 })
 
 --// Create main window
-local Window = Ui:CreateMainWindow()
+local Window
+local WinOk, WinErr = pcall(function()
+	Window = Ui:CreateMainWindow()
+end)
+if not WinOk then
+	warn("[Sigma Spy] UI failed to create:", WinErr)
+	return
+end
 
 --// Executor / environment check
 local Supported = Process:CheckIsSupported()
 if not Supported then
-	Window:Close()
+	pcall(function() Window:Close() end)
 	return
 end
 
@@ -200,70 +211,61 @@ Communication:AddCommCallback("Print", function(...)
 end)
 
 --// Generation value swaps
-local Players = Services.Players
-local LocalPlayer = Players.LocalPlayer
-
-Generation:SetSwapsCallback(function(self)
-	self:AddSwap(LocalPlayer, {
-		String = "LocalPlayer",
-	})
-	if LocalPlayer.Character then
-		self:AddSwap(LocalPlayer.Character, {
-			String = "Character",
-			NextParent = LocalPlayer,
+pcall(function()
+	local Players = Services.Players
+	local LocalPlayer = Players.LocalPlayer
+	Generation:SetSwapsCallback(function(self)
+		self:AddSwap(LocalPlayer, {
+			String = "LocalPlayer",
 		})
-	end
+		if LocalPlayer.Character then
+			self:AddSwap(LocalPlayer.Character, {
+				String = "Character",
+				NextParent = LocalPlayer,
+			})
+		end
+	end)
 end)
 
 --// Build UI content
-Ui:CreateWindowContent(Window)
-Ui:SetCommChannel(Event)
-Ui:BeginLogService()
-
---// Actor script + hooks (NoActors=true by default to avoid crashes)
-local ActorCode = ""
-if not Configuration.NoActors then
-	local Ok, Result = pcall(function()
-		return Files:MakeActorScript(Scripts, ChannelId)
-	end)
-	if Ok then
-		ActorCode = Result
-	else
-		warn("[Sigma Spy] MakeActorScript failed:", Result)
-	end
-end
-
-local OkHooks, HooksErr = pcall(function()
-	Hook:LoadHooks(ActorCode, ChannelId)
-end)
-if not OkHooks then
-	warn("[Sigma Spy] LoadHooks failed:", HooksErr)
-end
-
---// Function patches default OFF (patching pcall/getfenv can crash some executors)
-local EnablePatches = false
-local AskOk, AskResult = pcall(function()
-	return Ui:AskUser({
-		Title = "Enable function patches?",
-		Content = {
-			"Usually leave this as No.",
-			"On some executors, patches can reduce detections.",
-			"On others, they can freeze or crash Roblox.",
-			"",
-			"Recommended: No",
-		},
-		Options = { "No", "Yes" },
-	})
-end)
-if AskOk and AskResult == "Yes" then
-	EnablePatches = true
-end
-
---// Start hooks
 pcall(function()
-	Event:Fire("BeginHooks", {
-		PatchFunctions = EnablePatches,
-	})
+	Ui:CreateWindowContent(Window)
+	Ui:SetCommChannel(Event)
+	Ui:BeginLogService()
 end)
+
+--// Hooks (skipped in SafeMode to prevent Roblox hard crashes)
+if Configuration.SafeMode then
+	print("[Sigma Spy] SafeMode ON — UI only, hooks disabled.")
+	print("[Sigma Spy] To enable hooks: load with { SafeMode = false }")
+else
+	local ActorCode = ""
+	if not Configuration.NoActors then
+		local Ok, Result = pcall(function()
+			return Files:MakeActorScript(Scripts, ChannelId)
+		end)
+		if Ok then
+			ActorCode = Result
+		else
+			warn("[Sigma Spy] MakeActorScript failed:", Result)
+		end
+	end
+
+	local OkHooks, HooksErr = pcall(function()
+		Hook:LoadHooks(ActorCode, ChannelId)
+	end)
+	if not OkHooks then
+		warn("[Sigma Spy] LoadHooks failed:", HooksErr)
+	end
+
+	-- Function patches default OFF
+	local EnablePatches = false
+
+	pcall(function()
+		Event:Fire("BeginHooks", {
+			PatchFunctions = EnablePatches,
+		})
+	end)
+end
 
 print("[Sigma Spy] Loaded successfully.")
