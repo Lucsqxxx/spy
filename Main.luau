@@ -1,9 +1,43 @@
 --[[
-	Sigma Spy – MINIMAL DIAGNOSTIC BOOT
-	No UI, no hooks, no ReGui. Only prints steps to find the crash point.
+	Sigma Spy – DIAGNOSTIC (no print dependency)
+	Uses warn, notifications, writefile, rconsole, clipboard.
 ]]
 
-print("[Sigma Spy] step 1: script started")
+local function Out(msg)
+	msg = "[Sigma Spy] " .. tostring(msg)
+
+	pcall(function() warn(msg) end)
+	pcall(function() print(msg) end)
+
+	-- Many executors
+	pcall(function() rconsoleprint(msg .. "\n") end)
+	pcall(function() rconsoleinfo(msg) end)
+	pcall(function() rconsolelog(msg) end)
+
+	-- On-screen notification
+	pcall(function()
+		game:GetService("StarterGui"):SetCore("SendNotification", {
+			Title = "Sigma Spy",
+			Text = msg,
+			Duration = 5,
+		})
+	end)
+
+	-- Workspace file log
+	pcall(function()
+		if writefile and appendfile then
+			if isfile and isfile("SigmaSpyLog.txt") then
+				appendfile("SigmaSpyLog.txt", msg .. "\n")
+			else
+				writefile("SigmaSpyLog.txt", msg .. "\n")
+			end
+		elseif writefile then
+			writefile("SigmaSpyLog.txt", msg .. "\n")
+		end
+	end)
+end
+
+Out("step 1: script started")
 
 local Configuration = {
 	RepoUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main",
@@ -23,7 +57,7 @@ if typeof(Parameters[1]) == "table" then
 	end
 end
 
-print("[Sigma Spy] step 2: config ok")
+Out("step 2: config ok")
 
 local function HttpGet(url)
 	local ok, res = pcall(function()
@@ -37,24 +71,24 @@ end
 
 local base = Configuration.RepoUrl:gsub("/+$", "")
 
-print("[Sigma Spy] step 3: fetching Files.lua")
+Out("step 3: fetching Files.lua")
 local filesSrc, err = HttpGet(base .. "/src/utils/Files.lua")
 if not filesSrc then
-	warn("[Sigma Spy] FAILED Files.lua:", err)
+	Out("FAILED Files.lua: " .. tostring(err))
 	return
 end
-print("[Sigma Spy] step 4: Files.lua fetched, len=" .. #filesSrc)
+Out("step 4: Files fetched len=" .. tostring(#filesSrc))
 
-local ok, Files = pcall(function()
+local ok, FilesOrErr = pcall(function()
 	return loadstring(filesSrc, "Files")()
 end)
 if not ok then
-	warn("[Sigma Spy] FAILED load Files:", Files)
+	Out("FAILED load Files: " .. tostring(FilesOrErr))
 	return
 end
-print("[Sigma Spy] step 5: Files module loaded")
+Out("step 5: Files module loaded")
 
-print("[Sigma Spy] step 6: fetch core modules (no UI)")
+Out("step 6: loading core modules (no UI)")
 local names = {
 	{ "Process", "/src/core/Process.lua" },
 	{ "Hook", "/src/core/Hook.lua" },
@@ -65,22 +99,27 @@ local names = {
 
 for _, info in names do
 	local name, path = info[1], info[2]
-	print("[Sigma Spy] fetching " .. name)
+	Out("fetch " .. name)
 	local src, e = HttpGet(base .. path)
 	if not src then
-		warn("[Sigma Spy] FAILED fetch " .. name .. ":", e)
+		Out("FAIL fetch " .. name .. ": " .. tostring(e))
 	else
 		local lok, mod = pcall(function()
 			return loadstring(src, name)()
 		end)
 		if not lok then
-			warn("[Sigma Spy] FAILED compile/run " .. name .. ":", mod)
+			Out("FAIL run " .. name .. ": " .. tostring(mod))
 		else
-			print("[Sigma Spy] ok " .. name)
+			Out("ok " .. name)
 		end
 	end
 end
 
-print("[Sigma Spy] step 7: skip UI / ReGui / hooks (diagnostic)")
-print("[Sigma Spy] DIAGNOSTIC COMPLETE – if you see this, core modules are fine")
-print("[Sigma Spy] Crash was likely ReGui/UI. Report which step number was last printed.")
+Out("step 7: DIAGNOSTIC COMPLETE (no UI/hooks)")
+Out("If Roblox stayed open, core is fine. Crash was likely UI/ReGui/hooks.")
+
+pcall(function()
+	if setclipboard then
+		setclipboard("Sigma Spy diagnostic completed OK")
+	end
+end)
