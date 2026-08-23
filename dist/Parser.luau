@@ -52,8 +52,7 @@ byte()}`end)end function b:FormatVectorValues(e,...)local f={self:RoundVector(e,
 in next,e do local i=math.round(h)table.insert(f,i)end return f end function b:
 RoundVector(e,f,g)local h,i,j=e.X,e.Y,not f and e.Z or 0 if g then local k={e:
 GetComponents()}return unpack(self:RoundValues(k))end return math.round(h),math.
-round(i),not f and math.round(j)or nil end function b:GetServerTimeNow()return d
-(workspace)end function b:MakeReplacements(e)local f=tick()-(e or tick())local g
+round(i),not f and math.round(j)or nil end function b:GetServerTimeNow()return d(workspace)end function b:MakeReplacements(e)local f=tick()-(e or tick())local g
 ,h,i=math.round(self:GetServerTimeNow()-f),math.round(workspace.
 DistributedGameTime-f),{}local j=function(j,k)if typeof(j)=='number'then i[-j]=`-{
 k}`end i[j]=k end j(Vector2.one,'Vector2.one')j(Vector2.zero,'Vector2.zero')j(
@@ -83,8 +82,7 @@ self.IndexFunc,self.ClassNameStrings local i,j=g(e,'Name'),g(e,'ClassName')local
 k=h[j]local l=k or i l=self:MakePrintable(l,true)if f then local m=f[e]if m then
 l=m.String end end return l end return b end function a.b()local b={}b.__index=b
 function GetDictSize(c)local d=0 for e in next,c do d+=1 end return d end
-function b.new(c)local d={}return setmetatable(d,b)end function b:FormatTableKey
-(c)local d=self.Formatter if typeof(c)~='string'then return end local e=d:
+function b.new(c)local d={}return setmetatable(d,b)end function b:FormatTableKey(c)local d=self.Formatter if typeof(c)~='string'then return end local e=d:
 NeedsBrackets(c)if e then return end return`{c} = `end function b:
 ParseTableIntoString(c)local d,e,f,g=self.Formatter,c.Indent or 0,c.Table,c.
 NoBrackets local h,i=GetDictSize(f),true if h==0 then return g and''or'{}',h,
