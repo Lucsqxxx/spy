@@ -21,7 +21,8 @@ local Configuration = {
 
 	RepoUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main",
 	ParserUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main/dist/Parser.luau",
-	PreferLocal = true,
+	-- false = always use GitHub (avoids stale workspace copies causing crashes)
+	PreferLocal = false,
 }
 
 --// Apply user overwrites
