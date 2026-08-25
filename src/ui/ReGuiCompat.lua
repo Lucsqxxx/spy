@@ -1,11 +1,8 @@
---[[
-	ReGuiCompat v3 – closer to original Sigma Spy / Dear-ReGui look
-	Reference: dark navy, left remote list, Editor/Options/Remote tabs
-]]
+
 
 local ReGui = {
 	Version = "compat-3.1",
-	DefaultTitle = "Sigma Spy",
+	DefaultTitle = "Wyvern Spy",
 	Themes = {},
 	Windows = {},
 	Initialised = true,
@@ -33,7 +30,6 @@ local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Palette from screenshots
 local C = {
 	Bg = Color3.fromRGB(20, 22, 28),
 	BgDark = Color3.fromRGB(15, 16, 20),
@@ -79,10 +75,10 @@ end
 function ReGui:CheckImportState() end
 
 local function parentGui()
-	local screen = CoreGui:FindFirstChild("SigmaSpyUI")
+	local screen = CoreGui:FindFirstChild("WyvernSpyUI")
 	if screen then return screen end
 	screen = Instance.new("ScreenGui")
-	screen.Name = "SigmaSpyUI"
+	screen.Name = "WyvernSpyUI"
 	screen.ResetOnSpawn = false
 	screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screen.DisplayOrder = 120
@@ -119,7 +115,6 @@ local function stroke(parent, color, thickness)
 	return s
 end
 
--- ============== Element ==============
 local Element = {}
 
 local function wrap(inst, className, extra)
@@ -166,7 +161,7 @@ function Element:_create(class, config)
 		if config.LayoutOrder then gui.LayoutOrder = config.LayoutOrder end
 	end
 
-	-------------------------------------------------------------------- List / Canvas
+	
 	if class == "List" or class == "Canvas" then
 		local scroll = config.Scroll or class == "Canvas"
 		local frame
@@ -204,7 +199,7 @@ function Element:_create(class, config)
 		return wrap(frame, class)
 	end
 
-	-------------------------------------------------------------------- Table
+	
 	if class == "Table" then
 		local frame = Instance.new("Frame")
 		frame.BackgroundColor3 = C.BgDark
@@ -229,14 +224,14 @@ function Element:_create(class, config)
 		})
 	end
 
-	-------------------------------------------------------------------- Row
+	
 	if class == "Row" or class == "HeaderRow" or class == "NextRow" then
 		local frame = Instance.new("Frame")
 		frame.BorderSizePixel = 0
 		frame.Size = config.Size or UDim2.new(1, 0, 0, 28)
 		frame.AutomaticSize = Enum.AutomaticSize.None
 		frame.ClipsDescendants = true
-		-- alternating row bg for tables
+		
 		if self.Class == "Table" and self._rowAlt then
 			self._rowIndex = (self._rowIndex or 0) + 1
 			if self._rowIndex % 2 == 0 then
@@ -260,7 +255,7 @@ function Element:_create(class, config)
 		return wrap(frame, "Row")
 	end
 
-	-------------------------------------------------------------------- Column
+	
 	if class == "NextColumn" then
 		local frame = Instance.new("Frame")
 		frame.BackgroundTransparency = 1
@@ -279,7 +274,7 @@ function Element:_create(class, config)
 		return wrap(frame, "Column")
 	end
 
-	-------------------------------------------------------------------- Label
+	
 	if class == "Label" then
 		local label = Instance.new("TextLabel")
 		label.BackgroundTransparency = 1
@@ -299,7 +294,7 @@ function Element:_create(class, config)
 		return wrap(label, "Label")
 	end
 
-	-------------------------------------------------------------------- BulletText
+	
 	if class == "BulletText" then
 		local lines = {}
 		for _, row in (config.Rows or {}) do
@@ -321,7 +316,7 @@ function Element:_create(class, config)
 		return wrap(label, "BulletText")
 	end
 
-	-------------------------------------------------------------------- Separator
+	
 	if class == "Separator" then
 		local frame = Instance.new("Frame")
 		frame.BackgroundTransparency = 1
@@ -349,11 +344,11 @@ function Element:_create(class, config)
 		return wrap(frame, "Separator")
 	end
 
-	-------------------------------------------------------------------- Button
+	
 	if class == "Button" then
 		local btn = Instance.new("TextButton")
 		local sz = config.Size
-		-- Prevent UDim2.new(1,0,*) from blowing past the window in horizontal rows
+		
 		if sz and sz.X.Scale >= 1 and sz.X.Offset == 0 then
 			sz = UDim2.new(0, 120, 0, sz.Y.Offset > 0 and sz.Y.Offset or 26)
 		end
@@ -371,7 +366,7 @@ function Element:_create(class, config)
 		order(btn)
 		corner(btn, 4)
 		applyFont(btn)
-		-- Equal-width flex in horizontal rows when requested
+		
 		if config.FlexFill then
 			pcall(function()
 				local flex = Instance.new("UIFlexItem")
@@ -389,7 +384,7 @@ function Element:_create(class, config)
 		return el
 	end
 
-	-------------------------------------------------------------------- Selectable (remote list items)
+	
 	if class == "Selectable" then
 		local btn = Instance.new("TextButton")
 		btn.Size = config.Size or UDim2.new(1, -2, 0, 18)
@@ -438,7 +433,7 @@ function Element:_create(class, config)
 		return el
 	end
 
-	-------------------------------------------------------------------- Checkbox (screenshot style)
+	
 	if class == "Checkbox" then
 		local holder = Instance.new("Frame")
 		holder.BackgroundTransparency = 1
@@ -504,7 +499,7 @@ function Element:_create(class, config)
 		return el
 	end
 
-	-------------------------------------------------------------------- CodeEditor / Console
+	
 	if class == "CodeEditor" or class == "Console" then
 		local colors = config.Colors or {}
 		local function col3(c, fallback)
@@ -554,18 +549,18 @@ function Element:_create(class, config)
 			local n = #src
 			while i <= n do
 				local ch = src:sub(i, i)
-				-- long comment --[[ ]]
+				
 				if src:sub(i, i + 3) == "--[[" then
 					local j = src:find("%]%]", i + 4) or n
 					if src:sub(j, j + 1) == "]]" then j = j + 1 end
 					table.insert(out, '<font color="' .. COL.comment .. '">' .. escapeRich(src:sub(i, j)) .. "</font>")
 					i = j + 1
-				-- line comment
+				
 				elseif src:sub(i, i + 1) == "--" then
 					local j = src:find("\n", i) or (n + 1)
 					table.insert(out, '<font color="' .. COL.comment .. '">' .. escapeRich(src:sub(i, j - 1)) .. "</font>")
 					i = j
-				-- strings
+				
 				elseif ch == '"' or ch == "'" then
 					local q = ch
 					local j = i + 1
@@ -581,13 +576,13 @@ function Element:_create(class, config)
 					end
 					table.insert(out, '<font color="' .. COL.string .. '">' .. escapeRich(src:sub(i, j)) .. "</font>")
 					i = j + 1
-				-- long string [[ ]]
+				
 				elseif src:sub(i, i + 1) == "[[" then
 					local j = src:find("%]%]", i + 2) or n
 					if src:sub(j, j + 1) == "]]" then j = j + 1 end
 					table.insert(out, '<font color="' .. COL.string .. '">' .. escapeRich(src:sub(i, j)) .. "</font>")
 					i = j + 1
-				-- number
+				
 				elseif ch:match("%d") then
 					local j = i
 					while j <= n and src:sub(j, j):match("[%d%.xXa-fA-F]") do
@@ -595,7 +590,7 @@ function Element:_create(class, config)
 					end
 					table.insert(out, '<font color="' .. COL.number .. '">' .. escapeRich(src:sub(i, j - 1)) .. "</font>")
 					i = j
-				-- identifier / keyword
+				
 				elseif ch:match("[%a_]") then
 					local j = i
 					while j <= n and src:sub(j, j):match("[%w_]") do
@@ -645,7 +640,7 @@ function Element:_create(class, config)
 			end)
 		end
 
-		-- Line number gutter + editor row
+		
 		local row = Instance.new("Frame")
 		row.BackgroundTransparency = 1
 		row.Size = UDim2.new(0, 0, 0, 0)
@@ -699,7 +694,7 @@ function Element:_create(class, config)
 		applyFont(box)
 		box.ClearTextOnFocus = false
 		box.MultiLine = true
-		box.TextWrapped = false -- allow horizontal scroll
+		box.TextWrapped = false 
 		box.RichText = false
 		box.Text = config.Text or ""
 		box.TextEditable = (config.Editable ~= false) and not config.ReadOnly
@@ -760,7 +755,7 @@ function Element:_create(class, config)
 			end
 		end)
 
-		-- initial highlight
+		
 		task.defer(showHighlight)
 
 		local el = wrap(scroll, class)
@@ -865,7 +860,7 @@ function Element:_create(class, config)
 		return el
 	end
 
-	-------------------------------------------------------------------- TabSelector
+	
 	if class == "TabSelector" then
 		local root = Instance.new("Frame")
 		root.BackgroundTransparency = 1
@@ -1073,7 +1068,7 @@ function Element:PopupModal(config)
 	title.Size = UDim2.new(1, -40, 0, 28)
 	title.Position = UDim2.fromOffset(12, 8)
 	title.BackgroundTransparency = 1
-	title.Text = config.Title or "Sigma Spy"
+	title.Text = config.Title or "Wyvern Spy"
 	title.TextColor3 = C.Text
 	title.Font = Enum.Font.GothamBold
 	title.TextSize = 15
@@ -1108,7 +1103,7 @@ function Element:PopupModal(config)
 		dim:Destroy()
 	end
 	closeBtn.MouseButton1Click:Connect(close)
-	-- click dim background to close
+	
 	dim.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			local pos = input.Position
@@ -1124,12 +1119,11 @@ function Element:PopupModal(config)
 	return el
 end
 
--- Context menu for Script / Build buttons (closes on pick or outside click)
 function Element:PopupCanvas(config)
 	config = config or {}
 	local screen = parentGui()
 
-	-- full-screen invisible catcher
+	
 	local catcher = Instance.new("TextButton")
 	catcher.Name = "MenuCatcher"
 	catcher.Size = UDim2.fromScale(1, 1)
@@ -1155,7 +1149,7 @@ function Element:PopupCanvas(config)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = menu
 
-	-- position near RelativeTo button if provided
+	
 	local rel = config.RelativeTo
 	task.defer(function()
 		if typeof(rel) == "Instance" and rel:IsA("GuiObject") then
@@ -1182,7 +1176,7 @@ function Element:PopupCanvas(config)
 	end
 	catcher.MouseButton1Click:Connect(close)
 
-	-- wrap Selectable to auto-close after click
+	
 	local oldCreate = el._create
 	function el:Selectable(cfg)
 		cfg = cfg or {}
@@ -1231,7 +1225,7 @@ function ReGui:Window(config)
 	corner(frame, 4)
 	stroke(frame, C.Border, 1)
 
-	-- Blue title bar (original Sigma Spy style)
+	
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
 	titleBar.Size = UDim2.new(1, 0, 0, 24)
