@@ -228,9 +228,13 @@ function Element:_create(class, config)
 	if class == "Row" or class == "HeaderRow" or class == "NextRow" then
 		local frame = Instance.new("Frame")
 		frame.BorderSizePixel = 0
-		frame.Size = config.Size or UDim2.new(1, 0, 0, 28)
+		frame.Size = config.Size or UDim2.new(1, 0, 0, 26)
 		frame.AutomaticSize = Enum.AutomaticSize.None
 		frame.ClipsDescendants = true
+		if class == "HeaderRow" then
+			frame.BackgroundColor3 = Color3.fromRGB(32, 40, 58)
+			frame.BackgroundTransparency = 0
+		end
 		
 		if self.Class == "Table" and self._rowAlt then
 			self._rowIndex = (self._rowIndex or 0) + 1
@@ -259,7 +263,7 @@ function Element:_create(class, config)
 	if class == "NextColumn" then
 		local frame = Instance.new("Frame")
 		frame.BackgroundTransparency = 1
-		frame.Size = UDim2.new(0, 140, 0, 0)
+		frame.Size = UDim2.new(0.5, -4, 0, 0)
 		frame.AutomaticSize = Enum.AutomaticSize.Y
 		frame.Parent = host
 		order(frame)
