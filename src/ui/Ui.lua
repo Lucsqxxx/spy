@@ -184,12 +184,21 @@ function Ui:LoadReGui()
 	local ThemeConfig = Config.ThemeConfig
 	ThemeConfig.TextFont = TextFont
 
-	--// Apply ProggyClean / custom font to ReGuiCompat (ImGui look)
 	if ReGui.SetFont then
 		ReGui:SetFont(TextFont, ThemeConfig.TextSize or 13)
 	end
 
-	--// ReGui
+	-- Stealth: avoid obvious product name in CoreGui / title when enabled
+	local Stealth = false
+	pcall(function()
+		local Conf = rawget(getfenv(), "Configuration")
+	end)
+	pcall(function()
+		if Files and Files.Configuration and Files.Configuration.Stealth then
+			Stealth = true
+		end
+	end)
+
 	ReGui:DefineTheme("WyvernSpy", ThemeConfig)
 end
 
@@ -312,7 +321,7 @@ function Ui:ShowModal(Lines: table)
 
 	--// Modal Window
 	local ModalWindow = Window:PopupModal({
-		Title = "Wyvern Spy"
+		Title = "Client"
 	})
 	ModalWindow:Label({
 		Text = Message,
@@ -437,7 +446,7 @@ function Ui:DisplayAura()
     local AURADELAY = Rand:NextInteger(1, 5)
 
 	--// Title
-	local Title = `Wyvern Spy`
+	local Title = `Client`
 	local Seasonal = self:TurnSeasonal(Title)
     Window:SetTitle(Seasonal)
 
