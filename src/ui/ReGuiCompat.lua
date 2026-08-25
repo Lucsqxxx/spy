@@ -18,23 +18,26 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Palette from screenshots
 local C = {
-	Bg = Color3.fromRGB(30, 34, 46),
-	BgDark = Color3.fromRGB(22, 25, 35),
-	Title = Color3.fromRGB(38, 44, 60),
-	Border = Color3.fromRGB(58, 68, 92),
-	Text = Color3.fromRGB(205, 210, 225),
-	TextDim = Color3.fromRGB(130, 140, 165),
-	Accent = Color3.fromRGB(80, 130, 200),
-	Btn = Color3.fromRGB(50, 70, 110),
-	BtnHover = Color3.fromRGB(65, 90, 140),
-	Select = Color3.fromRGB(40, 70, 120),
-	SelectActive = Color3.fromRGB(55, 100, 170),
-	Input = Color3.fromRGB(16, 18, 26),
+	-- Matched to original Sigma Spy / ImGui screenshot
+	Bg = Color3.fromRGB(24, 28, 38),
+	BgDark = Color3.fromRGB(18, 20, 28),
+	Title = Color3.fromRGB(45, 85, 145),      -- blue title bar
+	TitleBot = Color3.fromRGB(35, 65, 115),
+	Border = Color3.fromRGB(50, 70, 110),
+	Text = Color3.fromRGB(220, 225, 235),
+	TextDim = Color3.fromRGB(130, 140, 160),
+	Accent = Color3.fromRGB(90, 150, 220),
+	Btn = Color3.fromRGB(40, 70, 120),
+	BtnHover = Color3.fromRGB(55, 95, 160),
+	Select = Color3.fromRGB(35, 65, 110),
+	SelectActive = Color3.fromRGB(50, 100, 170),
+	Input = Color3.fromRGB(14, 16, 22),
 	Check = Color3.fromRGB(70, 140, 220),
-	Green = Color3.fromRGB(90, 210, 130),
-	TabActive = Color3.fromRGB(45, 75, 130),
-	TabIdle = Color3.fromRGB(35, 40, 55),
-	RowAlt = Color3.fromRGB(26, 30, 42),
+	Green = Color3.fromRGB(80, 220, 120),
+	TabActive = Color3.fromRGB(50, 95, 160),
+	TabIdle = Color3.fromRGB(32, 40, 55),
+	RowAlt = Color3.fromRGB(22, 26, 36),
+	LineNum = Color3.fromRGB(90, 100, 120),
 }
 
 function ReGui:CheckConfig(Target, Defaults)
@@ -620,6 +623,31 @@ function Element:_create(class, config)
 			end)
 		end
 
+		-- Line number gutter + editor row
+		local row = Instance.new("Frame")
+		row.BackgroundTransparency = 1
+		row.Size = UDim2.new(0, 0, 0, 0)
+		row.AutomaticSize = Enum.AutomaticSize.XY
+		row.Parent = scroll
+		local rowLayout = Instance.new("UIListLayout")
+		rowLayout.FillDirection = Enum.FillDirection.Horizontal
+		rowLayout.Padding = UDim.new(0, 6)
+		rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		rowLayout.Parent = row
+
+		local lineBox = Instance.new("TextLabel")
+		lineBox.Name = "LineNumbers"
+		lineBox.BackgroundTransparency = 1
+		lineBox.Size = UDim2.new(0, 36, 0, 0)
+		lineBox.AutomaticSize = Enum.AutomaticSize.Y
+		lineBox.TextXAlignment = Enum.TextXAlignment.Right
+		lineBox.TextYAlignment = Enum.TextYAlignment.Top
+		lineBox.TextColor3 = C.LineNum
+		lineBox.TextSize = config.FontSize or 13
+		lineBox.Font = Enum.Font.Code
+		lineBox.Text = "1"
+		lineBox.Parent = row
+
 		local box = Instance.new("TextBox")
 		box.Size = UDim2.new(0, 0, 0, 0)
 		box.AutomaticSize = Enum.AutomaticSize.XY
@@ -636,10 +664,27 @@ function Element:_create(class, config)
 		box.RichText = false
 		box.Text = config.Text or ""
 		box.TextEditable = (config.Editable ~= false) and not config.ReadOnly
-		box.Parent = scroll
+		box.Parent = row
+
+		local function updateLineNumbers(src)
+			local text = tostring(src or "")
+			local count = 1
+			for i = 1, #text do
+				if string.byte(text, i) == 10 then
+					count += 1
+				end
+			end
+			if #text == 0 then count = 1 end
+			local buf = table.create(count)
+			for i = 1, count do
+				buf[i] = tostring(i)
+			end
+			lineBox.Text = table.concat(buf, string.char(10))
+		end
 
 		local plainText = config.Text or ""
 		local focused = false
+		updateLineNumbers(plainText)
 
 		local function showHighlight()
 			if focused then return end
@@ -651,11 +696,13 @@ function Element:_create(class, config)
 				box.RichText = false
 				box.Text = plainText
 			end
+			updateLineNumbers(plainText)
 		end
 
 		local function showPlain()
 			box.RichText = false
 			box.Text = plainText
+			updateLineNumbers(plainText)
 		end
 
 		box.Focused:Connect(function()
@@ -670,6 +717,7 @@ function Element:_create(class, config)
 		box:GetPropertyChangedSignal("Text"):Connect(function()
 			if focused then
 				plainText = box.Text
+				updateLineNumbers(plainText)
 			end
 		end)
 
@@ -1128,64 +1176,70 @@ end
 function ReGui:Window(config)
 	config = config or {}
 	local screen = parentGui()
-	local size = config.Size or UDim2.fromOffset(720, 460)
+	local size = config.Size or UDim2.fromOffset(760, 480)
+	local minimized = false
+	local fullSize = size
 
 	local frame = Instance.new("Frame")
 	frame.Name = "Window"
 	frame.Size = size
-	frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.12, 0)
+	frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.1, 0)
 	frame.BackgroundColor3 = C.Bg
 	frame.BorderSizePixel = 0
 	frame.Active = true
 	frame.Draggable = true
 	frame.Parent = screen
-	corner(frame, 6)
+	corner(frame, 4)
 	stroke(frame, C.Border, 1)
 
+	-- Blue title bar (screenshot style)
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
-	titleBar.Size = UDim2.new(1, 0, 0, 28)
+	titleBar.Size = UDim2.new(1, 0, 0, 26)
 	titleBar.BackgroundColor3 = C.Title
 	titleBar.BorderSizePixel = 0
 	titleBar.Parent = frame
 
-	-- orange accent dot like original
-	local dot = Instance.new("Frame")
-	dot.Size = UDim2.fromOffset(8, 8)
-	dot.Position = UDim2.fromOffset(10, 10)
-	dot.BackgroundColor3 = Color3.fromRGB(255, 170, 50)
-	dot.BorderSizePixel = 0
-	dot.Parent = titleBar
-	corner(dot, 4)
+	-- minimize (collapse) arrow on left
+	local minBtn = Instance.new("TextButton")
+	minBtn.Name = "Minimize"
+	minBtn.Size = UDim2.fromOffset(22, 20)
+	minBtn.Position = UDim2.fromOffset(4, 3)
+	minBtn.BackgroundTransparency = 1
+	minBtn.Text = "▼"
+	minBtn.TextColor3 = C.Text
+	minBtn.Font = Enum.Font.GothamBold
+	minBtn.TextSize = 12
+	minBtn.Parent = titleBar
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
-	title.Size = UDim2.new(1, -50, 1, 0)
-	title.Position = UDim2.fromOffset(24, 0)
+	title.Size = UDim2.new(1, -70, 1, 0)
+	title.Position = UDim2.fromOffset(28, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
-	title.TextColor3 = C.Text
-	title.Font = Enum.Font.GothamBold
+	title.TextColor3 = Color3.fromRGB(235, 240, 250)
+	title.Font = Enum.Font.GothamMedium
 	title.TextSize = 13
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = titleBar
 
 	local close = Instance.new("TextButton")
 	close.Size = UDim2.fromOffset(24, 20)
-	close.Position = UDim2.new(1, -28, 0, 4)
-	close.BackgroundColor3 = Color3.fromRGB(100, 50, 60)
+	close.Position = UDim2.new(1, -28, 0, 3)
+	close.BackgroundColor3 = Color3.fromRGB(180, 60, 70)
 	close.Text = "×"
-	close.TextColor3 = Color3.fromRGB(255, 210, 210)
+	close.TextColor3 = Color3.fromRGB(255, 230, 230)
 	close.Font = Enum.Font.GothamBold
 	close.TextSize = 16
 	close.BorderSizePixel = 0
 	close.Parent = titleBar
-	corner(close, 4)
+	corner(close, 3)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
-	content.Position = UDim2.fromOffset(6, 32)
-	content.Size = UDim2.new(1, -12, 1, -38)
+	content.Position = UDim2.fromOffset(6, 30)
+	content.Size = UDim2.new(1, -12, 1, -36)
 	content.BackgroundTransparency = 1
 	content.ClipsDescendants = true
 	content.Parent = frame
@@ -1201,7 +1255,36 @@ function ReGui:Window(config)
 
 	local win = wrap(frame, "Window")
 	function win:_host() return content end
-	close.MouseButton1Click:Connect(function() frame.Visible = false end)
+
+	local function setMinimized(v)
+		minimized = v
+		content.Visible = not minimized
+		if minimized then
+			minBtn.Text = "▶"
+			frame.Size = UDim2.fromOffset(fullSize.X.Offset, 26)
+		else
+			minBtn.Text = "▼"
+			frame.Size = fullSize
+		end
+	end
+
+	minBtn.MouseButton1Click:Connect(function()
+		setMinimized(not minimized)
+	end)
+	close.MouseButton1Click:Connect(function()
+		frame.Visible = false
+	end)
+
+	function win:SetVisible(v)
+		frame.Visible = not not v
+	end
+	function win:Minimize()
+		setMinimized(true)
+	end
+	function win:Restore()
+		setMinimized(false)
+	end
+
 	table.insert(self.Windows, win)
 	return win
 end
