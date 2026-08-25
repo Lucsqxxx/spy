@@ -356,12 +356,12 @@ function Element:_create(class, config)
 		if sz and sz.X.Scale >= 1 and sz.X.Offset == 0 then
 			sz = UDim2.new(0, 120, 0, sz.Y.Offset > 0 and sz.Y.Offset or 26)
 		end
-		btn.Size = sz or UDim2.new(0, 100, 0, 26)
+		btn.Size = sz or UDim2.new(0, 96, 0, 22)
 		btn.AutomaticSize = Enum.AutomaticSize.None
 		btn.BackgroundColor3 = C.Btn
 		btn.TextColor3 = C.Text
 		btn.TextSize = 12
-		btn.Font = Enum.Font.GothamMedium
+		btn.Font = Enum.Font.Code
 		btn.Text = tostring(config.Text or config.Label or "Button")
 		btn.TextTruncate = Enum.TextTruncate.AtEnd
 		btn.BorderSizePixel = 0
@@ -520,6 +520,7 @@ function Element:_create(class, config)
 			number = col3(colors.Number or colors.Nil or colors.Bool, "rgb(255,198,0)"),
 			builtin = col3(colors.BuiltIn, "rgb(132,214,247)"),
 			method = col3(colors.LocalMethod or colors.FunctionName, "rgb(253,251,172)"),
+			property = col3(colors.LocalProperty, "rgb(97,161,241)"),
 			op = col3(colors.Operator or colors.Bracket, "rgb(200,200,210)"),
 		}
 		local KEYWORDS = {
@@ -1214,54 +1215,63 @@ function ReGui:Window(config)
 	corner(frame, 4)
 	stroke(frame, C.Border, 1)
 
-	-- Blue title bar (screenshot style)
+	-- Blue title bar (original Sigma Spy style)
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
-	titleBar.Size = UDim2.new(1, 0, 0, 26)
+	titleBar.Size = UDim2.new(1, 0, 0, 24)
 	titleBar.BackgroundColor3 = C.Title
 	titleBar.BorderSizePixel = 0
 	titleBar.Parent = frame
 
-	-- minimize (collapse) arrow on left
 	local minBtn = Instance.new("TextButton")
 	minBtn.Name = "Minimize"
-	minBtn.Size = UDim2.fromOffset(22, 20)
+	minBtn.Size = UDim2.fromOffset(18, 18)
 	minBtn.Position = UDim2.fromOffset(4, 3)
 	minBtn.BackgroundTransparency = 1
 	minBtn.Text = "▼"
-	minBtn.TextColor3 = C.Text
-	minBtn.Font = Enum.Font.GothamBold
+	minBtn.TextColor3 = Color3.fromRGB(230, 230, 240)
+	minBtn.Font = Enum.Font.Code
 	minBtn.TextSize = 12
 	minBtn.Parent = titleBar
+	applyFont(minBtn)
+
+	local icon = Instance.new("TextLabel")
+	icon.Size = UDim2.fromOffset(14, 18)
+	icon.Position = UDim2.fromOffset(22, 3)
+	icon.BackgroundTransparency = 1
+	icon.Text = "🥕"
+	icon.TextSize = 12
+	icon.Parent = titleBar
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.Size = UDim2.new(1, -70, 1, 0)
-	title.Position = UDim2.fromOffset(28, 0)
+	title.Position = UDim2.fromOffset(38, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
-	title.TextColor3 = Color3.fromRGB(235, 240, 250)
-	title.Font = Enum.Font.GothamMedium
+	title.TextColor3 = Color3.fromRGB(230, 230, 235)
+	title.Font = Enum.Font.Code
 	title.TextSize = 13
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = titleBar
+	applyFont(title)
 
 	local close = Instance.new("TextButton")
-	close.Size = UDim2.fromOffset(24, 20)
-	close.Position = UDim2.new(1, -28, 0, 3)
-	close.BackgroundColor3 = Color3.fromRGB(180, 60, 70)
+	close.Size = UDim2.fromOffset(22, 18)
+	close.Position = UDim2.new(1, -26, 0, 3)
+	close.BackgroundTransparency = 1
 	close.Text = "×"
-	close.TextColor3 = Color3.fromRGB(255, 230, 230)
-	close.Font = Enum.Font.GothamBold
+	close.TextColor3 = Color3.fromRGB(220, 220, 230)
+	close.Font = Enum.Font.Code
 	close.TextSize = 16
 	close.BorderSizePixel = 0
 	close.Parent = titleBar
-	corner(close, 3)
+	applyFont(close)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
-	content.Position = UDim2.fromOffset(6, 30)
-	content.Size = UDim2.new(1, -12, 1, -36)
+	content.Position = UDim2.fromOffset(4, 26)
+	content.Size = UDim2.new(1, -8, 1, -30)
 	content.BackgroundTransparency = 1
 	content.ClipsDescendants = true
 	content.Parent = frame
@@ -1283,7 +1293,7 @@ function ReGui:Window(config)
 		content.Visible = not minimized
 		if minimized then
 			minBtn.Text = "▶"
-			frame.Size = UDim2.fromOffset(fullSize.X.Offset, 26)
+			frame.Size = UDim2.fromOffset(fullSize.X.Offset, 24)
 		else
 			minBtn.Text = "▼"
 			frame.Size = fullSize
