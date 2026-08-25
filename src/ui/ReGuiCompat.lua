@@ -35,26 +35,27 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Palette from screenshots
 local C = {
-	-- Matched to original Sigma Spy / ImGui screenshot
-	Bg = Color3.fromRGB(24, 28, 38),
-	BgDark = Color3.fromRGB(18, 20, 28),
-	Title = Color3.fromRGB(45, 85, 145),      -- blue title bar
-	TitleBot = Color3.fromRGB(35, 65, 115),
-	Border = Color3.fromRGB(50, 70, 110),
-	Text = Color3.fromRGB(220, 225, 235),
-	TextDim = Color3.fromRGB(130, 140, 160),
-	Accent = Color3.fromRGB(90, 150, 220),
-	Btn = Color3.fromRGB(40, 70, 120),
-	BtnHover = Color3.fromRGB(55, 95, 160),
-	Select = Color3.fromRGB(35, 65, 110),
-	SelectActive = Color3.fromRGB(50, 100, 170),
-	Input = Color3.fromRGB(14, 16, 22),
-	Check = Color3.fromRGB(70, 140, 220),
-	Green = Color3.fromRGB(80, 220, 120),
-	TabActive = Color3.fromRGB(50, 95, 160),
-	TabIdle = Color3.fromRGB(32, 40, 55),
-	RowAlt = Color3.fromRGB(22, 26, 36),
-	LineNum = Color3.fromRGB(90, 100, 120),
+	Bg = Color3.fromRGB(20, 22, 28),
+	BgDark = Color3.fromRGB(15, 16, 20),
+	Title = Color3.fromRGB(42, 78, 140),
+	TitleBot = Color3.fromRGB(32, 58, 110),
+	Border = Color3.fromRGB(48, 64, 96),
+	Text = Color3.fromRGB(210, 210, 210),
+	TextDim = Color3.fromRGB(120, 120, 130),
+	Accent = Color3.fromRGB(100, 150, 210),
+	Btn = Color3.fromRGB(36, 64, 112),
+	BtnHover = Color3.fromRGB(50, 90, 150),
+	Select = Color3.fromRGB(30, 60, 100),
+	SelectActive = Color3.fromRGB(45, 95, 165),
+	Input = Color3.fromRGB(12, 12, 16),
+	Check = Color3.fromRGB(60, 120, 200),
+	Green = Color3.fromRGB(77, 245, 105),
+	Yellow = Color3.fromRGB(242, 255, 0),
+	TabActive = Color3.fromRGB(48, 90, 155),
+	TabIdle = Color3.fromRGB(28, 32, 42),
+	RowAlt = Color3.fromRGB(18, 20, 26),
+	LineNum = Color3.fromRGB(100, 100, 110),
+	Gutter = Color3.fromRGB(28, 28, 34),
 }
 
 function ReGui:CheckConfig(Target, Defaults)
@@ -656,10 +657,18 @@ function Element:_create(class, config)
 		rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		rowLayout.Parent = row
 
+		local gutter = Instance.new("Frame")
+		gutter.Name = "Gutter"
+		gutter.BackgroundColor3 = C.Gutter
+		gutter.BorderSizePixel = 0
+		gutter.Size = UDim2.new(0, 42, 0, 0)
+		gutter.AutomaticSize = Enum.AutomaticSize.Y
+		gutter.Parent = row
+
 		local lineBox = Instance.new("TextLabel")
 		lineBox.Name = "LineNumbers"
 		lineBox.BackgroundTransparency = 1
-		lineBox.Size = UDim2.new(0, 36, 0, 0)
+		lineBox.Size = UDim2.new(1, -6, 0, 0)
 		lineBox.AutomaticSize = Enum.AutomaticSize.Y
 		lineBox.TextXAlignment = Enum.TextXAlignment.Right
 		lineBox.TextYAlignment = Enum.TextYAlignment.Top
@@ -668,7 +677,14 @@ function Element:_create(class, config)
 		lineBox.Font = Enum.Font.Code
 		applyFont(lineBox)
 		lineBox.Text = "1"
-		lineBox.Parent = row
+		lineBox.Parent = gutter
+
+		local sep = Instance.new("Frame")
+		sep.Size = UDim2.new(0, 1, 1, 0)
+		sep.Position = UDim2.new(1, -1, 0, 0)
+		sep.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+		sep.BorderSizePixel = 0
+		sep.Parent = gutter
 
 		local box = Instance.new("TextBox")
 		box.Size = UDim2.new(0, 0, 0, 0)
