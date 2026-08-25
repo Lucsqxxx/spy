@@ -82,12 +82,8 @@ local Module = {
         WatchNew = {
             Value = true,
             Label = "Highlight new logs"
-        },
-        StealthUi = {
-            Value = true,
-            Label = "Stealth UI names"
         }
-    }
+}
 }
 
 function Module:GetFlagValue(Name: string): FlagValue
