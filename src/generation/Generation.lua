@@ -20,14 +20,22 @@ local Generation = {
 		["Remote"] = {
 			{"%RemoteCall%"}
 		},
+		["Minimal"] = {
+			{"%RemoteCall%"}
+		},
+		["Edit"] = {
+			{"-- Edit args below, then Run"},
+			{"%RemoteCall%"}
+		},
 		["Spam"] = {
-			{"while wait() do"},
+			{"while task.wait(0.1) do"},
 			{"%RemoteCall%", 2},
 			{"end"}
 		},
 		["Repeat"] = {
 			{"for Index = 1, 10 do"},
 			{"%RemoteCall%", 2},
+			{"task.wait(0.05)", 2},
 			{"end"}
 		},
 		["Block"] = {
