@@ -278,7 +278,7 @@ function Element:_create(class, config)
 	if class == "Label" then
 		local label = Instance.new("TextLabel")
 		label.BackgroundTransparency = 1
-		label.Size = UDim2.new(0, 0, 0, 18)
+		label.Size = UDim2.new(0, 0, 0, 20)
 		label.AutomaticSize = Enum.AutomaticSize.XY
 		label.TextXAlignment = config.TextXAlignment or Enum.TextXAlignment.Left
 		label.TextYAlignment = Enum.TextYAlignment.Center
@@ -979,6 +979,48 @@ function Element:_create(class, config)
 		return el
 	end
 
+	if class == "InputInt" then
+		local holder = Instance.new("Frame")
+		holder.BackgroundTransparency = 1
+		holder.Size = UDim2.new(1, 0, 0, 24)
+		holder.Parent = host
+		order(holder)
+		local lab = Instance.new("TextLabel")
+		lab.BackgroundTransparency = 1
+		lab.Size = UDim2.new(0.55, 0, 1, 0)
+		lab.Text = tostring(config.Label or config.Text or "")
+		lab.TextColor3 = C.Text
+		lab.TextXAlignment = Enum.TextXAlignment.Left
+		lab.Font = Enum.Font.Code
+		lab.TextSize = 12
+		lab.Parent = holder
+		applyFont(lab)
+		local box = Instance.new("TextBox")
+		box.Size = UDim2.new(0.4, 0, 0, 20)
+		box.Position = UDim2.new(0.58, 0, 0, 2)
+		box.BackgroundColor3 = C.Input
+		box.TextColor3 = C.Text
+		box.Text = tostring(config.Value or 0)
+		box.Font = Enum.Font.Code
+		box.TextSize = 12
+		box.ClearTextOnFocus = false
+		box.Parent = holder
+		corner(box, 3)
+		applyFont(box)
+		box.FocusLost:Connect(function()
+			local n = tonumber(box.Text)
+			if n then
+				n = math.clamp(math.floor(n), 1, 500)
+				box.Text = tostring(n)
+				config.Value = n
+				if config.Callback then pcall(config.Callback, n) end
+			else
+				box.Text = tostring(config.Value or 50)
+			end
+		end)
+		return wrap(holder, "InputInt")
+	end
+
 	if class == "Keybind" then
 		return self:_create("Button", {
 			Text = config.Label or config.Text or "Key",
@@ -1007,7 +1049,7 @@ end
 
 for _, name in {
 	"List", "Canvas", "Table", "Row", "NextRow", "NextColumn", "HeaderRow",
-	"Label", "Button", "Selectable", "Checkbox", "Separator", "CodeEditor",
+	"Label", "Button", "Selectable", "Checkbox", "InputInt", "Separator", "CodeEditor",
 	"Console", "BulletText", "Keybind", "TreeNode", "TabSelector",
 } do
 	Element[name] = function(self, config)
@@ -1315,6 +1357,44 @@ function ReGui:Window(config)
 	end)
 	close.MouseButton1Click:Connect(function()
 		frame.Visible = false
+	end)
+
+	-- Resize grab (bottom-right)
+	local grab = Instance.new("TextButton")
+	grab.Name = "ResizeGrab"
+	grab.Size = UDim2.fromOffset(16, 16)
+	grab.Position = UDim2.new(1, -16, 1, -16)
+	grab.BackgroundColor3 = C.Border
+	grab.BackgroundTransparency = 0.3
+	grab.Text = ""
+	grab.BorderSizePixel = 0
+	grab.ZIndex = 5
+	grab.Parent = frame
+	corner(grab, 3)
+	local dragging = false
+	local startPos, startSize
+	grab.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			startPos = input.Position
+			startSize = frame.AbsoluteSize
+		end
+	end)
+	grab.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+			fullSize = frame.Size
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if not dragging or minimized then return end
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			local delta = input.Position - startPos
+			local nx = math.clamp(startSize.X + delta.X, 420, 1200)
+			local ny = math.clamp(startSize.Y + delta.Y, 280, 900)
+			frame.Size = UDim2.fromOffset(nx, ny)
+			fullSize = frame.Size
+		end
 	end)
 
 	function win:SetVisible(v)
