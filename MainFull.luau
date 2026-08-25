@@ -1,13 +1,8 @@
---[[
-	Sigma Spy – Full UI attempt for executor Real
-	Uses patched ReGui prefab loader (avoids crashing LoadLocalAsset).
-	Falls back to simple UI if ReGui still fails.
-]]
 
 local function Out(...)
 	local t = { ... }
 	for i = 1, #t do t[i] = tostring(t[i]) end
-	local msg = "[Sigma Spy] " .. table.concat(t, " ")
+	local msg = "[Wyvern Spy] " .. table.concat(t, " ")
 	pcall(warn, msg)
 	pcall(print, msg)
 end
@@ -19,8 +14,8 @@ local Configuration = {
 	NoActors = true,
 	SafeMode = false,
 	PreferLocal = false,
-	FolderName = "Sigma Spy",
-	Directory = "Sigma Spy",
+	FolderName = "Wyvern Spy",
+	Directory = "Wyvern Spy",
 	RepoUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main",
 	ParserUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main/dist/Parser.luau",
 }
@@ -91,12 +86,11 @@ for Name, Path in ModuleMap do
 	end
 end
 
--- ProggyClean font (ImGui look) before UI
 Out("loading font")
 pcall(function()
 	local fontBody = HttpGet(Base .. "/assets/ProggyClean.ttf")
 	if fontBody and writefile then
-		local folder = Configuration.FolderName or "Sigma Spy"
+		local folder = Configuration.FolderName or "Wyvern Spy"
 		pcall(makefolder, folder)
 		pcall(makefolder, folder .. "/assets")
 		local ttfPath = folder .. "/assets/ProggyClean.ttf"
@@ -105,7 +99,6 @@ pcall(function()
 		if assetId then
 			local jsonPath = Files:CreateFont("ProggyClean", assetId)
 			if jsonPath and Ui and Ui.SetFontFile then
-				-- Ui not loaded yet; store for later
 			end
 			Configuration._FontTtf = ttfPath
 			Configuration._FontJson = jsonPath
@@ -131,7 +124,6 @@ pcall(function()
 	Process:CheckConfig(Config)
 end)
 
--- This runs Ui:Init which loads ReGui + patched CheckImportState
 if Configuration._FontJson then
 	pcall(function()
 		Modules.Ui:SetFontFile(Configuration._FontJson)
