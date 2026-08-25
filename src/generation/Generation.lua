@@ -13,10 +13,10 @@ type RemoteData = {
 	NoVariables: boolean?
 }
 
---// Module
 local Generation = {
-	DumpBaseName = "SigmaSpy-Dump %s.lua",
-	Header = "-- Generated with Sigma Spy (Reworked)\n",
+	DumpBaseName = "WyvernSpy-Dump %s.lua",
+	Header = "-- Generated with Wyvern Spy | lucsqx
+",
 	ScriptTemplates = {
 		["Remote"] = {
 			{"%RemoteCall%"}
@@ -58,7 +58,6 @@ local Generation = {
 	}
 }
 
---// Modules
 local Config
 local Hook
 local ParserModule
@@ -76,12 +75,12 @@ function Generation:Init(Data: table)
     local Modules = Data.Modules
 	local Configuration = Modules.Configuration
 
-	--// Modules
+	
 	Config = Modules.Config
 	Hook = Modules.Hook
 	Flags = Modules.Flags
 	
-	--// Import parser
+	
 	local ParserUrl = Configuration.ParserUrl
 	self:LoadParser(ParserUrl)
 end
@@ -101,7 +100,7 @@ function Generation:WriteDump(Content: string): string
 	local DumpBaseName = self.DumpBaseName
 	local FilePath = self:TimeStampFile(DumpBaseName)
 
-	--// Write to file
+	
 	writefile(FilePath, Content)
 
 	return FilePath
@@ -110,10 +109,10 @@ end
 function Generation:LoadParser(ModuleUrl: string)
 	local function Fallback(Reason: string?)
 		if Reason then
-			warn("[Sigma Spy] Parser load error:", Reason)
+			warn("[Wyvern Spy] Parser load error:", Reason)
 		end
-		warn("[Sigma Spy] Failed to load parser from:", ModuleUrl)
-		warn("[Sigma Spy] Script generation formatting may be limited.")
+		warn("[Wyvern Spy] Failed to load parser from:", ModuleUrl)
+		warn("[Wyvern Spy] Script generation formatting may be limited.")
 		ParserModule = {
 			Modules = {
 				Formatter = {
@@ -155,12 +154,12 @@ function Generation:LoadParser(ModuleUrl: string)
 		return
 	end
 
-	-- Fetch source
+	
 	local FetchOk, Source = pcall(function()
 		return game:HttpGet(ModuleUrl)
 	end)
 	if not FetchOk or typeof(Source) ~= "string" or #Source < 100 then
-		-- Alternate URL style (main vs refs/heads/main)
+		
 		local Alt = ModuleUrl:gsub("/refs/heads/main/", "/main/")
 		if Alt ~= ModuleUrl then
 			FetchOk, Source = pcall(function()
@@ -173,14 +172,14 @@ function Generation:LoadParser(ModuleUrl: string)
 		return
 	end
 
-	-- Compile
+	
 	local Chunk, CompileErr = loadstring(Source, "Parser")
 	if not Chunk then
 		Fallback(`compile error: {CompileErr}`)
 		return
 	end
 
-	-- Execute
+	
 	local RunOk, Result = pcall(Chunk)
 	if not RunOk then
 		Fallback(`runtime error: {Result}`)
@@ -192,7 +191,7 @@ function Generation:LoadParser(ModuleUrl: string)
 	end
 
 	ParserModule = Result
-	print("[Sigma Spy] Parser loaded OK")
+	print("[Wyvern Spy] Parser loaded OK")
 end
 
 function Generation:MakeValueSwapsTable(): table
@@ -210,7 +209,7 @@ function Generation:GetBase(Module): (string, boolean)
 
 	local Code = NoComments and "" or Header
 
-	--// Generate variables code
+	
 	local Variables = Module.Parser:MakeVariableCode({
 		"Services", "Remote", "Variables"
 	}, NoComments)
@@ -231,7 +230,7 @@ function Generation:GetSwaps()
 		Swaps[Object] = Data
 	end
 
-	--// Invoke GetSwaps function
+	
 	Func(Interface)
 
 	return Swaps
@@ -254,10 +253,10 @@ function Generation:NewParser(Extra: table?)
 		end,
 	}
 
-	--// Merge extra configuration
+	
 	Merge(Configuration, Extra)
 
-	--// Create new parser instance
+	
 	return ParserModule:New(Configuration)
 end
 
@@ -286,7 +285,7 @@ function Generation:CallRemoteScript(Data, Info: CallInfo): string
 
 	local IndentString = self:MakeIndent(Indent)
 
-	--// Parse arguments
+	
 	local ParsedArgs, ItemsCount, IsArray = Parser:ParseTableIntoString({
 		NoBrackets = true,
 		NoVariables = NoVariables,
@@ -294,7 +293,7 @@ function Generation:CallRemoteScript(Data, Info: CallInfo): string
 		Indent = Indent
 	})
 
-	--// Create table variable if not an array
+	
 	if not IsArray or NoVariables then
 		ParsedArgs = Variables:MakeVariable({
 			Value = ("{%s}"):format(ParsedArgs),
@@ -304,31 +303,30 @@ function Generation:CallRemoteScript(Data, Info: CallInfo): string
 		})
 	end
 
-	--// Wrap in a unpack if the table is a dict
+	
 	if ItemsCount > 0 and not IsArray then
 		ParsedArgs = `unpack({ParsedArgs}, 1, table.maxn({ParsedArgs}))`
 	end
 
-	--// Firesignal script for client recieves
+	
 	if IsReceive then
 		local Second = ItemsCount <= 0 and "" or `, {ParsedArgs}`
 		local Signal = `{RemoteVariable}.{Method}`
 
-		local Code = `-- This data was received from the server`
+		local Code = `
 		ParsedArgs = self:Indent(IndentString, Code)
 		Code ..= `\n{IndentString}firesignal({Signal}{Second})`
 		
 		return Code
 	end
 	
-	--// Remote invoke script
+	
 	return `{RemoteVariable}:{Method}({ParsedArgs})`
 end
 
---// Variables: %VariableName%
 function Generation:ApplyVariables(String: string, Variables: table, ...): string
 	for Variable, Value in Variables do
-		--// Invoke value function
+		
 		if typeof(Value) == "function" then
 			Value = Value(...)
 		end
@@ -362,7 +360,7 @@ function Generation:MakeCallCode(ScriptType: string, Data: ScriptData): string
 		local Out = ""
 
 		for Key, Value in next, Template do
-			--// MetaMethod check
+			
 			local IsMetaTypeOnly = table.find(MetaMethods, Key)
 			if IsMetaTypeOnly then
 				if Key == MetaMethod then
@@ -372,15 +370,15 @@ function Generation:MakeCallCode(ScriptType: string, Data: ScriptData): string
 				continue
 			end
 
-			--// Information
+			
 			local Content, Indent = Value[1], Value[2] or 0
 			Indent = math.clamp(Indent-1, 0, 9999)
 
-			--// Make line
+			
 			local Line = self:ApplyVariables(Content, Variables, Indent)
 			local IndentString = self:MakeIndent(Indent)
 
-			--// Append to code
+			
 			Out ..= `{IndentString}{Line}\n`
 		end
 
@@ -391,23 +389,23 @@ function Generation:MakeCallCode(ScriptType: string, Data: ScriptData): string
 end
 
 function Generation:RemoteScript(Module, Data: RemoteData, ScriptType: string): string
-	--// Unpack data
+	
 	local Remote = Data.Remote
 	local Args = Data.Args
 	local Method = Data.Method
 	local MetaMethod = Data.MetaMethod
 
-	--// Remote info
+	
 	local ClassName = Hook:Index(Remote, "ClassName")
 	local IsNilParent = Hook:Index(Remote, "Parent") == nil
 	
 	local Variables = Module.Variables
 	local Formatter = Module.Formatter
 	
-	--// Pre-render variables
+	
 	Variables:PrerenderVariables(Args, {"Instance"})
 
-	--// Create remote variable
+	
 	local RemoteVariable = Variables:MakeVariable({
 		Value = Formatter:Format(Remote, {
 			NoVariables = true
@@ -418,7 +416,7 @@ function Generation:RemoteScript(Module, Data: RemoteData, ScriptType: string): 
 		Class = "Remote"
 	})
 
-	--// Generate call script
+	
 	local CallCode = self:MakeCallCode(ScriptType, {
 		Variables = {
 			["RemoteCall"] = function(Indent: number)
@@ -435,7 +433,7 @@ function Generation:RemoteScript(Module, Data: RemoteData, ScriptType: string): 
 		MetaMethod = MetaMethod
 	})
 	
-	--// Make code
+	
 	local Code = self:GetBase(Module)
 	return `{Code}\n{CallCode}`
 end
@@ -448,10 +446,10 @@ function Generation:ConnectionsTable(Signal: RBXScriptSignal): table
 		local Function = Connection.Function
 		local Script = rawget(getfenv(Function), "script")
 
-		--// Skip if self
+		
 		if Script == ThisScript then continue end
 
-		--// Connection data
+		
 		local Data = {
 			Function = Function,
 			State = Connection.State,
@@ -465,15 +463,15 @@ function Generation:ConnectionsTable(Signal: RBXScriptSignal): table
 end
 
 function Generation:TableScript(Module, Table: table): string
-	--// Pre-render variables
+	
 	Module.Variables:PrerenderVariables(Table, {"Instance"})
 
-	--// Parse arguments
+	
 	local ParsedTable = Module.Parser:ParseTableIntoString({
 		Table = Table
 	})
 
-	--// Generate script
+	
 	local Code, NoVariables = self:GetBase(Module)
 	local Seperator = NoVariables and "" or "\n"
 	Code ..= `{Seperator}return {ParsedTable}`
@@ -502,7 +500,7 @@ function Generation:ConnectionInfo(Remote: Instance, ClassData: table): table?
 
 	local Connections = {}
 	for _, Method: string in next, ReceiveMethods do
-		pcall(function() -- TODO: GETCALLBACKVALUE
+		pcall(function() 
 			local Signal = Hook:Index(Remote, Method)
 			Connections[Method] = self:ConnectionsTable(Signal)
 		end)
@@ -512,13 +510,13 @@ function Generation:ConnectionInfo(Remote: Instance, ClassData: table): table?
 end
 
 function Generation:AdvancedInfo(Module, Data: table): string
-	--// Unpack remote data
+	
 	local Function = Data.CallingFunction
 	local ClassData = Data.ClassData
 	local Remote = Data.Remote
 	local Args = Data.Args
 	
-	--// Advanced info table base
+	
 	local FunctionInfo = {
 		["Caller"] = {
 			["SourceScript"] = Data.SourceScript,
@@ -539,13 +537,13 @@ function Generation:AdvancedInfo(Module, Data: table): string
 		["IsActor"] = Data.IsActor,
 	}
 
-	--// Some closures may not be lua
+	
 	if Function and islclosure(Function) then
 		FunctionInfo["UpValues"] = debug.getupvalues(Function)
 		FunctionInfo["Constants"] = debug.getconstants(Function)
 	end
 
-	--// Generate script
+	
 	return self:TableScript(Module, FunctionInfo)
 end
 
@@ -556,7 +554,7 @@ function Generation:DumpLogs(Logs: table): string
 		Calls = {}
 	}
 
-	--// Create new parser instance
+	
 	local Module = Generation:NewParser()
 
 	for _, Data in Logs do
@@ -570,19 +568,19 @@ function Generation:DumpLogs(Logs: table): string
 			CallingScript = Data.CallingScript,
 		}
 
-		--// Append
+		
 		table.insert(Calls, Table)
 
-		--// Set BaseData
+		
 		if not BaseData then
 			BaseData = Data
 		end
 	end
 
-	--// Basedata merge
+	
 	Parsed.Remote = BaseData.Remote
 
-	--// Compile and save
+	
 	local Output = self:TableScript(Module, Parsed)
 	local FilePath = self:WriteDump(Output)
 	
