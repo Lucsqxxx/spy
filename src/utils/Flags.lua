@@ -46,17 +46,9 @@ local Module = {
             Label = "Log receives",
         },
         Paused = {
-            Value = true,
-            Label = "Paused (safe default)",
+            Value = false,
+            Label = "Paused",
             Keybind = Enum.KeyCode.Q
-        },
-        MaxLogsPerSec = {
-            Value = 30,
-            Label = "Max logs / sec"
-        },
-        LightHooks = {
-            Value = true,
-            Label = "Light hooks only"
         },
         KeybindsEnabled = {
             Value = true,
