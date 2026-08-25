@@ -482,6 +482,117 @@ function Element:_create(class, config)
 
 	-------------------------------------------------------------------- CodeEditor / Console
 	if class == "CodeEditor" or class == "Console" then
+		local colors = config.Colors or {}
+		local function col3(c, fallback)
+			if typeof(c) == "Color3" then
+				return string.format("rgb(%d,%d,%d)", math.floor(c.R * 255), math.floor(c.G * 255), math.floor(c.B * 255))
+			end
+			return fallback
+		end
+		local COL = {
+			text = col3(colors.Text, "rgb(204,204,204)"),
+			keyword = col3(colors.Keyword or colors.Function or colors.Local, "rgb(248,109,124)"),
+			string = col3(colors.String, "rgb(172,240,148)"),
+			comment = col3(colors.Comment, "rgb(102,102,102)"),
+			number = col3(colors.Number or colors.Nil or colors.Bool, "rgb(255,198,0)"),
+			builtin = col3(colors.BuiltIn, "rgb(132,214,247)"),
+			method = col3(colors.LocalMethod or colors.FunctionName, "rgb(253,251,172)"),
+			op = col3(colors.Operator or colors.Bracket, "rgb(200,200,210)"),
+		}
+		local KEYWORDS = {
+			["and"]=true,["break"]=true,["do"]=true,["else"]=true,["elseif"]=true,
+			["end"]=true,["false"]=true,["for"]=true,["function"]=true,["goto"]=true,
+			["if"]=true,["in"]=true,["local"]=true,["nil"]=true,["not"]=true,
+			["or"]=true,["repeat"]=true,["return"]=true,["then"]=true,["true"]=true,
+			["until"]=true,["while"]=true,["continue"]=true,["export"]=true,["type"]=true,
+		}
+		local BUILTINS = {
+			["game"]=true,["workspace"]=true,["script"]=true,["Color3"]=true,["Vector3"]=true,
+			["Vector2"]=true,["CFrame"]=true,["UDim2"]=true,["UDim"]=true,["Instance"]=true,
+			["Enum"]=true,["task"]=true,["wait"]=true,["print"]=true,["warn"]=true,
+			["error"]=true,["typeof"]=true,["type"]=true,["pairs"]=true,["ipairs"]=true,
+			["next"]=true,["pcall"]=true,["xpcall"]=true,["unpack"]=true,["select"]=true,
+			["tonumber"]=true,["tostring"]=true,["setmetatable"]=true,["getmetatable"]=true,
+			["require"]=true,["tick"]=true,["time"]=true,["SharedTable"]=true,
+			["FireServer"]=true,["InvokeServer"]=true,["OnClientEvent"]=true,["OnClientInvoke"]=true,
+			["GetService"]=true,["FindFirstChild"]=true,["WaitForChild"]=true,
+		}
+
+		local function escapeRich(s)
+			return (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
+		end
+
+		local function highlight(src)
+			src = tostring(src or "")
+			local out = {}
+			local i = 1
+			local n = #src
+			while i <= n do
+				local ch = src:sub(i, i)
+				-- long comment --[[ ]]
+				if src:sub(i, i + 3) == "--[[" then
+					local j = src:find("%]%]", i + 4) or n
+					if src:sub(j, j + 1) == "]]" then j = j + 1 end
+					table.insert(out, '<font color="' .. COL.comment .. '">' .. escapeRich(src:sub(i, j)) .. "</font>")
+					i = j + 1
+				-- line comment
+				elseif src:sub(i, i + 1) == "--" then
+					local j = src:find("\n", i) or (n + 1)
+					table.insert(out, '<font color="' .. COL.comment .. '">' .. escapeRich(src:sub(i, j - 1)) .. "</font>")
+					i = j
+				-- strings
+				elseif ch == '"' or ch == "'" then
+					local q = ch
+					local j = i + 1
+					while j <= n do
+						local c = src:sub(j, j)
+						if c == "\\" then
+							j += 2
+						elseif c == q then
+							break
+						else
+							j += 1
+						end
+					end
+					table.insert(out, '<font color="' .. COL.string .. '">' .. escapeRich(src:sub(i, j)) .. "</font>")
+					i = j + 1
+				-- long string [[ ]]
+				elseif src:sub(i, i + 1) == "[[" then
+					local j = src:find("%]%]", i + 2) or n
+					if src:sub(j, j + 1) == "]]" then j = j + 1 end
+					table.insert(out, '<font color="' .. COL.string .. '">' .. escapeRich(src:sub(i, j)) .. "</font>")
+					i = j + 1
+				-- number
+				elseif ch:match("%d") then
+					local j = i
+					while j <= n and src:sub(j, j):match("[%d%.xXa-fA-F]") do
+						j += 1
+					end
+					table.insert(out, '<font color="' .. COL.number .. '">' .. escapeRich(src:sub(i, j - 1)) .. "</font>")
+					i = j
+				-- identifier / keyword
+				elseif ch:match("[%a_]") then
+					local j = i
+					while j <= n and src:sub(j, j):match("[%w_]") do
+						j += 1
+					end
+					local word = src:sub(i, j - 1)
+					local color = COL.text
+					if KEYWORDS[word] then
+						color = COL.keyword
+					elseif BUILTINS[word] then
+						color = COL.builtin
+					end
+					table.insert(out, '<font color="' .. color .. '">' .. escapeRich(word) .. "</font>")
+					i = j
+				else
+					table.insert(out, '<font color="' .. COL.op .. '">' .. escapeRich(ch) .. "</font>")
+					i += 1
+				end
+			end
+			return table.concat(out)
+		end
+
 		local scroll = Instance.new("ScrollingFrame")
 		if config.Fill then
 			scroll.Size = UDim2.new(1, 0, 1, -34)
@@ -489,11 +600,12 @@ function Element:_create(class, config)
 		else
 			scroll.Size = config.Size or UDim2.new(1, 0, 0, 160)
 		end
-		scroll.BackgroundColor3 = C.Input
+		scroll.BackgroundColor3 = (typeof(colors.Background) == "Color3" and colors.Background) or C.Input
 		scroll.BorderSizePixel = 0
-		scroll.ScrollBarThickness = 5
+		scroll.ScrollBarThickness = 6
 		scroll.ScrollBarImageColor3 = C.Border
-		scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		scroll.ScrollingDirection = Enum.ScrollingDirection.XY
+		scroll.AutomaticCanvasSize = Enum.AutomaticSize.XY
 		scroll.CanvasSize = UDim2.new()
 		scroll.Parent = host
 		order(scroll)
@@ -507,11 +619,12 @@ function Element:_create(class, config)
 				flex.Parent = scroll
 			end)
 		end
+
 		local box = Instance.new("TextBox")
-		box.Size = UDim2.new(1, -4, 0, 0)
-		box.AutomaticSize = Enum.AutomaticSize.Y
+		box.Size = UDim2.new(0, 0, 0, 0)
+		box.AutomaticSize = Enum.AutomaticSize.XY
 		box.BackgroundTransparency = 1
-		box.TextColor3 = Color3.fromRGB(175, 220, 185)
+		box.TextColor3 = (typeof(colors.Text) == "Color3" and colors.Text) or Color3.fromRGB(200, 210, 220)
 		box.PlaceholderColor3 = C.TextDim
 		box.TextXAlignment = Enum.TextXAlignment.Left
 		box.TextYAlignment = Enum.TextYAlignment.Top
@@ -519,37 +632,102 @@ function Element:_create(class, config)
 		box.Font = Enum.Font.Code
 		box.ClearTextOnFocus = false
 		box.MultiLine = true
-		box.TextWrapped = true
+		box.TextWrapped = false -- allow horizontal scroll
+		box.RichText = false
 		box.Text = config.Text or ""
 		box.TextEditable = (config.Editable ~= false) and not config.ReadOnly
 		box.Parent = scroll
+
+		local plainText = config.Text or ""
+		local focused = false
+
+		local function showHighlight()
+			if focused then return end
+			local ok = pcall(function()
+				box.RichText = true
+				box.Text = highlight(plainText)
+			end)
+			if not ok then
+				box.RichText = false
+				box.Text = plainText
+			end
+		end
+
+		local function showPlain()
+			box.RichText = false
+			box.Text = plainText
+		end
+
+		box.Focused:Connect(function()
+			focused = true
+			showPlain()
+		end)
+		box.FocusLost:Connect(function()
+			plainText = box.Text
+			focused = false
+			showHighlight()
+		end)
+		box:GetPropertyChangedSignal("Text"):Connect(function()
+			if focused then
+				plainText = box.Text
+			end
+		end)
+
+		-- initial highlight
+		task.defer(showHighlight)
+
 		local el = wrap(scroll, class)
 		el.Enabled = config.Enabled ~= false
 		el._box = box
 		el._lines = {}
-		function el:GetText() return box.Text end
-		function el:GetValue() return box.Text end
+		el._plain = function() return plainText end
+
+		function el:GetText()
+			if focused then return box.Text end
+			return plainText
+		end
+		function el:GetValue()
+			return self:GetText()
+		end
 		function el:SetText(t)
-			box.Text = tostring(t or "")
+			plainText = tostring(t or "")
+			if focused then
+				box.RichText = false
+				box.Text = plainText
+			else
+				showHighlight()
+			end
 			el._lines = {}
 		end
 		function el:Clear()
-			box.Text = ""
+			self:SetText("")
 			el._lines = {}
 		end
 		function el:AppendText(...)
 			if not el.Enabled then return end
 			local parts = {...}
 			for i = 1, #parts do parts[i] = tostring(parts[i]) end
-			table.insert(el._lines, table.concat(parts, " "))
-			local maxL = config.MaxLines or 200
-			while #el._lines > maxL do table.remove(el._lines, 1) end
-			box.Text = table.concat(el._lines, "\n")
+			local line = table.concat(parts, " ")
+			if plainText ~= "" and not plainText:match("\n$") then
+				plainText ..= "\n"
+			end
+			plainText ..= line
+			local maxL = config.MaxLines or 500
+			local lines = {}
+			for s in (plainText .. "\n"):gmatch("(.-)\n") do
+				table.insert(lines, s)
+			end
+			while #lines > maxL do table.remove(lines, 1) end
+			plainText = table.concat(lines, "\n")
+			if focused then
+				box.Text = plainText
+			else
+				showHighlight()
+			end
 		end
 		return el
 	end
 
-	-------------------------------------------------------------------- TreeNode
 	if class == "TreeNode" then
 		local root = Instance.new("Frame")
 		root.BackgroundTransparency = 1
