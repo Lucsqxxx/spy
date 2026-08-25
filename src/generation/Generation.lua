@@ -1,3 +1,4 @@
+-- wyvern gen 2026-08-26b
 type table = {
 	[any]: any
 }
@@ -324,29 +325,32 @@ function Generation:CallRemoteScript(Data, Info: CallInfo): string
 
 	
 	if IsReceive then
-		local Second = ItemsCount <= 0 and "" or `, {ParsedArgs}`
-		local Signal = `{RemoteVariable}.{Method}`
-		local Code = `{IndentString}firesignal({Signal}{Second})`
-		return Code
+		local Second = ""
+		if ItemsCount > 0 then
+			Second = ", " .. tostring(ParsedArgs)
+		end
+		local Signal = tostring(RemoteVariable) .. "." .. tostring(Method)
+		return tostring(IndentString) .. "firesignal(" .. Signal .. Second .. ")"
 	end
-	
-	
-	return `{RemoteVariable}:{Method}({ParsedArgs})`
+
+	return tostring(RemoteVariable) .. ":" .. tostring(Method) .. "(" .. tostring(ParsedArgs) .. ")"
 end
 
 function Generation:ApplyVariables(String: string, Variables: table, ...): string
 	for Variable, Value in Variables do
-		
 		if typeof(Value) == "function" then
 			Value = Value(...)
 		end
-
-		String = String:gsub(`%%{Variable}%%`, function()
-			return Value
+		-- Lua patterns: %% matches literal %
+		local pattern = "%%" .. tostring(Variable) .. "%%"
+		local replacement = tostring(Value)
+		String = String:gsub(pattern, function()
+			return replacement
 		end)
 	end
 	return String
 end
+
 
 function Generation:MakeIndent(Indent: number)
 	return string.rep("	", Indent)
