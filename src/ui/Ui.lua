@@ -1277,6 +1277,19 @@ function Ui:ViewConnections(RemoteName: string, Signal: RBXScriptConnection)
 
 	--// Center Window
 	Window:Center()
+
+	-- Safe default notice
+	task.defer(function()
+		pcall(function()
+			if Flags:GetFlagValue("Paused") then
+				self:ShowModal({
+					"Safe mode: logging is PAUSED.",
+					"Open Options and uncheck Paused when you want to capture remotes.",
+					"Light hooks + rate limit protect users on strict games."
+				})
+			end
+		end)
+	end)
 end
 
 function Ui:GetRemoteHeader(Data: Log)
