@@ -1,21 +1,11 @@
-
-local function Out(...)
-	local t = { ... }
-	for i = 1, #t do t[i] = tostring(t[i]) end
-	local msg = "[Wyvern Spy] " .. table.concat(t, " ")
-	pcall(warn, msg)
-	pcall(print, msg)
-end
-
-Out("boot (ReGui patched)")
-
 local Configuration = {
 	UseWorkspace = false,
 	NoActors = true,
+	Stealth = true,
 	SafeMode = false,
 	PreferLocal = false,
-	FolderName = "Wyvern Spy",
-	Directory = "Wyvern Spy",
+	FolderName = "ClientCache",
+	Directory = "ClientCache",
 	RepoUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main",
 	ParserUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main/dist/Parser.luau",
 }
@@ -26,6 +16,30 @@ if typeof(Parameters[1]) == "table" then
 		Configuration[k] = v
 	end
 end
+
+local function Out(...)
+	local t = { ... }
+	for i = 1, #t do t[i] = tostring(t[i]) end
+	if Configuration.Stealth then
+		return
+	end
+	local msg = "[Wyvern Spy] " .. table.concat(t, " ")
+	pcall(warn, msg)
+	pcall(print, msg)
+end
+
+pcall(function()
+	if not Configuration.Stealth then return end
+	local genv = getgenv and getgenv() or nil
+	if genv then
+		genv.WyvernSpy = nil
+		genv.Wyvern = nil
+		genv.SigmaSpy = nil
+		genv.Sigma = nil
+	end
+end)
+
+Out("boot")
 
 local Services = setmetatable({}, {
 	__index = function(_, Name)
