@@ -187,23 +187,37 @@ function Ui:CreateButtons(Parent, Data: CreateButtons)
 	local Base = Data.Base or {}
 	local Buttons = Data.Buttons
 	local NoTable = Data.NoTable
+	local MaxColumns = Data.MaxColumns or 3
 
-	--// Create table layout
-	if not NoTable then
-		Parent = Parent:Table({
-			MaxColumns = 3
-		}):NextRow()
+	-- Default: compact buttons that stay inside the window
+	if not Base.Size then
+		Base.Size = UDim2.fromOffset(110, 26)
+	end
+	-- Clamp full-width sizes that blow out horizontal layouts
+	if Base.Size and Base.Size.X.Scale >= 1 then
+		Base.Size = UDim2.fromOffset(120, Base.Size.Y.Offset > 0 and Base.Size.Y.Offset or 26)
+	end
+	Base.FlexFill = true
+
+	if NoTable then
+		for _, Button in next, Buttons do
+			ReGui:CheckConfig(Button, Base)
+			Parent:Button(Button)
+		end
+		return
 	end
 
-	--// Create buttons
+	-- Wrap into rows of MaxColumns so buttons never spill outside the window
+	local col = 0
+	local row = Parent:Row()
 	for _, Button in next, Buttons do
-		local Container = Parent
-		if not NoTable then
-			Container = Parent:NextColumn()
+		if col >= MaxColumns then
+			row = Parent:Row()
+			col = 0
 		end
-
 		ReGui:CheckConfig(Button, Base)
-		Container:Button(Button)
+		row:Button(Button)
+		col += 1
 	end
 end
 
@@ -364,37 +378,37 @@ end
 
 function Ui:CreateElements(Parent, Options)
 	local OptionTypes = self.OptionTypes
-	
-	--// Create table layout
-	local Table = Parent:Table({
-		MaxColumns = 3
-	}):NextRow()
+	local MaxColumns = 2 -- stay inside window width
+	local col = 0
+	local row = Parent:Row()
 
 	for Name, Data in Options do
 		local Value = Data.Value
 		local Type = typeof(Value)
 
-		--// Add missing values into options table
 		ReGui:CheckConfig(Data, {
 			Class = OptionTypes[Type],
 			Label = Name,
 		})
 		
-		--// Check if a element type exists for value type
 		local Class = Data.Class
 		assert(Class, `No {Type} type exists for option`)
 
-		local Container = Table:NextColumn()
+		if col >= MaxColumns then
+			row = Parent:Row()
+			col = 0
+		end
+
+		local Container = row:NextColumn()
 		local Checkbox = nil
 
-		--// Check for a keybind layout
 		local Keybind = Data.Keybind
 		Container = self:CheckKeybindLayout(Container, Keybind, function()
 			Checkbox:Toggle()
 		end)
 		
-		--// Create column and element
 		Checkbox = Container[Class](Container, Data)
+		col += 1
 	end
 end
 
@@ -525,9 +539,9 @@ function Ui:MakeOptionsTab(InfoSelector)
 	Tab:Separator({Text="Logs"})
 	self:CreateButtons(Tab, {
 		Base = {
-			Size = UDim2.new(1, 0, 0, 20),
-			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.fromOffset(118, 26),
 		},
+		MaxColumns = 3,
 		Buttons = {
 			{
 				Text = "Clear logs",
@@ -1094,9 +1108,9 @@ function Ui:SetFocusedRemote(Data)
 	--// Instance options
 	self:CreateButtons(Tab, {
 		Base = {
-			Size = UDim2.new(1, 0, 0, 20),
-			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.fromOffset(130, 26),
 		},
+		MaxColumns = 2,
 		Buttons = {
 			{
 				Text = "Copy script path",
