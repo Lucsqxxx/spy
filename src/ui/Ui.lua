@@ -1,6 +1,6 @@
 local Ui = {
 	DefaultEditorContent = [=[--[[
-	Wyvern Spy, made by lucsqx
+	Wyvern Spy, Wyvern Spy
 	Hooks rewritten and many more fixes!
 
 	
@@ -524,7 +524,7 @@ function Ui:ConsoleTab(InfoSelector)
 
 	--// Create console
 	Console = Tab:Console({
-		Text = "-- Wyvern Spy | lucsqx",
+		Text = "-- Wyvern Spy",
 		ReadOnly = true,
 		Border = false,
 		Fill = true,
@@ -614,8 +614,8 @@ function Ui:AddDetailsSection(OptionsTab)
 	OptionsTab:Separator({Text="Information"})
 	OptionsTab:BulletText({
 		Rows = {
-			"Wyvern Spy - made by lucsqx",
-			"Wyvern Spy - made by lucsqx",
+			"Wyvern Spy - Wyvern Spy",
+			"Wyvern Spy - Wyvern Spy",
 			""
 		}
 	})
@@ -846,7 +846,10 @@ function Ui:MakeTableHeaders(Table, Rows: table)
 	local HeaderRow = Table:HeaderRow()
 	for _, Catagory in Rows do
 		local Column = HeaderRow:NextColumn()
-		Column:Label({Text=Catagory})
+		Column:Label({
+			Text = tostring(Catagory),
+			TextColor3 = Color3.fromRGB(140, 170, 220),
+		})
 	end
 end
 
@@ -1030,7 +1033,8 @@ function Ui:SetFocusedRemote(Data)
 			["Edit & Repeat"] = DataConnection("MakeScript", "Edit"),
 			["Block Remote"] = DataConnection("MakeScript", "Block"),
 			["Repeat For"] = DataConnection("MakeScript", "Repeat"),
-			["Spam Remote"] = DataConnection("MakeScript", "Spam")
+			["Spam Remote"] = DataConnection("MakeScript", "Spam"),
+			["Undo Spam"] = DataConnection("MakeScript", "UndoSpam")
 		})
 	end
 	function Data:SaveScript()
