@@ -425,27 +425,28 @@ end
 
 function Ui:CreateWindowContent(Window)
     --// Window group
+    -- Horizontal split: remotes list (left) + tabs (right) — matches original Sigma Spy layout
     local Layout = Window:List({
-        UiPadding = 2,
+        UiPadding = 4,
         HorizontalFlex = Enum.UIFlexAlignment.Fill,
         VerticalFlex = Enum.UIFlexAlignment.Fill,
-        FillDirection = Enum.FillDirection.Vertical,
+        FillDirection = Enum.FillDirection.Horizontal,
         Fill = true
     })
 
-	--// Remotes list
+	--// Remotes list (left sidebar)
     self.RemotesList = Layout:Canvas({
         Scroll = true,
-        UiPadding = 5,
+        UiPadding = 4,
         AutomaticSize = Enum.AutomaticSize.None,
         FlexMode = Enum.UIFlexMode.None,
-        Size = UDim2.new(0, 130, 1, 0)
+        Size = UDim2.new(0, 150, 1, 0)
     })
 
-	--// Tab box
+	--// Tab box (Editor / Options / Remote)
 	local InfoSelector = Layout:TabSelector({
         NoAnimation = true,
-        Size = UDim2.new(1, -130, 0.4, 0),
+        Size = UDim2.new(1, -156, 1, 0),
     })
 
 	self.InfoSelector = InfoSelector
