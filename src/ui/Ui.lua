@@ -1,9 +1,9 @@
 local Ui = {
 	DefaultEditorContent = [=[--[[
-	Sigma Spy, written by depso
+	Wyvern Spy, made by lucsqx
 	Hooks rewritten and many more fixes!
 
-	Discord: https://discord.gg/bkUkm2vSbv
+	
 ]]]=],
 	LogLimit = 100,
     SeasonLabels = { 
@@ -25,7 +25,7 @@ local Ui = {
 		["Desktop"] = UDim2.fromOffset(600, 400),
 	},
     BaseConfig = {
-        Theme = "SigmaSpy",
+        Theme = "WyvernSpy",
         NoScroll = true,
     },
 	OptionTypes = {
@@ -109,7 +109,7 @@ function Ui:Init(Data)
 	local CompatUrl = `{Data.Configuration.RepoUrl}/src/ui/ReGuiCompat.lua`
 	local CompatSource = game:HttpGet(CompatUrl)
 	ReGui = loadstring(CompatSource, "ReGuiCompat")()
-	warn("[Sigma Spy] Using ReGuiCompat (no prefab asset)")
+	warn("[Wyvern Spy] Using ReGuiCompat (no prefab asset)")
 
 	self:LoadFont()
 	self:LoadReGui()
@@ -161,7 +161,7 @@ function Ui:LoadFont()
 	if not Ok or not NewFont then return end
 	TextFont = NewFont
 	FontSuccess = true
-	warn("[Sigma Spy] Custom font loaded (ProggyClean/ImGui)")
+	warn("[Wyvern Spy] Custom font loaded (ProggyClean/ImGui)")
 end
 
 function Ui:SetFontFile(FontFile: string)
@@ -175,7 +175,7 @@ function Ui:FontWasSuccessful()
 	self:ShowModal({
 		"Unfortunately your executor was unable to download the font and therefore switched to the Dark theme",
 		"\nIf you would like to use the ImGui theme, \nplease download the font (assets/ProggyClean.ttf)",
-		"and put put it in your workspace folder\n(Sigma Spy/assets)"
+		"and put put it in your workspace folder\n(Wyvern Spy/assets)"
 	})
 end
 
@@ -189,7 +189,7 @@ function Ui:LoadReGui()
 	end
 
 	--// ReGui
-	ReGui:DefineTheme("SigmaSpy", ThemeConfig)
+	ReGui:DefineTheme("WyvernSpy", ThemeConfig)
 end
 
 type CreateButtons = {
@@ -311,7 +311,7 @@ function Ui:ShowModal(Lines: table)
 
 	--// Modal Window
 	local ModalWindow = Window:PopupModal({
-		Title = "Sigma Spy"
+		Title = "Wyvern Spy"
 	})
 	ModalWindow:Label({
 		Text = Message,
@@ -328,15 +328,15 @@ end
 
 function Ui:ShowUnsupportedExecutor(Name: string)
 	Ui:ShowModal({
-		"Unfortunately Sigma Spy is not supported on your executor",
-		"The best free option is Swift (discord.gg/getswiftgg)",
+		"Unfortunately Wyvern Spy is not supported on your executor",
+		"Your executor may not support all features",
 		`\nYour executor: {Name}`
 	})
 end
 
 function Ui:ShowUnsupported(FuncName: string)
 	Ui:ShowModal({
-		"Unfortunately Sigma Spy is not supported on your executor",
+		"Unfortunately Wyvern Spy is not supported on your executor",
 		`\nMissing function: {FuncName}`
 	})
 end
@@ -426,7 +426,7 @@ function Ui:CreateElements(Parent, Options)
 	end
 end
 
---// Boiiii what did you say about Sigma Spy 💀💀
+--// Boiiii what did you say about Wyvern Spy 💀💀
 function Ui:DisplayAura()
     local Window = self.Window
     local Rand = self.RandomSeed
@@ -436,7 +436,7 @@ function Ui:DisplayAura()
     local AURADELAY = Rand:NextInteger(1, 5)
 
 	--// Title
-	local Title = `Sigma Spy | AURA: {AURA}`
+	local Title = `Wyvern Spy`
 	local Seasonal = self:TurnSeasonal(Title)
     Window:SetTitle(Seasonal)
 
@@ -453,7 +453,7 @@ end
 
 function Ui:CreateWindowContent(Window)
     --// Window group
-    -- Horizontal split: remotes list (left) + tabs (right) — matches original Sigma Spy layout
+    -- Horizontal split: remotes list (left) + tabs (right) — matches original Wyvern Spy layout
     local Layout = Window:List({
         UiPadding = 4,
         HorizontalFlex = Enum.UIFlexAlignment.Fill,
@@ -524,7 +524,7 @@ function Ui:ConsoleTab(InfoSelector)
 
 	--// Create console
 	Console = Tab:Console({
-		Text = "-- Created by depso",
+		Text = "-- Wyvern Spy | lucsqx",
 		ReadOnly = true,
 		Border = false,
 		Fill = true,
@@ -584,17 +584,11 @@ function Ui:MakeOptionsTab(InfoSelector)
 					Process:UpdateAllRemoteData("Excluded", false)
 				end,
 			},
-			{
-				Text = "Join Discord",
-				Callback = function()
-					Process:PromptDiscordInvite("s9ngmUDWgb")
-					self:SetClipboard("https://discord.gg/s9ngmUDWgb")
-				end,
-			},
+			
 			{
 				Text = "Copy Github",
 				Callback = function()
-					self:SetClipboard("https://github.com/depthso/Sigma-Spy")
+					self:SetClipboard("https://github.com/Lucsqxxx/spy")
 				end,
 			},
 			{
@@ -620,9 +614,9 @@ function Ui:AddDetailsSection(OptionsTab)
 	OptionsTab:Separator({Text="Information"})
 	OptionsTab:BulletText({
 		Rows = {
-			"Sigma spy - Written by depso!",
-			"Libraries: Roblox-Parser, Dear-ReGui",
-			"Thank you syn.lua for suggesting I make this"
+			"Wyvern Spy - made by lucsqx",
+			"Wyvern Spy - made by lucsqx",
+			""
 		}
 	})
 end
@@ -672,7 +666,7 @@ function Ui:MakeEditorTab(InfoSelector)
 				Text = "Run",
 				Callback = function()
 					local Script = CodeEditor:GetText()
-					local Func, Error = loadstring(Script, "SigmaSpy-USERSCRIPT")
+					local Func, Error = loadstring(Script, "WyvernSpy-USERSCRIPT")
 
 					--// Syntax check
 					if not Func then
@@ -699,7 +693,7 @@ function Ui:MakeEditorTab(InfoSelector)
 				Text = "Pop-out",
 				Callback = function()
 					local Script = CodeEditor:GetText()
-					local Tile = ActiveData and ActiveData.Task or "Sigma Spy"
+					local Tile = ActiveData and ActiveData.Task or "Wyvern Spy"
 					self:MakeEditorPopoutWindow(Script, {
 						Title = Tile
 					})
@@ -761,7 +755,7 @@ function Ui:EditFile(FilePath: string, InFolder: boolean, OnSaveFunc: ((table, s
 	local Folder = Files.FolderName
 	local CodeEditor, Window
 
-	--// Relative to Sigma Spy folder
+	--// Relative to Wyvern Spy folder
 	if InFolder then
 		FilePath = `{Folder}/{FilePath}`
 	end
@@ -775,7 +769,7 @@ function Ui:EditFile(FilePath: string, InFolder: boolean, OnSaveFunc: ((table, s
 			Text = "Save",
 			Callback = function()
 				local Script = CodeEditor:GetText()
-				local Success, Error = loadstring(Script, "SigmaSpy-Editor")
+				local Success, Error = loadstring(Script, "WyvernSpy-Editor")
 
 				--// Syntax check
 				if not Success then
@@ -853,8 +847,8 @@ function Ui:MakeTableHeaders(Table, Rows: table)
 end
 
 function Ui:Decompile(Editor: table, Script: Script)
-	local Header = "--BOOIIII THIS IS SO TUFF FLIPPY SKIBIDI AURA (SIGMA SPY)"
-	Editor:SetText("--Decompiling... +9999999 AURA (mango phonk)")
+	local Header = "--Decompiled with Wyvern Spy"
+	Editor:SetText("--Decompiling... ")
 
 	--// Decompile script
 	local Decompiled, IsError = Process:Decompile(Script)
@@ -955,16 +949,16 @@ function Ui:SetFocusedRemote(Data)
 	Data.Selectable:SetSelected(true)
 
 	local function SetIDEText(Content: string, Task: string?)
-		Data.Task = Task or "Sigma Spy"
+		Data.Task = Task or "Wyvern Spy"
 		if not CodeEditor then
-			warn("[Sigma Spy] CodeEditor missing")
+			warn("[Wyvern Spy] CodeEditor missing")
 			return
 		end
 		local Ok, Err = pcall(function()
 			CodeEditor:SetText(tostring(Content or ""))
 		end)
 		if not Ok then
-			warn("[Sigma Spy] SetText failed:", Err)
+			warn("[Wyvern Spy] SetText failed:", Err)
 			-- Fallback: try .Text on instance
 			pcall(function()
 				if CodeEditor._box then
@@ -1007,7 +1001,7 @@ function Ui:SetFocusedRemote(Data)
 
 		--// Check if script exists
 		if not Script and not NoMissingCheck then 
-			Ui:ShowModal({"The Script has been destroyed by the game (-9999999 AURA)"})
+			Ui:ShowModal({"The Script has been destroyed by the game "})
 			return
 		end
 
@@ -1046,7 +1040,7 @@ function Ui:SetFocusedRemote(Data)
 		--// getscriptbytecode
     	local Success, Bytecode = pcall(getscriptbytecode, Script)
 		if not Success then
-			Ui:ShowModal({"Failed to get Scripte bytecode (-9999999 AURA)"})
+			Ui:ShowModal({"Failed to get Scripte bytecode "})
 			return
 		end
 
@@ -1075,11 +1069,11 @@ function Ui:SetFocusedRemote(Data)
 
 		--// Error messages
 		if not IsRemoteFunction then
-			Ui:ShowModal({"The Remote is not a Remote Function (-9999999 AURA)"})
+			Ui:ShowModal({"The Remote is not a Remote Function "})
 			return
 		end
 		if not ReturnValues then
-			Ui:ShowModal({"No return values (-9999999 AURA)"})
+			Ui:ShowModal({"No return values "})
 			return
 		end
 
