@@ -15,8 +15,7 @@ type RemoteData = {
 
 local Generation = {
 	DumpBaseName = "WyvernSpy-Dump %s.lua",
-	Header = "-- Generated with Wyvern Spy | lucsqx
-",
+	Header = "-- Generated with Wyvern Spy | lucsqx\n",
 	ScriptTemplates = {
 		["Remote"] = {
 			{"%RemoteCall%"}
