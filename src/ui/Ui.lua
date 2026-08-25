@@ -104,78 +104,12 @@ function Ui:Init(Data)
 	Communication = Modules.Communication
 	Files = Modules.Files
 
-	--// ReGui (path matches new project structure)
-	local ReGuiUrl = `{Data.Configuration.RepoUrl}/src/ui/ReGui.lua`
-	local ReGuiSource = game:HttpGet(ReGuiUrl)
-	ReGui = loadstring(ReGuiSource, "ReGui")()
-
-	--// Real (and some other executors) hard-crash on LoadLocalAsset for PrefabsId.
-	--// Replace CheckImportState with safer asset load methods before any Window is created.
-	function ReGui:CheckImportState()
-		if self.Initialised then
-			return
-		end
-
-		local Id = self.PrefabsId
-		local PrefabModel = nil
-
-		local function Try(label, fn)
-			if PrefabModel then
-				return
-			end
-			local Ok, Res = pcall(fn)
-			if Ok and Res ~= nil then
-				-- GetObjects-style returns a table of instances
-				if typeof(Res) == "table" then
-					Res = Res[1]
-				end
-				if typeof(Res) == "Instance" then
-					PrefabModel = Res
-					warn("[Sigma Spy] ReGui prefabs loaded via:", label)
-				end
-			end
-		end
-
-		-- Safer alternatives first (LoadLocalAsset last — crashes "Real")
-		Try("GetObjects", function()
-			if getobjects then
-				return getobjects("rbxassetid://" .. tostring(Id))
-			end
-			return game:GetObjects("rbxassetid://" .. tostring(Id))
-		end)
-
-		Try("InsertService:LoadAsset", function()
-			return game:GetService("InsertService"):LoadAsset(Id)
-		end)
-
-		Try("loadlocalasset", function()
-			if loadlocalasset then
-				return loadlocalasset("rbxassetid://" .. tostring(Id))
-			end
-			error("no loadlocalasset")
-		end)
-
-		Try("LoadLocalAsset", function()
-			local IS = game:GetService("InsertService")
-			return IS:LoadLocalAsset("rbxassetid://" .. tostring(Id))
-		end)
-
-		-- Existing ReGui-Prefabs already in game
-		Try("existing PlayerGui", function()
-			local pg = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
-			if pg then
-				return pg:FindFirstChild("ReGui-Prefabs")
-			end
-			return nil
-		end)
-
-		if not PrefabModel then
-			warn("[Sigma Spy] ReGui prefabs FAILED to load — UI cannot start on this executor")
-			error("ReGui prefabs unavailable (LoadLocalAsset blocked/crashes)")
-		end
-
-		self:Init({ Prefabs = PrefabModel })
-	end
+	--// ReGui: use pure-Instance compat library (no prefab asset — works on Real)
+	--// Original Dear-ReGui requires rbxassetid://71968920594655 via LoadLocalAsset which crashes Real.
+	local CompatUrl = `{Data.Configuration.RepoUrl}/src/ui/ReGuiCompat.lua`
+	local CompatSource = game:HttpGet(CompatUrl)
+	ReGui = loadstring(CompatSource, "ReGuiCompat")()
+	warn("[Sigma Spy] Using ReGuiCompat (no prefab asset)")
 
 	self:LoadFont()
 	self:LoadReGui()
