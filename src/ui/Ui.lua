@@ -30,6 +30,7 @@ local Ui = {
     },
 	OptionTypes = {
 		boolean = "Checkbox",
+		number = "InputInt",
 	},
 	DisplayRemoteInfo = {
 		"MetaMethod",
@@ -678,6 +679,10 @@ function Ui:MakeEditorTab(InfoSelector)
 				end
 			},
 			{
+				Text = "Repeat",
+				Callback = MakeActiveDataCallback("RepeatCall")
+			},
+			{
 				Text = "Get return",
 				Callback = MakeActiveDataCallback("GetReturn")
 			},
@@ -1022,6 +1027,8 @@ function Ui:SetFocusedRemote(Data)
 		Ui:MakeButtonMenu(Button, {self}, {
 			["Save"] = DataConnection("SaveScript"),
 			["Call Remote"] = DataConnection("MakeScript", "Remote"),
+			["Minimal"] = DataConnection("MakeScript", "Minimal"),
+			["Edit & Repeat"] = DataConnection("MakeScript", "Edit"),
 			["Block Remote"] = DataConnection("MakeScript", "Block"),
 			["Repeat For"] = DataConnection("MakeScript", "Repeat"),
 			["Spam Remote"] = DataConnection("MakeScript", "Spam")
@@ -1271,6 +1278,12 @@ end
 
 function Ui:GetRemoteHeader(Data: Log)
 	local LogLimit = self.LogLimit
+	pcall(function()
+		local v = Flags:GetFlagValue("LogsPerRemote")
+		if typeof(v) == "number" and v > 0 then
+			LogLimit = math.floor(v)
+		end
+	end)
 	local Logs = self.Logs
 	local RemotesList = self.RemotesList
 
@@ -1478,6 +1491,20 @@ function Ui:CreateLog(Data: Log)
 			self:SetFocusedRemote(Data)
 		end,
     })
+
+	-- Watch / highlight new logs briefly
+	pcall(function()
+		if Flags:GetFlagValue("WatchNew") and Data.Selectable.SetSelected then
+			Data.Selectable:SetSelected(true)
+			task.delay(1.2, function()
+				pcall(function()
+					if ActiveData ~= Data then
+						Data.Selectable:SetSelected(false)
+					end
+				end)
+			end)
+		end
+	end)
 
 	Header:LogAdded(Data)
 
