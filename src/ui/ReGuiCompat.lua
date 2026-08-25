@@ -4,12 +4,29 @@
 ]]
 
 local ReGui = {
-	Version = "compat-3.0",
+	Version = "compat-3.1",
 	DefaultTitle = "Sigma Spy",
 	Themes = {},
 	Windows = {},
 	Initialised = true,
+	DefaultFont = Font.fromEnum(Enum.Font.Code),
+	DefaultTextSize = 13,
 }
+
+function ReGui:SetFont(fontFace, textSize)
+	if fontFace then
+		self.DefaultFont = fontFace
+	end
+	if textSize then
+		self.DefaultTextSize = textSize
+	end
+end
+
+local function applyFont(gui)
+	pcall(function()
+		gui.FontFace = ReGui.DefaultFont
+	end)
+end
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -277,6 +294,7 @@ function Element:_create(class, config)
 		label.Text = tostring(config.Text or "")
 		label.Parent = host
 		order(label)
+		applyFont(label)
 		return wrap(label, "Label")
 	end
 
@@ -351,6 +369,7 @@ function Element:_create(class, config)
 		btn.Parent = host
 		order(btn)
 		corner(btn, 4)
+		applyFont(btn)
 		-- Equal-width flex in horizontal rows when requested
 		if config.FlexFill then
 			pcall(function()
@@ -386,6 +405,7 @@ function Element:_create(class, config)
 		btn.Parent = host
 		order(btn)
 		pad(btn, 6, 4, 0, 0)
+		applyFont(btn)
 		local el = wrap(btn, "Selectable")
 		el._btn = btn
 		function el:SetSelected(v)
@@ -645,6 +665,7 @@ function Element:_create(class, config)
 		lineBox.TextColor3 = C.LineNum
 		lineBox.TextSize = config.FontSize or 13
 		lineBox.Font = Enum.Font.Code
+		applyFont(lineBox)
 		lineBox.Text = "1"
 		lineBox.Parent = row
 
@@ -658,6 +679,7 @@ function Element:_create(class, config)
 		box.TextYAlignment = Enum.TextYAlignment.Top
 		box.TextSize = config.FontSize or 13
 		box.Font = Enum.Font.Code
+		applyFont(box)
 		box.ClearTextOnFocus = false
 		box.MultiLine = true
 		box.TextWrapped = false -- allow horizontal scroll
