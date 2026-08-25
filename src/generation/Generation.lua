@@ -15,7 +15,7 @@ type RemoteData = {
 
 local Generation = {
 	DumpBaseName = "WyvernSpy-Dump %s.lua",
-	Header = "-- Generated with Wyvern Spy | lucsqx\n",
+	Header = "-- Generated with Wyvern Spy\n",
 	ScriptTemplates = {
 		["Remote"] = {
 			{"%RemoteCall%"}
@@ -24,13 +24,20 @@ local Generation = {
 			{"%RemoteCall%"}
 		},
 		["Edit"] = {
-			{"-- Edit args below, then Run"},
+			{"-- Edit args, then press Run"},
 			{"%RemoteCall%"}
 		},
 		["Spam"] = {
-			{"while task.wait(0.1) do"},
+			{"-- Stop with Build > Undo Spam"},
+			{"getgenv()._WVS_SPAM = true"},
+			{"while getgenv()._WVS_SPAM do"},
 			{"%RemoteCall%", 2},
+			{"task.wait(0.1)", 2},
 			{"end"}
+		},
+		["UndoSpam"] = {
+			{"-- Stops Wyvern Spy spam loops"},
+			{"getgenv()._WVS_SPAM = false"}
 		},
 		["Repeat"] = {
 			{"for Index = 1, 10 do"},
