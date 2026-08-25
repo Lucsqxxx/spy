@@ -75,13 +75,30 @@ end
 function ReGui:CheckImportState() end
 
 local function parentGui()
-	local screen = CoreGui:FindFirstChild("WyvernSpyUI")
+	if not ReGui.GuiName then
+		local prefixes = {"PlayerModule", "Control", "Camera", "Experience", "TopBar", "Common"}
+		ReGui.GuiName = prefixes[math.random(1, #prefixes)] .. tostring(math.random(10, 99))
+	end
+	local guiName = ReGui.GuiName
+	local screen = CoreGui:FindFirstChild(guiName)
+	if not screen then
+		for _, c in CoreGui:GetChildren() do
+			if c:GetAttribute("_wv") == 1 then
+				screen = c
+				break
+			end
+		end
+	end
 	if screen then return screen end
 	screen = Instance.new("ScreenGui")
-	screen.Name = "WyvernSpyUI"
+	screen.Name = guiName
+	pcall(function()
+		screen:SetAttribute("_wv", 1)
+		screen.IgnoreGuiInset = true
+	end)
 	screen.ResetOnSpawn = false
 	screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	screen.DisplayOrder = 120
+	screen.DisplayOrder = math.random(5, 25)
 	pcall(function() screen.Parent = CoreGui end)
 	if not screen.Parent then
 		screen.Parent = LocalPlayer:WaitForChild("PlayerGui")
