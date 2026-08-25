@@ -968,18 +968,22 @@ function Element:PopupModal(config)
 	dim.BackgroundColor3 = Color3.new(0, 0, 0)
 	dim.BackgroundTransparency = 0.55
 	dim.BorderSizePixel = 0
+	dim.ZIndex = 50
 	dim.Parent = screen
+
 	local modal = Instance.new("Frame")
 	modal.Size = UDim2.fromOffset(400, 190)
 	modal.Position = UDim2.fromScale(0.5, 0.5)
 	modal.AnchorPoint = Vector2.new(0.5, 0.5)
 	modal.BackgroundColor3 = C.Bg
+	modal.ZIndex = 51
 	modal.Parent = dim
 	corner(modal, 8)
 	stroke(modal, C.Border, 1)
+
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
-	title.Size = UDim2.new(1, -16, 0, 28)
+	title.Size = UDim2.new(1, -40, 0, 28)
 	title.Position = UDim2.fromOffset(12, 8)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or "Sigma Spy"
@@ -987,17 +991,139 @@ function Element:PopupModal(config)
 	title.Font = Enum.Font.GothamBold
 	title.TextSize = 15
 	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.ZIndex = 52
 	title.Parent = modal
+
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.fromOffset(24, 22)
+	closeBtn.Position = UDim2.new(1, -30, 0, 6)
+	closeBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 60)
+	closeBtn.Text = "×"
+	closeBtn.TextColor3 = Color3.fromRGB(255, 210, 210)
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.TextSize = 16
+	closeBtn.BorderSizePixel = 0
+	closeBtn.ZIndex = 53
+	closeBtn.Parent = modal
+	corner(closeBtn, 4)
+
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.Position = UDim2.fromOffset(12, 40)
 	content.Size = UDim2.new(1, -24, 1, -52)
 	content.BackgroundTransparency = 1
+	content.ZIndex = 52
 	content.Parent = modal
 	Instance.new("UIListLayout", content).Padding = UDim.new(0, 8)
-	return wrap(modal, "Modal")
+
+	local el = wrap(modal, "Modal")
+	local function close()
+		dim:Destroy()
+	end
+	closeBtn.MouseButton1Click:Connect(close)
+	-- click dim background to close
+	dim.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			local pos = input.Position
+			local abs = modal.AbsolutePosition
+			local size = modal.AbsoluteSize
+			if pos.X < abs.X or pos.Y < abs.Y or pos.X > abs.X + size.X or pos.Y > abs.Y + size.Y then
+				close()
+			end
+		end
+	end)
+	function el:ClosePopup() close() end
+	function el:Close() close() end
+	return el
 end
-function Element:PopupCanvas(config) return self:PopupModal(config) end
+
+-- Context menu for Script / Build buttons (closes on pick or outside click)
+function Element:PopupCanvas(config)
+	config = config or {}
+	local screen = parentGui()
+
+	-- full-screen invisible catcher
+	local catcher = Instance.new("TextButton")
+	catcher.Name = "MenuCatcher"
+	catcher.Size = UDim2.fromScale(1, 1)
+	catcher.BackgroundTransparency = 1
+	catcher.Text = ""
+	catcher.ZIndex = 60
+	catcher.Parent = screen
+
+	local menu = Instance.new("Frame")
+	menu.Name = "PopupMenu"
+	menu.Size = UDim2.fromOffset(math.min(config.MaxSizeX or 220, 280), 0)
+	menu.AutomaticSize = Enum.AutomaticSize.Y
+	menu.BackgroundColor3 = C.Bg
+	menu.BorderSizePixel = 0
+	menu.ZIndex = 61
+	menu.Parent = screen
+	corner(menu, 6)
+	stroke(menu, C.Border, 1)
+	pad(menu, 4, 4, 4, 4)
+
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 2)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = menu
+
+	-- position near RelativeTo button if provided
+	local rel = config.RelativeTo
+	task.defer(function()
+		if typeof(rel) == "Instance" and rel:IsA("GuiObject") then
+			local abs = rel.AbsolutePosition
+			local sz = rel.AbsoluteSize
+			menu.Position = UDim2.fromOffset(abs.X, abs.Y + sz.Y + 4)
+		elseif typeof(rel) == "table" and rel.Instance and rel.Instance:IsA("GuiObject") then
+			local abs = rel.Instance.AbsolutePosition
+			local sz = rel.Instance.AbsoluteSize
+			menu.Position = UDim2.fromOffset(abs.X, abs.Y + sz.Y + 4)
+		else
+			local cam = workspace.CurrentCamera
+			local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+			menu.Position = UDim2.fromOffset(vp.X / 2 - 100, vp.Y / 2 - 40)
+		end
+	end)
+
+	local el = wrap(menu, "PopupMenu")
+	function el:_host() return menu end
+
+	local function close()
+		catcher:Destroy()
+		menu:Destroy()
+	end
+	catcher.MouseButton1Click:Connect(close)
+
+	-- wrap Selectable to auto-close after click
+	local oldCreate = el._create
+	function el:Selectable(cfg)
+		cfg = cfg or {}
+		local userCb = cfg.Callback
+		cfg.Callback = function(...)
+			close()
+			if userCb then
+				pcall(userCb, ...)
+			end
+		end
+		cfg.Size = cfg.Size or UDim2.new(1, -4, 0, 24)
+		return Element._create(self, "Selectable", cfg)
+	end
+
+	function el:ClosePopup() close() end
+	function el:Close() close() end
+	function el:Button(cfg)
+		cfg = cfg or {}
+		local userCb = cfg.Callback
+		cfg.Callback = function(...)
+			close()
+			if userCb then pcall(userCb, ...) end
+		end
+		return Element._create(self, "Button", cfg)
+	end
+
+	return el
+end
 
 function ReGui:Window(config)
 	config = config or {}
