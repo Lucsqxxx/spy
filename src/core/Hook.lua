@@ -1,9 +1,4 @@
---!nolint DeprecatedApi
 
---[[
-	Sigma Spy – Hook module
-	Handles metamethod and function hooking for remote interception.
-]]
 
 local Hook = {
 	OriginalNamecall = nil,
@@ -21,7 +16,6 @@ type table = {
 type MetaFunc = (Instance, ...any) -> ...any
 type UnkFunc = (...any) -> ...any
 
---// Modules
 local Modules
 local Process
 local Configuration
@@ -39,26 +33,25 @@ function Hook:Init(Data)
 	Configuration = Modules.Configuration or Configuration
 end
 
---// The callback is expected to return a nil value sometimes which should be ingored
 local HookMiddle = newcclosure(function(OriginalFunc, Callback, AlwaysTable: boolean?, ...)
-	--// Invoke callback and check for a reponce otherwise ignored
+	
 	local ReturnValues = Callback(...)
 	if ReturnValues then
-		--// Unpack
+		
 		if not AlwaysTable then
 			return Process:Unpack(ReturnValues)
 		end
 
-		--// Return packed responce
+		
 		return ReturnValues
 	end
 
-	--// Return packed responce
+	
 	if AlwaysTable then
 		return {OriginalFunc(...)}
 	end
 
-	--// Unpacked
+	
 	return OriginalFunc(...)
 end)
 
@@ -80,12 +73,11 @@ function Hook:PushConfig(Overwrites)
     Merge(self, Overwrites)
 end
 
---// getrawmetatable
 function Hook:ReplaceMetaMethod(Object: Instance, Call: string, Callback: MetaFunc): MetaFunc
 	local Metatable = getrawmetatable(Object)
 	local OriginalFunc = clonefunction(Metatable[Call])
 	
-	--// Replace function
+	
 	setreadonly(Metatable, false)
 	Metatable[Call] = newcclosure(function(...)
 		return HookMiddle(OriginalFunc, Callback, false, ...)
@@ -95,7 +87,6 @@ function Hook:ReplaceMetaMethod(Object: Instance, Call: string, Callback: MetaFu
 	return OriginalFunc
 end
 
---// hookfunction
 function Hook:HookFunction(Func: UnkFunc, Callback: UnkFunc)
 	local OriginalFunc
 	local WrappedCallback = newcclosure(Callback)
@@ -105,7 +96,6 @@ function Hook:HookFunction(Func: UnkFunc, Callback: UnkFunc)
 	return OriginalFunc
 end
 
---// hookmetamethod
 function Hook:HookMetaCall(Object: Instance, Call: string, Callback: MetaFunc): MetaFunc
 	local Metatable = getrawmetatable(Object)
 	local Unhooked
@@ -119,37 +109,34 @@ end
 function Hook:HookMetaMethod(Object: Instance, Call: string, Callback: MetaFunc): MetaFunc
 	local Func = newcclosure(Callback)
 	
-	--// Getrawmetatable
+	
 	if Config.ReplaceMetaCallFunc then
 		return self:ReplaceMetaMethod(Object, Call, Func)
 	end
 	
-	--// Hookmetamethod
+	
 	return self:HookMetaCall(Object, Call, Func)
 end
 
---// This includes a few patches for executor functions that result in detection
---// This isn't bulletproof since some functions like hookfunction I can't patch
---// By the way, thanks for copying this guys! Super appreciate the copycat
 function Hook:PatchFunctions()
-	--// Check if this function is disabled in the configuration
+	
 	if Config.NoFunctionPatching then return end
 
 	local Patches = {
-		--// Error detection patch
-		--// hookfunction may still be detected depending on the executor
+		
+		
 		[pcall] =  function(OldFunc, Func, ...)
 			local Responce = {OldFunc(Func, ...)}
 			local Success, Error = Responce[1], Responce[2]
 			local IsC = iscclosure(Func)
 
-			--// Patch c-closure error detection
+			
 			if Success == false and IsC then
 				local NewError = Process:CleanCError(Error)
 				Responce[2] = NewError
 			end
 
-			--// Stack-overflow detection patch
+			
 			if Success == false and not IsC and Error:find("C stack overflow") then
 				local Tracetable = Error:split(":")
 				local Caller, Line = Tracetable[1], Tracetable[2]
@@ -166,7 +153,7 @@ function Hook:PatchFunctions()
 		[getfenv] = function(OldFunc, Level: number, ...)
 			Level = Level or 1
 
-			--// Prevent catpure of executor's env
+			
 			if type(Level) == "number" then
 				Level += 2
 			end
@@ -174,7 +161,7 @@ function Hook:PatchFunctions()
 			local Responce = {OldFunc(Level, ...)}
 			local ENV = Responce[1]
 
-			--// __tostring ENV detection patch
+			
 			if not checkcaller() and ENV == ExeENV then
 				Communication:ConsolePrint("ENV escape patched")
 				return OldFunc(999999, ...)
@@ -184,14 +171,14 @@ function Hook:PatchFunctions()
 		end
 	}
 
-	--// Hook each function
+	
 	for Func, CallBack in Patches do
 		local Wrapped = newcclosure(CallBack)
 		local OldFunc; OldFunc = self:HookFunction(Func, function(...)
 			return Wrapped(OldFunc, ...)
 		end)
 
-		--// Cache previous function
+		
 		self.PreviousFunctions[Func] = OldFunc
 	end
 end
@@ -226,15 +213,15 @@ function Hook:HookRemoteTypeIndex(ClassName: string, FuncName: string)
 	local Func = Remote[FuncName]
 	local OriginalFunc
 
-	--// Remotes will share the same functions
-	--// 	For example FireServer will be identical
-	--// Addionally, this is for __index calls.
-	--// 	A __namecall hook will not detect this
+	
+	
+	
+	
 	OriginalFunc = self:HookFunction(Func, function(self, ...)
-		--// Check if the Object is allowed 
+		
 		if not Process:RemoteAllowed(self, "Send", FuncName) then return end
 
-		--// Process the remote data
+		
 		return ProcessRemote(OriginalFunc, "__index", self, FuncName, ...)
 	end)
 end
@@ -248,10 +235,16 @@ function Hook:HookRemoteIndexes()
 end
 
 function Hook:BeginHooks()
-	--// Hook Remote functions
-	self:HookRemoteIndexes()
+	local Light = true
+	pcall(function()
+		if Modules and Modules.Flags then
+			Light = Modules.Flags:GetFlagValue("LightHooks") ~= false
+		end
+	end)
+	if not Light then
+		self:HookRemoteIndexes()
+	end
 
-	--// Namecall hook
 	local OriginalNameCall
 	OriginalNameCall = self:HookMetaMethod(game, "__namecall", function(self, ...)
 		local Method = getnamecallmethod()
@@ -260,7 +253,7 @@ function Hook:BeginHooks()
 
 	Merge(self, {
 		OriginalNamecall = OriginalNameCall,
-		--OriginalIndex = Oi
+		
 	})
 end
 
@@ -269,17 +262,17 @@ function Hook:HookClientInvoke(Remote, Method, Callback)
 		return getcallbackvalue(Remote, Method)
 	end)
 
-	--// Some executors like Potassium will throw a error if the Callback value is nil
+	
 	if not Success then return end
 	if not Function then return end
 	
-	--// Test hookfunction
+	
 	local HookSuccess = pcall(function()
 		self:HookFunction(Function, Callback)
 	end)
 	if HookSuccess then return end
 
-	--// Replace callback function otherwise
+	
 	Remote[Method] = function(...)
 		return HookMiddle(Function, Callback, false, ...)
 	end
@@ -292,20 +285,20 @@ function Hook:MultiConnect(Remotes)
 end
 
 function Hook:ConnectClientRecive(Remote)
-	--// Check if the Remote class is allowed for receiving
+	
 	local Allowed = Process:RemoteAllowed(Remote, "Receive")
 	if not Allowed then return end
 
-	--// Check if the Object has Remote class data
+	
     local ClassData = Process:GetClassData(Remote)
     local IsRemoteFunction = ClassData.IsRemoteFunction
 	local NoReciveHook = ClassData.NoReciveHook
     local Method = ClassData.Receive[1]
 
-	--// Check if the Recive should be hooked
+	
 	if NoReciveHook then return end
 
-	--// New callback function
+	
 	local function Callback(...)
         return Process:ProcessRemote({
             Method = Method,
@@ -315,26 +308,26 @@ function Hook:ConnectClientRecive(Remote)
         }, Remote, ...)
 	end
 
-	--// Connect remote
+	
 	if not IsRemoteFunction then
    		Remote[Method]:Connect(Callback)
-	else -- Remote functions
+	else 
 		self:HookClientInvoke(Remote, Method, Callback)
 	end
 end
 
 function Hook:BeginService(Libraries, ExtraData, ChannelId, ...)
-	--// Librareis
+	
 	local ReturnSpoofs = Libraries.ReturnSpoofs
 	local ProcessLib = Libraries.Process
 	local Communication = Libraries.Communication
 	local Generation = Libraries.Generation
 	local Config = Libraries.Config
 
-	--// Check for configuration overwrites
+	
 	ProcessLib:CheckConfig(Config)
 
-	--// Init data
+	
 	local InitData = {
 		Modules = {
 			ReturnSpoofs = ReturnSpoofs,
@@ -352,11 +345,11 @@ function Hook:BeginService(Libraries, ExtraData, ChannelId, ...)
 		})
 	}
 
-	--// Init libraries
+	
 	Communication:Init(InitData)
 	ProcessLib:Init(InitData)
 
-	--// Communication configuration
+	
 	local Channel, IsWrapped = Communication:GetCommChannel(ChannelId)
 	Communication:SetChannel(Channel)
 	Communication:AddTypeCallbacks({
@@ -379,11 +372,11 @@ function Hook:BeginService(Libraries, ExtraData, ChannelId, ...)
 		end
 	})
 	
-	--// Process configuration
+	
 	ProcessLib:SetChannel(Channel, IsWrapped)
 	ProcessLib:SetExtraData(ExtraData)
 
-	--// Hook configuration
+	
 	self:Init(InitData)
 
 	if ExtraData and ExtraData.IsActor then
@@ -392,12 +385,12 @@ function Hook:BeginService(Libraries, ExtraData, ChannelId, ...)
 end
 
 function Hook:LoadMetaHooks(ActorCode: string, ChannelId: number)
-	--// Hook actors
+	
 	if not Configuration.NoActors then
 		self:RunOnActors(ActorCode, ChannelId)
 	end
 
-	--// Hook current thread
+	
 	self:BeginService(Modules, nil, ChannelId) 
 end
 
@@ -407,7 +400,7 @@ function Hook:LoadReceiveHooks()
 
 	if NoReceiveHooking then return end
 
-	--// Remote added (safe – only new instances)
+	
 	pcall(function()
 		game.DescendantAdded:Connect(function(Remote)
 			pcall(function()
@@ -416,14 +409,14 @@ function Hook:LoadReceiveHooks()
 		end)
 	end)
 
-	--// Collect remotes with nil parents
+	
 	pcall(function()
 		if getnilinstances then
 			self:MultiConnect(getnilinstances())
 		end
 	end)
 
-	--// Search for remotes (limited services – full GetDescendants on everything can freeze/crash)
+	
 	local Preferred = {
 		"ReplicatedStorage",
 		"ReplicatedFirst",
@@ -444,14 +437,14 @@ function Hook:LoadHooks(ActorCode: string, ChannelId: number)
 		self:LoadMetaHooks(ActorCode, ChannelId)
 	end)
 	if not Ok then
-		warn("[Sigma Spy] LoadMetaHooks error:", Err)
+		warn("[Wyvern Spy] LoadMetaHooks error:", Err)
 	end
 
 	Ok, Err = pcall(function()
 		self:LoadReceiveHooks()
 	end)
 	if not Ok then
-		warn("[Sigma Spy] LoadReceiveHooks error:", Err)
+		warn("[Wyvern Spy] LoadReceiveHooks error:", Err)
 	end
 end
 
