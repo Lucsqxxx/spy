@@ -145,14 +145,23 @@ end
 function Ui:LoadFont()
 	local FontFile = self.FontJsonFile
 
-	--// Get FontFace AssetId
+	--// Get FontFace AssetId (json or direct ttf path)
 	local AssetId = Files:LoadCustomasset(FontFile)
+	if not AssetId then
+		-- try ttf next to json
+		local ttf = FontFile and FontFile:gsub("%.json$", ".ttf"):gsub("ProggyClean%.json", "ProggyClean.ttf")
+		if ttf and ttf ~= FontFile then
+			AssetId = Files:LoadCustomasset(ttf)
+		end
+	end
 	if not AssetId then return end
 
 	--// Create custom FontFace
-	local NewFont = Font.new(AssetId)
+	local Ok, NewFont = pcall(Font.new, AssetId)
+	if not Ok or not NewFont then return end
 	TextFont = NewFont
 	FontSuccess = true
+	warn("[Sigma Spy] Custom font loaded (ProggyClean/ImGui)")
 end
 
 function Ui:SetFontFile(FontFile: string)
@@ -173,6 +182,11 @@ end
 function Ui:LoadReGui()
 	local ThemeConfig = Config.ThemeConfig
 	ThemeConfig.TextFont = TextFont
+
+	--// Apply ProggyClean / custom font to ReGuiCompat (ImGui look)
+	if ReGui.SetFont then
+		ReGui:SetFont(TextFont, ThemeConfig.TextSize or 13)
+	end
 
 	--// ReGui
 	ReGui:DefineTheme("SigmaSpy", ThemeConfig)
