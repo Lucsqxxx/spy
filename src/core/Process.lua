@@ -540,29 +540,6 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
 	
 	if TransferType and not self:RemoteAllowed(Remote, TransferType, Method) then return end
 
-	-- Safe defaults: paused = no log work (hook still passthrough via caller)
-	if Flags and Flags.GetFlagValue then
-		local okp, paused = pcall(function() return Flags:GetFlagValue("Paused") end)
-		if okp and paused then
-			return
-		end
-		-- Rate limit logs per second (protect users on busy games)
-		local okm, maxPerSec = pcall(function() return Flags:GetFlagValue("MaxLogsPerSec") end)
-		if okm and typeof(maxPerSec) == "number" and maxPerSec > 0 then
-			local now = tick()
-			self._LogWindowStart = self._LogWindowStart or now
-			self._LogWindowCount = self._LogWindowCount or 0
-			if now - self._LogWindowStart >= 1 then
-				self._LogWindowStart = now
-				self._LogWindowCount = 0
-			end
-			if self._LogWindowCount >= maxPerSec then
-				return
-			end
-			self._LogWindowCount += 1
-		end
-	end
-
     
     local Id = Communication:GetDebugId(Remote)
     local ClassData = self:GetClassData(Remote)
