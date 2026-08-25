@@ -74,6 +74,14 @@ local Module = {
         NoVariables = {
             Value = false,
             Label = "No compression"
+        },
+        LogsPerRemote = {
+            Value = 50,
+            Label = "Logs per remote"
+        },
+        WatchNew = {
+            Value = true,
+            Label = "Highlight new logs"
         }
     }
 }
