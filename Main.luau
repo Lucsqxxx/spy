@@ -1,37 +1,21 @@
---[[
-	Sigma Spy for executor "Real"
-	- No ReGui (crashes Real via LoadLocalAsset)
-	- Simple log UI
-	- Hooks ON, NoActors, no function patches
-]]
 
 local function Out(...)
 	local t = { ... }
 	for i = 1, #t do t[i] = tostring(t[i]) end
-	local msg = "[Sigma Spy] " .. table.concat(t, " ")
+	local msg = "[Wyvern Spy] " .. table.concat(t, " ")
 	pcall(warn, msg)
 	pcall(print, msg)
-	pcall(function()
-		if writefile then
-			local line = msg .. "\n"
-			if appendfile and isfile and isfile("SigmaSpyLog.txt") then
-				appendfile("SigmaSpyLog.txt", line)
-			else
-				writefile("SigmaSpyLog.txt", line)
-			end
-		end
-	end)
 end
 
-Out("boot (Real / simple UI)")
+Out("boot (ReGui patched)")
 
 local Configuration = {
 	UseWorkspace = false,
 	NoActors = true,
-	SafeMode = false, -- hooks enabled
+	SafeMode = false,
 	PreferLocal = false,
-	FolderName = "Sigma Spy",
-	Directory = "Sigma Spy",
+	FolderName = "Wyvern Spy",
+	Directory = "Wyvern Spy",
 	RepoUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main",
 	ParserUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main/dist/Parser.luau",
 }
@@ -65,7 +49,7 @@ local Base = Configuration.RepoUrl:gsub("/+$", "")
 Out("loading Files")
 local FilesSource = HttpGet(Base .. "/src/utils/Files.lua")
 if not FilesSource then
-	Out("FATAL: Files.lua")
+	Out("FATAL Files")
 	return
 end
 local Files = loadstring(FilesSource, "Files")()
@@ -74,12 +58,13 @@ pcall(function()
 	Files:Init({ Services = Services })
 end)
 
-local core = {
+local ModuleMap = {
 	Process = "/src/core/Process.lua",
 	Hook = "/src/core/Hook.lua",
-	Communication = "/src/core/Communication.lua",
 	Flags = "/src/utils/Flags.lua",
 	Generation = "/src/generation/Generation.lua",
+	Communication = "/src/core/Communication.lua",
+	Ui = "/src/ui/Ui.lua",
 }
 
 local Scripts = {
@@ -91,7 +76,7 @@ pcall(function()
 	Scripts.ReturnSpoofs = Files:GetModule(Configuration.FolderName .. "/Return spoofs", "Return Spoofs")
 end)
 
-for Name, Path in core do
+for Name, Path in ModuleMap do
 	Out("loading", Name)
 	local src = HttpGet(Base .. Path)
 	if src then
@@ -101,230 +86,117 @@ for Name, Path in core do
 	end
 end
 
+Out("loading font")
+pcall(function()
+	local fontBody = HttpGet(Base .. "/assets/ProggyClean.ttf")
+	if fontBody and writefile then
+		local folder = Configuration.FolderName or "Wyvern Spy"
+		pcall(makefolder, folder)
+		pcall(makefolder, folder .. "/assets")
+		local ttfPath = folder .. "/assets/ProggyClean.ttf"
+		writefile(ttfPath, fontBody)
+		local assetId = Files:LoadCustomasset(ttfPath)
+		if assetId then
+			local jsonPath = Files:CreateFont("ProggyClean", assetId)
+			if jsonPath and Ui and Ui.SetFontFile then
+			end
+			Configuration._FontTtf = ttfPath
+			Configuration._FontJson = jsonPath
+			Configuration._FontAsset = assetId
+			Out("font ready")
+		else
+			Out("font getcustomasset failed")
+		end
+	end
+end)
+
 Out("compiling")
 local Modules = Files:LoadLibraries(Scripts)
-local Process = Modules.Process
-local Hook = Modules.Hook
-local Generation = Modules.Generation
-local Communication = Modules.Communication
-local Config = Modules.Config
-local Flags = Modules.Flags
+local Process, Hook, Ui, Generation, Communication, Config =
+	Modules.Process, Modules.Hook, Modules.Ui, Modules.Generation, Modules.Communication, Modules.Config
 
-if not (Process and Hook and Communication) then
-	Out("FATAL core")
+if not (Process and Hook and Ui and Communication) then
+	Out("FATAL modules")
 	return
 end
-Out("core ok")
 
--- Process:Init hooks Instance.new — keep it (needed for remote tracking)
--- Do not set SafeMode true or Instance.new hook is skipped
 pcall(function()
 	Process:CheckConfig(Config)
 end)
-pcall(function()
+
+if Configuration._FontJson then
+	pcall(function()
+		Modules.Ui:SetFontFile(Configuration._FontJson)
+		Out("font file set")
+	end)
+end
+Out("Ui:Init (ReGui + prefab patch)")
+local initOk, initErr = pcall(function()
 	Files:LoadModules(Modules, {
 		Modules = Modules,
 		Services = Services,
 		Configuration = Configuration,
 	})
 end)
-Out("inited")
-
----------------------------------------------------------------------
--- Simple UI
----------------------------------------------------------------------
-local LogLines = {}
-local MaxLogs = 80
-local ListFrame
-
-local function AddLogLine(text)
-	text = tostring(text)
-	table.insert(LogLines, 1, text)
-	while #LogLines > MaxLogs do
-		table.remove(LogLines)
-	end
-	if not ListFrame then
-		return
-	end
-	-- refresh labels (simple)
-	for _, child in ListFrame:GetChildren() do
-		if child:IsA("TextLabel") then
-			child:Destroy()
-		end
-	end
-	for i, line in ipairs(LogLines) do
-		if i > 25 then
-			break
-		end
-		local Lab = Instance.new("TextLabel")
-		Lab.Size = UDim2.new(1, -8, 0, 18)
-		Lab.BackgroundTransparency = 1
-		Lab.Text = line
-		Lab.TextColor3 = Color3.fromRGB(200, 200, 210)
-		Lab.TextSize = 12
-		Lab.Font = Enum.Font.Code
-		Lab.TextXAlignment = Enum.TextXAlignment.Left
-		Lab.TextTruncate = Enum.TextTruncate.AtEnd
-		Lab.LayoutOrder = i
-		Lab.Parent = ListFrame
-	end
+if not initOk then
+	Out("Init error:", initErr)
 end
 
-local Screen
-local uiOk, uiErr = pcall(function()
-	local LP = Services.Players.LocalPlayer
-	Screen = Instance.new("ScreenGui")
-	Screen.Name = "SigmaSpyReal"
-	Screen.ResetOnSpawn = false
-	Screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+Out("CreateMainWindow")
+local Window
+local winOk, winErr = pcall(function()
+	Window = Ui:CreateMainWindow()
+end)
+
+if not winOk or not Window then
+	Out("ReGui window FAILED:", winErr)
+	Out("Your executor still cannot load ReGui prefabs. Use MainReal.luau (simple UI).")
+	return
+end
+Out("ReGui window OK!")
+
+local Supported = true
+pcall(function()
+	Supported = Process:CheckIsSupported()
+end)
+if not Supported then
 	pcall(function()
-		Screen.Parent = game:GetService("CoreGui")
+		Window:Close()
 	end)
-	if not Screen.Parent then
-		Screen.Parent = LP:WaitForChild("PlayerGui")
-	end
-
-	local Main = Instance.new("Frame")
-	Main.Name = "Main"
-	Main.Size = UDim2.fromOffset(420, 320)
-	Main.Position = UDim2.new(0.5, -210, 0.2, 0)
-	Main.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-	Main.BorderSizePixel = 0
-	Main.Active = true
-	Main.Draggable = true
-	Main.Parent = Screen
-	Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
-
-	local Title = Instance.new("TextLabel")
-	Title.Size = UDim2.new(1, -80, 0, 32)
-	Title.Position = UDim2.fromOffset(12, 4)
-	Title.BackgroundTransparency = 1
-	Title.Text = "Sigma Spy  |  Real"
-	Title.TextColor3 = Color3.fromRGB(230, 230, 240)
-	Title.TextSize = 16
-	Title.Font = Enum.Font.GothamBold
-	Title.TextXAlignment = Enum.TextXAlignment.Left
-	Title.Parent = Main
-
-	local Close = Instance.new("TextButton")
-	Close.Size = UDim2.fromOffset(28, 28)
-	Close.Position = UDim2.new(1, -36, 0, 4)
-	Close.BackgroundColor3 = Color3.fromRGB(50, 40, 40)
-	Close.Text = "X"
-	Close.TextColor3 = Color3.fromRGB(255, 200, 200)
-	Close.Font = Enum.Font.GothamBold
-	Close.Parent = Main
-	Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 6)
-	Close.MouseButton1Click:Connect(function()
-		Screen:Destroy()
-	end)
-
-	local Status = Instance.new("TextLabel")
-	Status.Name = "Status"
-	Status.Size = UDim2.new(1, -16, 0, 20)
-	Status.Position = UDim2.fromOffset(8, 36)
-	Status.BackgroundTransparency = 1
-	Status.Text = "Hooks: starting..."
-	Status.TextColor3 = Color3.fromRGB(140, 200, 140)
-	Status.TextSize = 12
-	Status.Font = Enum.Font.Gotham
-	Status.TextXAlignment = Enum.TextXAlignment.Left
-	Status.Parent = Main
-
-	local Scroll = Instance.new("ScrollingFrame")
-	Scroll.Size = UDim2.new(1, -16, 1, -70)
-	Scroll.Position = UDim2.fromOffset(8, 60)
-	Scroll.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
-	Scroll.BorderSizePixel = 0
-	Scroll.ScrollBarThickness = 4
-	Scroll.CanvasSize = UDim2.fromOffset(0, 500)
-	Scroll.Parent = Main
-	Instance.new("UICorner", Scroll).CornerRadius = UDim.new(0, 6)
-
-	ListFrame = Instance.new("Frame")
-	ListFrame.Size = UDim2.new(1, -4, 1, 0)
-	ListFrame.BackgroundTransparency = 1
-	ListFrame.Parent = Scroll
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 2)
-	layout.Parent = ListFrame
-
-	AddLogLine("Ready. Waiting for remotes...")
-end)
-
-if not uiOk then
-	Out("UI error:", uiErr)
-else
-	Out("UI ok")
+	Out("unsupported executor")
+	return
 end
 
----------------------------------------------------------------------
--- Communication + hooks
----------------------------------------------------------------------
-Out("setting up communication")
-local ChannelId, Event
-local cOk, cErr = pcall(function()
-	ChannelId, Event = Communication:CreateChannel()
-	Communication:AddCommCallback("QueueLog", function(Data)
-		-- Data may be remote log table
-		local ok2, line = pcall(function()
-			if typeof(Data) == "table" then
-				local remote = Data.Remote
-				local method = Data.Method or "?"
-				local name = typeof(remote) == "Instance" and remote.Name or tostring(remote)
-				local recv = Data.IsReceive and "RECV" or "SEND"
-				return string.format("[%s] %s  %s", recv, method, name)
-			end
-			return tostring(Data)
-		end)
-		AddLogLine(ok2 and line or tostring(Data))
-	end)
-	Communication:AddCommCallback("Print", function(...)
-		local t = { ... }
-		for i = 1, #t do t[i] = tostring(t[i]) end
-		AddLogLine(table.concat(t, " "))
-	end)
+local ChannelId, Event = Communication:CreateChannel()
+Communication:AddCommCallback("QueueLog", function(...)
+	Ui:QueueLog(...)
 end)
-if not cOk then
-	Out("comm error:", cErr)
-end
+Communication:AddCommCallback("Print", function(...)
+	Ui:ConsoleLog(...)
+end)
 
 pcall(function()
 	local LP = Services.Players.LocalPlayer
-	if Generation and Generation.SetSwapsCallback then
-		Generation:SetSwapsCallback(function(self)
-			self:AddSwap(LP, { String = "LocalPlayer" })
-			if LP.Character then
-				self:AddSwap(LP.Character, { String = "Character", NextParent = LP })
-			end
-		end)
-	end
+	Generation:SetSwapsCallback(function(self)
+		self:AddSwap(LP, { String = "LocalPlayer" })
+		if LP.Character then
+			self:AddSwap(LP.Character, { String = "Character", NextParent = LP })
+		end
+	end)
 end)
 
-Out("loading hooks (NoActors, no patches)")
-local hOk, hErr = pcall(function()
+pcall(function()
+	Ui:CreateWindowContent(Window)
+	Ui:SetCommChannel(Event)
+	Ui:BeginLogService()
+end)
+
+Out("hooks")
+pcall(function()
 	Hook:LoadHooks("", ChannelId)
 end)
-if not hOk then
-	Out("LoadHooks error:", hErr)
-	AddLogLine("LoadHooks error: " .. tostring(hErr))
-else
-	Out("LoadHooks ok")
-end
-
 pcall(function()
-	if Event then
-		Event:Fire("BeginHooks", { PatchFunctions = false })
-	end
+	Event:Fire("BeginHooks", { PatchFunctions = false })
 end)
 
-AddLogLine("Hooks active. Play the game to see remotes.")
-if Screen and Screen:FindFirstChild("Main") then
-	local st = Screen.Main:FindFirstChild("Status")
-	if st then
-		st.Text = "Hooks: ON  |  Actors: OFF  |  Patches: OFF"
-	end
-end
-
-Out("LOADED — hooks on, simple UI")
+Out("LOADED with ReGui")
