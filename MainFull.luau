@@ -91,6 +91,32 @@ for Name, Path in ModuleMap do
 	end
 end
 
+-- ProggyClean font (ImGui look) before UI
+Out("loading font")
+pcall(function()
+	local fontBody = HttpGet(Base .. "/assets/ProggyClean.ttf")
+	if fontBody and writefile then
+		local folder = Configuration.FolderName or "Sigma Spy"
+		pcall(makefolder, folder)
+		pcall(makefolder, folder .. "/assets")
+		local ttfPath = folder .. "/assets/ProggyClean.ttf"
+		writefile(ttfPath, fontBody)
+		local assetId = Files:LoadCustomasset(ttfPath)
+		if assetId then
+			local jsonPath = Files:CreateFont("ProggyClean", assetId)
+			if jsonPath and Ui and Ui.SetFontFile then
+				-- Ui not loaded yet; store for later
+			end
+			Configuration._FontTtf = ttfPath
+			Configuration._FontJson = jsonPath
+			Configuration._FontAsset = assetId
+			Out("font ready")
+		else
+			Out("font getcustomasset failed")
+		end
+	end
+end)
+
 Out("compiling")
 local Modules = Files:LoadLibraries(Scripts)
 local Process, Hook, Ui, Generation, Communication, Config =
@@ -106,6 +132,12 @@ pcall(function()
 end)
 
 -- This runs Ui:Init which loads ReGui + patched CheckImportState
+if Configuration._FontJson then
+	pcall(function()
+		Modules.Ui:SetFontFile(Configuration._FontJson)
+		Out("font file set")
+	end)
+end
 Out("Ui:Init (ReGui + prefab patch)")
 local initOk, initErr = pcall(function()
 	Files:LoadModules(Modules, {
