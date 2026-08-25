@@ -376,7 +376,12 @@ function Element:_create(class, config)
 
 	if class == "CodeEditor" or class == "Console" then
 		local scroll = Instance.new("ScrollingFrame")
-		scroll.Size = config.Size or UDim2.new(1, 0, 1, -4)
+		-- Fill leaves room for button rows below (no need to scroll to see buttons)
+		if config.Fill then
+			scroll.Size = UDim2.new(1, 0, 1, -36)
+		else
+			scroll.Size = config.Size or UDim2.new(1, 0, 0, 180)
+		end
 		scroll.BackgroundColor3 = C.Input
 		scroll.BorderSizePixel = 0
 		scroll.ScrollBarThickness = 5
@@ -387,6 +392,13 @@ function Element:_create(class, config)
 		setLayoutOrder(scroll)
 		corner(scroll, 4)
 		pad(scroll, 6)
+		if config.Fill then
+			pcall(function()
+				local flex = Instance.new("UIFlexItem")
+				flex.FlexMode = Enum.UIFlexMode.Fill
+				flex.Parent = scroll
+			end)
+		end
 		local box = Instance.new("TextBox")
 		box.Size = UDim2.new(1, -4, 0, 0)
 		box.AutomaticSize = Enum.AutomaticSize.Y
@@ -409,6 +421,10 @@ function Element:_create(class, config)
 		el._lines = {}
 		function el:GetText() return box.Text end
 		function el:GetValue() return box.Text end
+		function el:SetText(t)
+			box.Text = tostring(t or "")
+			el._lines = {}
+		end
 		function el:Clear()
 			box.Text = ""
 			el._lines = {}
@@ -525,19 +541,21 @@ function Element:_create(class, config)
 			btn.Parent = tabBar
 			corner(btn, 3)
 
-			local page = Instance.new("ScrollingFrame")
+			-- Fixed page: children can use Fill without hiding bottom buttons
+			local page = Instance.new("Frame")
 			page.Size = UDim2.new(1, -8, 1, -8)
 			page.Position = UDim2.fromOffset(4, 4)
 			page.BackgroundTransparency = 1
 			page.Visible = false
-			page.ScrollBarThickness = 4
-			page.AutomaticCanvasSize = Enum.AutomaticSize.Y
-			page.CanvasSize = UDim2.new()
 			page.Parent = body
 			local pl = Instance.new("UIListLayout")
 			pl.Padding = UDim.new(0, 4)
 			pl.SortOrder = Enum.SortOrder.LayoutOrder
+			pl.FillDirection = Enum.FillDirection.Vertical
 			pl.Parent = page
+			pcall(function()
+				pl.VerticalFlex = Enum.UIFlexAlignment.Fill
+			end)
 			pad(page, 4)
 
 			local tabEl = wrap(page, "Tab")
