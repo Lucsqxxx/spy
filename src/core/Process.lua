@@ -1,4 +1,4 @@
---!nolint DeprecatedApi
+
 
 type table = {
     [any]: any
@@ -17,9 +17,8 @@ type RemoteData = {
     OriginalFunc: (Instance, ...any) -> ...any
 }
 
---// Module
 local Process = {
-    --// Remote classes
+    
     RemoteClassData = {
         ["RemoteEvent"] = {
             Send = {
@@ -78,17 +77,15 @@ local Process = {
     }
 }
 
---// Modules
 local Hook
 local Communication
+local Flags
 local ReturnSpoofs
 local Ui
 local Config
 
---// Services
 local HttpService: HttpService
 
---// Communication channel
 local Channel
 local WrappedChannel = false
 
@@ -110,17 +107,18 @@ function Process:Init(Data)
     local Modules = Data.Modules
     local Services = Data.Services
 
-    --// Services
+    
     HttpService = Services.HttpService
 
-    --// Modules
+    
     Config = Modules.Config
     Ui = Modules.Ui
     Hook = Modules.Hook
     Communication = Modules.Communication
     ReturnSpoofs = Modules.ReturnSpoofs
+    Flags = Modules.Flags
 
-    -- Instance.new hook can destabilize some executors/games — only enable when not in SafeMode
+    
     local Configuration = Modules.Configuration
     if Configuration and Configuration.SafeMode then
         return
@@ -137,11 +135,10 @@ function Process:Init(Data)
         end))
     end)
     if not Ok then
-        warn("[Sigma Spy] Instance.new hook skipped:", Err)
+        warn("[Wyvern Spy] Instance.new hook skipped:", Err)
     end
 end
 
---// Communication
 function Process:SetChannel(NewChannel: BindableEvent, IsWrapped: boolean)
     Channel = NewChannel
     WrappedChannel = IsWrapped
@@ -160,7 +157,7 @@ end
 function Process:CheckConfig(Config: table)
     local Name = identifyexecutor():lower()
 
-    --// Force configuration overwrites for specific executors
+    
     local Overwrites = self:GetConfigOverwrites(Name)
     if not Overwrites then return end
 
@@ -200,7 +197,7 @@ function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?): table
     if typeof(Table) ~= "table" then return Table end
     local Cache = Visited or {}
 
-    --// Check for cached
+    
     if Cache[Table] then
         return Cache[Table]
     end
@@ -209,14 +206,14 @@ function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?): table
     Cache[Table] = New
 
     for Key, Value in next, Table do
-        --// Check if the value is ignored
+        
         if Ignore and table.find(Ignore, Value) then continue end
         
         Key = self:CheckValue(Key, Ignore, Cache)
         New[Key] = self:CheckValue(Value, Ignore, Cache)
     end
 
-    --// Master clear
+    
     if not Visited then
         table.clear(Cache)
     end
@@ -248,7 +245,7 @@ function Process:CheckExecutor(): boolean
     local Name = identifyexecutor():lower()
     local IsBlacklisted = table.find(Blacklisted, Name)
 
-    --// Some executors have broken functionality
+    
     if IsBlacklisted then
         Ui:ShowUnsupportedExecutor(Name)
         return false
@@ -265,12 +262,12 @@ function Process:CheckFunctions(): boolean
         "setreadonly"
     }
 
-    --// Check if the functions exist in the ENV
+    
     for _, Name in CoreFunctions do
         local Func = self:FuncExists(Name)
         if Func then continue end
 
-        --// Function missing!
+        
         Ui:ShowUnsupported(Name)
         return false
     end
@@ -279,13 +276,13 @@ function Process:CheckFunctions(): boolean
 end
 
 function Process:CheckIsSupported(): boolean
-    --// Check if the executor is blacklisted
+    
     local ExecutorSupported = self:CheckExecutor()
     if not ExecutorSupported then
         return false
     end
 
-    --// Check if the core functions exist
+    
     local FunctionsSupported = self:CheckFunctions()
     if not FunctionsSupported then
         return false
@@ -311,18 +308,18 @@ end
 function Process:RemoteAllowed(Remote: Event, TransferType: string, Method: string?): boolean?
     if typeof(Remote) ~= 'Instance' or InstanceCreatedRemotes[Remote] then return end
     
-    --// Check if the Remote is protected
+    
     if self:IsProtectedRemote(Remote) then return end
 
-    --// Fetch class table
+    
 	local ClassData = self:GetClassData(Remote)
 	if not ClassData then return end
 
-    --// Check if the transfer type has data
+    
 	local Allowed = ClassData[TransferType]
 	if not Allowed then return end
 
-    --// Check if the method is allowed
+    
 	if Method then
 		return table.find(Allowed, Method) ~= nil
 	end
@@ -343,7 +340,7 @@ function Process:GetRemoteSpoof(Remote: Instance, Method: string, ...): table?
 
     local ReturnValues = Spoof.Return
 
-    --// Call the ReturnValues function type
+    
     if typeof(ReturnValues) == "function" then
         ReturnValues = ReturnValues(...)
     end
@@ -362,11 +359,11 @@ function Process:FindCallingLClosure(Offset: number)
     while true do
         Offset += 1
 
-        --// Check if the stack level is valid
+        
         local IsValid = debug.info(Offset, "l") ~= -1
         if not IsValid then continue end
 
-        --// Check if the function is valid
+        
         local Function = debug.info(Offset, "f")
         if not Function then return end
         if Getfenv(Function) == SigmaENV then continue end
@@ -379,20 +376,20 @@ function Process:Decompile(Script: LocalScript | ModuleScript): string
     local KonstantAPI = "http://api.plusgiant5.com/konstant/decompile"
     local ForceKonstant = Config.ForceKonstantDecompiler
 
-    --// Use built-in decompiler if the executor supports it
+    
     if decompile and not ForceKonstant then 
         return decompile(Script)
     end
 
-    --// getscriptbytecode
+    
     local Success, Bytecode = pcall(getscriptbytecode, Script)
     if not Success then
-        local Error = `--Failed to get script bytecode, error:\n`
-        Error ..= `\n--[[\n{Bytecode}\n]]`
+        local Error = `
+        Error ..= `\n`
         return Error, true
     end
     
-    --// Send POST request to the API
+    
     local Responce = request({
         Url = KonstantAPI,
         Body = Bytecode,
@@ -402,10 +399,10 @@ function Process:Decompile(Script: LocalScript | ModuleScript): string
         },
     })
 
-    --// Error check
+    
     if Responce.StatusCode ~= 200 then
-        local Error = `--[KONSTANT] Error occured while requesting the API, error:\n`
-        Error ..= `\n--[[\n{Responce.Body}\n]]`
+        local Error = `
+        Error ..= `\n`
         return Error, true
     end
 
@@ -418,8 +415,8 @@ function Process:GetScriptFromFunc(Func: (...any) -> ...any)
     local Success, ENV = pcall(getfenv, Func)
     if not Success then return end
     
-    --// Blacklist sigma spy
-    if self:IsSigmaSpyENV(ENV) then return end
+    
+    if self:IsWyvernSpyENV(ENV) then return end
 
     return rawget(ENV, "script")
 end
@@ -434,7 +431,7 @@ function Process:ConnectionIsValid(Connection: table): boolean
 		end
 	}
 
-    --// Check if these properties are valid
+    
     local ToCheck = {
         "Script"
     }
@@ -442,12 +439,12 @@ function Process:ConnectionIsValid(Connection: table): boolean
         local Replacement = ValueReplacements[Property]
         local Value
 
-        --// Check if there's a function for a property
+        
         if Replacement then
             Value = Replacement(Connection)
         end
 
-        --// Check if the property has a value
+        
         if Value == nil then 
             return false 
         end
@@ -459,7 +456,7 @@ end
 function Process:FilterConnections(Signal: RBXScriptSignal): table
     local Processed = {}
 
-    --// Filter each connection
+    
     for _, Connection in getconnections(Signal) do
         if not self:ConnectionIsValid(Connection) then continue end
         table.insert(Processed, Connection)
@@ -468,18 +465,18 @@ function Process:FilterConnections(Signal: RBXScriptSignal): table
     return Processed
 end
 
-function Process:IsSigmaSpyENV(Env: table): boolean
+function Process:IsWyvernSpyENV(Env: table): boolean
     return Env == SigmaENV
 end
 
 function Process:GetRemoteData(Id: string)
     local RemoteOptions = self.RemoteOptions
 
-    --// Check for existing remote data
+    
 	local Existing = RemoteOptions[Id]
 	if Existing then return Existing end
 	
-    --// Base remote data
+    
 	local Data = {
 		Excluded = false,
 		Blocked = false
@@ -512,38 +509,61 @@ function Process:PromptDiscordInvite(InviteCode: string)
 end
 
 local ProcessCallback = newcclosure(function(Data: RemoteData, Remote, ...): table?
-    --// Unpack Data
+    
     local OriginalFunc = Data.OriginalFunc
     local Id = Data.Id
     local Method = Data.Method
 
-    --// Check if the Remote is Blocked
+    
     local RemoteData = Process:GetRemoteData(Id)
     if RemoteData.Blocked then return {} end
 
-    --// Check for a spoof
+    
     local Spoof = Process:GetRemoteSpoof(Remote, Method, OriginalFunc, ...)
     if Spoof then return Spoof end
 
-    --// Check if the orignal function was passed
+    
     if not OriginalFunc then return end
 
-    --// Invoke orignal function
+    
     return {
         OriginalFunc(Remote, ...)
     }
 end)
 
 function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
-    --// Unpack Data
+    
 	local Method = Data.Method
     local TransferType = Data.TransferType
     local IsReceive = Data.IsReceive
 
-	--// Check if the transfertype method is allowed
+	
 	if TransferType and not self:RemoteAllowed(Remote, TransferType, Method) then return end
 
-    --// Fetch details
+	-- Safe defaults: paused = no log work (hook still passthrough via caller)
+	if Flags and Flags.GetFlagValue then
+		local okp, paused = pcall(function() return Flags:GetFlagValue("Paused") end)
+		if okp and paused then
+			return
+		end
+		-- Rate limit logs per second (protect users on busy games)
+		local okm, maxPerSec = pcall(function() return Flags:GetFlagValue("MaxLogsPerSec") end)
+		if okm and typeof(maxPerSec) == "number" and maxPerSec > 0 then
+			local now = tick()
+			self._LogWindowStart = self._LogWindowStart or now
+			self._LogWindowCount = self._LogWindowCount or 0
+			if now - self._LogWindowStart >= 1 then
+				self._LogWindowStart = now
+				self._LogWindowCount = 0
+			end
+			if self._LogWindowCount >= maxPerSec then
+				return
+			end
+			self._LogWindowCount += 1
+		end
+	end
+
+    
     local Id = Communication:GetDebugId(Remote)
     local ClassData = self:GetClassData(Remote)
     local Timestamp = tick()
@@ -551,19 +571,19 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
     local CallingFunction
     local SourceScript
 
-    --// Add extra data into the log if needed
+    
     local ExtraData = self.ExtraData
     if ExtraData then
         self:Merge(Data, ExtraData)
     end
 
-    --// Get caller information
+    
     if not IsReceive then
         CallingFunction = self:FindCallingLClosure(6)
         SourceScript = CallingFunction and self:GetScriptFromFunc(CallingFunction) or nil
     end
 
-    --// Add to queue
+    
     self:Merge(Data, {
         Remote = cloneref(Remote),
 		CallingScript = getcallingscript(),
@@ -575,11 +595,11 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
         Args = {...}
     })
 
-    --// Invoke the Remote and log return values
+    
     local ReturnValues = ProcessCallback(Data, Remote, ...)
     Data.ReturnValues = ReturnValues
 
-    --// Queue log
+    
     Communication:QueueLog(Data)
 
     return ReturnValues
@@ -592,8 +612,6 @@ function Process:SetAllRemoteData(Key: string, Value)
 	end
 end
 
---// The communication creates a different table address
---// Recived tables will not be the same
 function Process:SetRemoteData(Id: string, RemoteData: table)
     local RemoteOptions = self.RemoteOptions
     RemoteOptions[Id] = RemoteData
