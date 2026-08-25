@@ -191,6 +191,7 @@ function Element:_create(class, config)
 		frame.BorderSizePixel = 0
 		frame.Size = config.Size or UDim2.new(1, 0, 0, 0)
 		frame.AutomaticSize = Enum.AutomaticSize.Y
+		frame.ClipsDescendants = true
 		frame.Parent = host
 		order(frame)
 		corner(frame, 4)
@@ -211,8 +212,9 @@ function Element:_create(class, config)
 	if class == "Row" or class == "HeaderRow" or class == "NextRow" then
 		local frame = Instance.new("Frame")
 		frame.BorderSizePixel = 0
-		frame.Size = config.Size or UDim2.new(1, 0, 0, 0)
-		frame.AutomaticSize = Enum.AutomaticSize.Y
+		frame.Size = config.Size or UDim2.new(1, 0, 0, 28)
+		frame.AutomaticSize = Enum.AutomaticSize.None
+		frame.ClipsDescendants = true
 		-- alternating row bg for tables
 		if self.Class == "Table" and self._rowAlt then
 			self._rowIndex = (self._rowIndex or 0) + 1
@@ -241,13 +243,18 @@ function Element:_create(class, config)
 	if class == "NextColumn" then
 		local frame = Instance.new("Frame")
 		frame.BackgroundTransparency = 1
-		frame.Size = UDim2.new(0, 0, 0, 0)
-		frame.AutomaticSize = Enum.AutomaticSize.XY
+		frame.Size = UDim2.new(0, 140, 0, 0)
+		frame.AutomaticSize = Enum.AutomaticSize.Y
 		frame.Parent = host
 		order(frame)
 		local layout = Instance.new("UIListLayout")
 		layout.Padding = UDim.new(0, 2)
 		layout.Parent = frame
+		pcall(function()
+			local flex = Instance.new("UIFlexItem")
+			flex.FlexMode = Enum.UIFlexMode.Fill
+			flex.Parent = frame
+		end)
 		return wrap(frame, "Column")
 	end
 
@@ -323,18 +330,32 @@ function Element:_create(class, config)
 	-------------------------------------------------------------------- Button
 	if class == "Button" then
 		local btn = Instance.new("TextButton")
-		btn.Size = config.Size or UDim2.new(0, 100, 0, 26)
-		btn.AutomaticSize = config.AutomaticSize or Enum.AutomaticSize.None
+		local sz = config.Size
+		-- Prevent UDim2.new(1,0,*) from blowing past the window in horizontal rows
+		if sz and sz.X.Scale >= 1 and sz.X.Offset == 0 then
+			sz = UDim2.new(0, 120, 0, sz.Y.Offset > 0 and sz.Y.Offset or 26)
+		end
+		btn.Size = sz or UDim2.new(0, 100, 0, 26)
+		btn.AutomaticSize = Enum.AutomaticSize.None
 		btn.BackgroundColor3 = C.Btn
 		btn.TextColor3 = C.Text
 		btn.TextSize = 12
 		btn.Font = Enum.Font.GothamMedium
 		btn.Text = tostring(config.Text or config.Label or "Button")
+		btn.TextTruncate = Enum.TextTruncate.AtEnd
 		btn.BorderSizePixel = 0
 		btn.AutoButtonColor = true
 		btn.Parent = host
 		order(btn)
 		corner(btn, 4)
+		-- Equal-width flex in horizontal rows when requested
+		if config.FlexFill then
+			pcall(function()
+				local flex = Instance.new("UIFlexItem")
+				flex.FlexMode = Enum.UIFlexMode.Fill
+				flex.Parent = btn
+			end)
+		end
 		local el = wrap(btn, "Button")
 		if config.Callback then
 			btn.MouseButton1Click:Connect(function()
@@ -463,7 +484,8 @@ function Element:_create(class, config)
 	if class == "CodeEditor" or class == "Console" then
 		local scroll = Instance.new("ScrollingFrame")
 		if config.Fill then
-			scroll.Size = UDim2.new(1, 0, 1, -32)
+			scroll.Size = UDim2.new(1, 0, 1, -34)
+			scroll.AutomaticSize = Enum.AutomaticSize.None
 		else
 			scroll.Size = config.Size or UDim2.new(1, 0, 0, 160)
 		end
@@ -605,6 +627,7 @@ function Element:_create(class, config)
 		body.Size = UDim2.new(1, 0, 1, -28)
 		body.BackgroundColor3 = C.BgDark
 		body.BorderSizePixel = 0
+		body.ClipsDescendants = true
 		body.Parent = root
 		corner(body, 4)
 		stroke(body, C.Border, 1)
@@ -633,11 +656,13 @@ function Element:_create(class, config)
 			page.Position = UDim2.fromOffset(5, 5)
 			page.BackgroundTransparency = 1
 			page.Visible = false
+			page.ClipsDescendants = true
 			page.Parent = body
 			local pl = Instance.new("UIListLayout")
 			pl.Padding = UDim.new(0, 5)
 			pl.SortOrder = Enum.SortOrder.LayoutOrder
 			pl.FillDirection = Enum.FillDirection.Vertical
+			pl.VerticalAlignment = Enum.VerticalAlignment.Top
 			pl.Parent = page
 			pcall(function()
 				pl.VerticalFlex = Enum.UIFlexAlignment.Fill
@@ -858,6 +883,7 @@ function ReGui:Window(config)
 	content.Position = UDim2.fromOffset(6, 32)
 	content.Size = UDim2.new(1, -12, 1, -38)
 	content.BackgroundTransparency = 1
+	content.ClipsDescendants = true
 	content.Parent = frame
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal
