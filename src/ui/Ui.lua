@@ -614,8 +614,9 @@ function Ui:MakeEditorTab(InfoSelector)
 	local EditorTab = InfoSelector:CreateTab({
 		Name = "Editor"
 	})
+	self.EditorTab = EditorTab
 
-	--// IDE
+	--// IDE (fills space above the button row)
 	local CodeEditor = EditorTab:CodeEditor({
 		Fill = true,
 		Editable = true,
@@ -625,8 +626,10 @@ function Ui:MakeEditorTab(InfoSelector)
 		Text = Default
 	})
 
-	--// Buttons
-	local ButtonsRow = EditorTab:Row()
+	--// Buttons always visible under the editor (not inside scroll)
+	local ButtonsRow = EditorTab:Row({
+		Size = UDim2.new(1, 0, 0, 28),
+	})
 	self:CreateButtons(ButtonsRow, {
 		NoTable = true,
 		Buttons = {
@@ -925,7 +928,39 @@ function Ui:SetFocusedRemote(Data)
 
 	local function SetIDEText(Content: string, Task: string?)
 		Data.Task = Task or "Sigma Spy"
-		CodeEditor:SetText(Content)
+		if not CodeEditor then
+			warn("[Sigma Spy] CodeEditor missing")
+			return
+		end
+		local Ok, Err = pcall(function()
+			CodeEditor:SetText(tostring(Content or ""))
+		end)
+		if not Ok then
+			warn("[Sigma Spy] SetText failed:", Err)
+			-- Fallback: try .Text on instance
+			pcall(function()
+				if CodeEditor._box then
+					CodeEditor._box.Text = tostring(Content or "")
+				elseif CodeEditor.Instance then
+					local box = CodeEditor.Instance:FindFirstChildWhichIsA("TextBox", true)
+					if box then box.Text = tostring(Content or "") end
+				end
+			end)
+		end
+		-- Switch to Editor tab so the user sees the script
+		pcall(function()
+			local et = self.EditorTab
+			if et and et._button then
+				-- fire same as clicking Editor tab
+				for _, t in (InfoSelector._tabs or {}) do
+					t.Instance.Visible = false
+					if t._button then t._button.BackgroundColor3 = Color3.fromRGB(48, 56, 78) end
+				end
+				et.Instance.Visible = true
+				et._button.BackgroundColor3 = Color3.fromRGB(55, 95, 160)
+				InfoSelector.ActiveTab = et
+			end
+		end)
 	end
 	local function DataConnection(Name, ...)
 		local Args = {...}
