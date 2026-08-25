@@ -235,16 +235,10 @@ function Hook:HookRemoteIndexes()
 end
 
 function Hook:BeginHooks()
-	local Light = true
-	pcall(function()
-		if Modules and Modules.Flags then
-			Light = Modules.Flags:GetFlagValue("LightHooks") ~= false
-		end
-	end)
-	if not Light then
-		self:HookRemoteIndexes()
-	end
+	
+	self:HookRemoteIndexes()
 
+	
 	local OriginalNameCall
 	OriginalNameCall = self:HookMetaMethod(game, "__namecall", function(self, ...)
 		local Method = getnamecallmethod()
