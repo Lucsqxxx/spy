@@ -384,8 +384,7 @@ function Process:Decompile(Script: LocalScript | ModuleScript): string
     
     local Success, Bytecode = pcall(getscriptbytecode, Script)
     if not Success then
-        local Error = `
-        Error ..= `\n`
+        local Error = "-- Failed to get script bytecode\n" .. tostring(Bytecode)
         return Error, true
     end
     
@@ -401,8 +400,7 @@ function Process:Decompile(Script: LocalScript | ModuleScript): string
 
     
     if Responce.StatusCode ~= 200 then
-        local Error = `
-        Error ..= `\n`
+        local Error = "-- Konstant decompile failed: HTTP " .. tostring(Responce.StatusCode)
         return Error, true
     end
 
