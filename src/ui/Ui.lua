@@ -1473,17 +1473,25 @@ function Ui:CreateLog(Data: Log)
 	local Header = self:GetRemoteHeader(Data)
 	local RemotesList = self.RemotesList
 
+	-- M1: burst / duplicate fingerprint counts
+	Header.Fingerprints = Header.Fingerprints or {}
+	local fp = Data.Fingerprint or (Method .. ":?")
+	Header.Fingerprints[fp] = (Header.Fingerprints[fp] or 0) + 1
+	local burst = Header.Fingerprints[fp]
+	Data.BurstCount = burst
+	if burst > 1 then
+		Text = `{Text}  ×{burst}`
+	end
+
 	local LogCount = Header.LogCount
 	local TreeNode = Header.TreeNode 
 	local Parent = TreeNode or RemotesList
 
-	--// Increase log count - TreeNodes are in GetRemoteHeader function
 	if NoTreeNodes then
 		RemotesCount += 1
 		LogCount = RemotesCount
 	end
 
-    --// Create focus button
 	Data.HeaderData = Header
 	Data.Selectable = Parent:Selectable({
 		Text = Text,
