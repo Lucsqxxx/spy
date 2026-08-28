@@ -180,45 +180,94 @@ function Process:CountMatches(String: string, Match: string): number
 	return Count
 end
 
-function Process:CheckValue(Value, Ignore: table?, Cache: table?)
+-- Snapshot limits (H5)
+Process.SnapshotMaxDepth = 8
+Process.SnapshotMaxEntries = 200
+
+function Process:CheckValue(Value, Ignore: table?, Cache: table?, Depth: number?)
     local Type = typeof(Value)
-    Communication:WaitCheck()
-    
-    if Type == "table" then
-        Value = self:DeepCloneTable(Value, Ignore, Cache)
-    elseif Type == "Instance" then
-        Value = cloneref(Value)
+    Depth = Depth or 0
+    if Communication and Communication.WaitCheck then
+        Communication:WaitCheck()
     end
-    
+
+    if Type == "table" then
+        Value = self:DeepCloneTable(Value, Ignore, Cache, Depth)
+    elseif Type == "Instance" then
+        if cloneref then
+            Value = cloneref(Value)
+        end
+    end
+
     return Value
 end
 
-function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?): table
+function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?, Depth: number?): table
     if typeof(Table) ~= "table" then return Table end
+    Depth = Depth or 0
+    local MaxDepth = self.SnapshotMaxDepth or 8
+    local MaxEntries = self.SnapshotMaxEntries or 200
     local Cache = Visited or {}
 
-    
     if Cache[Table] then
         return Cache[Table]
+    end
+
+    if Depth >= MaxDepth then
+        return { __wyvern = "max_depth", depth = Depth }
     end
 
     local New = {}
     Cache[Table] = New
 
+    local count = 0
     for Key, Value in next, Table do
-        
-        if Ignore and table.find(Ignore, Value) then continue end
-        
-        Key = self:CheckValue(Key, Ignore, Cache)
-        New[Key] = self:CheckValue(Value, Ignore, Cache)
+        count += 1
+        if count > MaxEntries then
+            New.__wyvern_truncated = true
+            New.__wyvern_count = count
+            break
+        end
+        if Ignore and table.find(Ignore, Value) then
+            continue
+        end
+        local NewKey = self:CheckValue(Key, Ignore, Cache, Depth + 1)
+        New[NewKey] = self:CheckValue(Value, Ignore, Cache, Depth + 1)
     end
 
-    
     if not Visited then
         table.clear(Cache)
     end
-    
+
     return New
+end
+
+-- C1: synchronous arg snapshot for the hot path
+function Process:SnapshotArgs(...): table
+    local packed = { ... }
+    return self:DeepCloneTable(packed)
+end
+
+-- M1: rough fingerprint for burst detection
+function Process:ArgFingerprint(Method: string, Args: table): string
+    local parts = { tostring(Method) }
+    local n = math.min(table.maxn(Args), 6)
+    for i = 1, n do
+        local v = Args[i]
+        local ty = typeof(v)
+        if ty == "string" then
+            parts[#parts + 1] = "s:" .. string.sub(v, 1, 32)
+        elseif ty == "number" or ty == "boolean" then
+            parts[#parts + 1] = ty:sub(1, 1) .. ":" .. tostring(v)
+        elseif ty == "Instance" then
+            parts[#parts + 1] = "i:" .. tostring(v)
+        elseif ty == "table" then
+            parts[#parts + 1] = "t:" .. tostring(table.maxn(v))
+        else
+            parts[#parts + 1] = ty
+        end
+    end
+    return table.concat(parts, "|")
 end
 
 function Process:Unpack(Table: table)
@@ -530,54 +579,80 @@ local ProcessCallback = newcclosure(function(Data: RemoteData, Remote, ...): tab
 end)
 
 function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
-    
 	local Method = Data.Method
     local TransferType = Data.TransferType
     local IsReceive = Data.IsReceive
 
-	
 	if TransferType and not self:RemoteAllowed(Remote, TransferType, Method) then return end
 
-    
-    local Id = Communication:GetDebugId(Remote)
-    local ClassData = self:GetClassData(Remote)
-    local Timestamp = tick()
+	-- C3: respect pause / filters BEFORE expensive work (still call original below)
+	local SkipLog = false
+	if Flags and Flags.GetFlagValue then
+		local ok, paused = pcall(function() return Flags:GetFlagValue("Paused") end)
+		if ok and paused then
+			SkipLog = true
+		end
+		if not SkipLog and IsReceive then
+			local ok2, logRecv = pcall(function() return Flags:GetFlagValue("LogRecives") end)
+			if ok2 and logRecv == false then
+				SkipLog = true
+			end
+		end
+		if not SkipLog and Data.IsExploit then
+			local ok3, logEx = pcall(function() return Flags:GetFlagValue("LogExploit") end)
+			if ok3 and logEx == false then
+				SkipLog = true
+			end
+		end
+	end
 
-    local CallingFunction
-    local SourceScript
+	-- Always invoke original first-class path
+	local ExtraData = self.ExtraData
+	if ExtraData then
+		self:Merge(Data, ExtraData)
+	end
 
-    
-    local ExtraData = self.ExtraData
-    if ExtraData then
-        self:Merge(Data, ExtraData)
-    end
+	local ReturnValues = ProcessCallback(Data, Remote, ...)
+	Data.ReturnValues = ReturnValues
 
-    
-    if not IsReceive then
-        CallingFunction = self:FindCallingLClosure(6)
-        SourceScript = CallingFunction and self:GetScriptFromFunc(CallingFunction) or nil
-    end
+	if SkipLog then
+		return ReturnValues
+	end
 
-    
-    self:Merge(Data, {
-        Remote = cloneref(Remote),
-		CallingScript = getcallingscript(),
-        CallingFunction = CallingFunction,
-        SourceScript = SourceScript,
-        Id = Id,
+	-- Capture path: snapshot args NOW (C1) then queue
+	local Id = Communication:GetDebugId(Remote)
+	local ClassData = self:GetClassData(Remote)
+	local Timestamp = tick()
+
+	local CallingFunction
+	local SourceScript
+	if not IsReceive then
+		CallingFunction = self:FindCallingLClosure(6)
+		SourceScript = CallingFunction and self:GetScriptFromFunc(CallingFunction) or nil
+	end
+
+	local ArgsSnap = self:SnapshotArgs(...)
+	local Fingerprint = self:ArgFingerprint(Method, ArgsSnap)
+
+	self:Merge(Data, {
+		Remote = cloneref and cloneref(Remote) or Remote,
+		CallingScript = getcallingscript and getcallingscript() or nil,
+		CallingFunction = CallingFunction,
+		SourceScript = SourceScript,
+		Id = Id,
 		ClassData = ClassData,
-        Timestamp = Timestamp,
-        Args = {...}
-    })
+		Timestamp = Timestamp,
+		Args = ArgsSnap,
+		ArgsSnapshot = true,
+		Fingerprint = Fingerprint,
+		RemotePath = (function()
+			local ok, name = pcall(function() return Remote:GetFullName() end)
+			return ok and name or tostring(Remote)
+		end)(),
+	})
 
-    
-    local ReturnValues = ProcessCallback(Data, Remote, ...)
-    Data.ReturnValues = ReturnValues
-
-    
-    Communication:QueueLog(Data)
-
-    return ReturnValues
+	Communication:QueueLog(Data)
+	return ReturnValues
 end
 
 function Process:SetAllRemoteData(Key: string, Value)
