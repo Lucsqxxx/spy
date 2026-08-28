@@ -648,7 +648,7 @@ function Ui:MakeEditorTab(InfoSelector)
 		Text = Default
 	})
 
-	--// Buttons always visible under the editor (not inside scroll)
+	-- L1: primary actions visible; overflow in More menu (no cramped 7-button row)
 	local ButtonsRow = EditorTab:Row({
 		Size = UDim2.new(1, 0, 0, 28),
 	})
@@ -667,13 +667,10 @@ function Ui:MakeEditorTab(InfoSelector)
 				Callback = function()
 					local Script = CodeEditor:GetText()
 					local Func, Error = loadstring(Script, "WyvernSpy-USERSCRIPT")
-
-					--// Syntax check
 					if not Func then
 						self:ShowModal({"Error running script!\n", Error})
 						return
 					end
-
 					Func()
 				end
 			},
@@ -682,29 +679,34 @@ function Ui:MakeEditorTab(InfoSelector)
 				Callback = MakeActiveDataCallback("RepeatCall")
 			},
 			{
-				Text = "Get return",
-				Callback = MakeActiveDataCallback("GetReturn")
-			},
-			{
-				Text = "Script",
-				Callback = MakeActiveDataCallback("ScriptOptions")
-			},
-			{
 				Text = "Build",
 				Callback = MakeActiveDataCallback("BuildScript")
 			},
 			{
-				Text = "Pop-out",
-				Callback = function()
-					local Script = CodeEditor:GetText()
-					local Tile = ActiveData and ActiveData.Task or "Wyvern Spy"
-					self:MakeEditorPopoutWindow(Script, {
-						Title = Tile
+				Text = "More",
+				Callback = function(Btn)
+					self:MakeButtonMenu(Btn, {}, {
+						["Get return"] = function()
+							if ActiveData then
+								ActiveData:GetReturn()
+							end
+						end,
+						["Script options"] = function()
+							if ActiveData then
+								ActiveData:ScriptOptions(Btn)
+							end
+						end,
+						["Pop-out editor"] = function()
+							local Script = CodeEditor:GetText()
+							local Tile = ActiveData and ActiveData.Task or "Wyvern Spy"
+							self:MakeEditorPopoutWindow(Script, { Title = Tile })
+						end,
 					})
 				end
 			},
 		}
 	})
+
 	
 	self.CodeEditor = CodeEditor
 end
