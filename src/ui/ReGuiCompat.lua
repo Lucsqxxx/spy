@@ -31,28 +31,30 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 local C = {
-	Bg = Color3.fromRGB(20, 22, 28),
-	BgDark = Color3.fromRGB(15, 16, 20),
-	Title = Color3.fromRGB(42, 78, 140),
-	TitleBot = Color3.fromRGB(32, 58, 110),
-	Border = Color3.fromRGB(48, 64, 96),
-	Text = Color3.fromRGB(210, 210, 210),
-	TextDim = Color3.fromRGB(120, 120, 130),
-	Accent = Color3.fromRGB(100, 150, 210),
-	Btn = Color3.fromRGB(36, 64, 112),
-	BtnHover = Color3.fromRGB(50, 90, 150),
-	Select = Color3.fromRGB(30, 60, 100),
-	SelectActive = Color3.fromRGB(45, 95, 165),
-	Input = Color3.fromRGB(12, 12, 16),
-	Check = Color3.fromRGB(60, 120, 200),
-	Green = Color3.fromRGB(77, 245, 105),
-	Yellow = Color3.fromRGB(242, 255, 0),
-	TabActive = Color3.fromRGB(48, 90, 155),
-	TabIdle = Color3.fromRGB(28, 32, 42),
-	RowAlt = Color3.fromRGB(18, 20, 26),
-	LineNum = Color3.fromRGB(100, 100, 110),
-	Gutter = Color3.fromRGB(28, 28, 34),
+	-- Cobalt-inspired dark network-devtool palette
+	Bg = Color3.fromRGB(22, 22, 24),
+	BgDark = Color3.fromRGB(16, 16, 18),
+	Title = Color3.fromRGB(28, 28, 30),
+	TitleBot = Color3.fromRGB(24, 24, 26),
+	Border = Color3.fromRGB(48, 48, 52),
+	Text = Color3.fromRGB(230, 230, 235),
+	TextDim = Color3.fromRGB(140, 140, 148),
+	Accent = Color3.fromRGB(90, 140, 220),
+	Btn = Color3.fromRGB(36, 36, 40),
+	BtnHover = Color3.fromRGB(50, 50, 56),
+	Select = Color3.fromRGB(32, 36, 44),
+	SelectActive = Color3.fromRGB(42, 52, 68),
+	Input = Color3.fromRGB(12, 12, 14),
+	Check = Color3.fromRGB(90, 140, 220),
+	Green = Color3.fromRGB(100, 200, 140),
+	Yellow = Color3.fromRGB(220, 190, 80),
+	TabActive = Color3.fromRGB(40, 44, 52),
+	TabIdle = Color3.fromRGB(24, 24, 28),
+	RowAlt = Color3.fromRGB(20, 20, 22),
+	LineNum = Color3.fromRGB(90, 90, 98),
+	Gutter = Color3.fromRGB(18, 18, 20),
 }
+
 
 function ReGui:CheckConfig(Target, Defaults)
 	if typeof(Target) ~= "table" then return Target end
@@ -185,7 +187,7 @@ function Element:_create(class, config)
 		if config.BackgroundTransparency ~= nil then
 			frame.BackgroundTransparency = config.BackgroundTransparency
 		end
-		corner(frame, 4)
+		corner(frame, 8)
 		local layout = Instance.new("UIListLayout")
 		layout.FillDirection = config.FillDirection or Enum.FillDirection.Vertical
 		layout.Padding = UDim.new(0, config.UiPadding or 2)
@@ -983,6 +985,39 @@ function Element:_create(class, config)
 		return el
 	end
 
+	if class == "InputText" then
+		local holder = Instance.new("Frame")
+		holder.BackgroundTransparency = 1
+		holder.Size = config.Size or UDim2.new(1, 0, 0, 28)
+		holder.BorderSizePixel = 0
+		holder.Parent = parent
+		local box = Instance.new("TextBox")
+		box.Size = UDim2.new(1, 0, 1, 0)
+		box.BackgroundColor3 = C.Input
+		box.BorderSizePixel = 0
+		box.Text = tostring(config.Value or config.Text or "")
+		box.PlaceholderText = config.Placeholder or ""
+		box.PlaceholderColor3 = C.TextDim
+		box.TextColor3 = C.Text
+		box.TextSize = 13
+		box.Font = Enum.Font.Gotham
+		box.ClearTextOnFocus = false
+		box.TextXAlignment = Enum.TextXAlignment.Left
+		box.Parent = holder
+		corner(box, 6)
+		stroke(box, C.Border, 1)
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft = UDim.new(0, 8)
+		pad.PaddingRight = UDim.new(0, 8)
+		pad.Parent = box
+		if config.Callback then
+			box:GetPropertyChangedSignal("Text"):Connect(function()
+				pcall(config.Callback, box, box.Text)
+			end)
+		end
+		return wrap(holder, "InputText")
+	end
+
 	if class == "InputInt" then
 		local holder = Instance.new("Frame")
 		holder.BackgroundTransparency = 1
@@ -1053,7 +1088,7 @@ end
 
 for _, name in {
 	"List", "Canvas", "Table", "Row", "NextRow", "NextColumn", "HeaderRow",
-	"Label", "Button", "Selectable", "Checkbox", "InputInt", "Separator", "CodeEditor",
+	"Label", "Button", "Selectable", "Checkbox", "InputText", "InputInt", "Separator", "CodeEditor",
 	"Console", "BulletText", "Keybind", "TreeNode", "TabSelector",
 } do
 	Element[name] = function(self, config)
@@ -1255,7 +1290,7 @@ end
 function ReGui:Window(config)
 	config = config or {}
 	local screen = parentGui()
-	local size = config.Size or UDim2.fromOffset(760, 480)
+	local size = config.Size or UDim2.fromOffset(820, 520)
 	local minimized = false
 	local fullSize = size
 
@@ -1274,60 +1309,57 @@ function ReGui:Window(config)
 	
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
-	titleBar.Size = UDim2.new(1, 0, 0, 24)
+	titleBar.Size = UDim2.new(1, 0, 0, 32)
 	titleBar.BackgroundColor3 = C.Title
 	titleBar.BorderSizePixel = 0
 	titleBar.Parent = frame
 
-	local minBtn = Instance.new("TextButton")
-	minBtn.Name = "Minimize"
-	minBtn.Size = UDim2.fromOffset(18, 18)
-	minBtn.Position = UDim2.fromOffset(4, 3)
-	minBtn.BackgroundTransparency = 1
-	minBtn.Text = "▼"
-	minBtn.TextColor3 = Color3.fromRGB(230, 230, 240)
-	minBtn.Font = Enum.Font.Code
-	minBtn.TextSize = 12
-	minBtn.Parent = titleBar
-	applyFont(minBtn)
-
 	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.fromOffset(14, 18)
-	icon.Position = UDim2.fromOffset(22, 3)
+	icon.Size = UDim2.fromOffset(20, 20)
+	icon.Position = UDim2.fromOffset(10, 6)
 	icon.BackgroundTransparency = 1
-	icon.Text = "🥕"
-	icon.TextSize = 12
+	icon.Text = "⚡"
+	icon.TextSize = 14
 	icon.Parent = titleBar
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
-	title.Size = UDim2.new(1, -70, 1, 0)
-	title.Position = UDim2.fromOffset(38, 0)
+	title.Size = UDim2.new(1, -100, 1, 0)
+	title.Position = UDim2.fromOffset(34, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
-	title.TextColor3 = Color3.fromRGB(230, 230, 235)
-	title.Font = Enum.Font.Code
-	title.TextSize = 13
+	title.TextColor3 = Color3.fromRGB(235, 235, 240)
+	title.Font = Enum.Font.GothamMedium
+	title.TextSize = 14
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = titleBar
-	applyFont(title)
+
+	local minBtn = Instance.new("TextButton")
+	minBtn.Name = "Minimize"
+	minBtn.Size = UDim2.fromOffset(28, 24)
+	minBtn.Position = UDim2.new(1, -64, 0, 4)
+	minBtn.BackgroundTransparency = 1
+	minBtn.Text = "─"
+	minBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
+	minBtn.Font = Enum.Font.Gotham
+	minBtn.TextSize = 14
+	minBtn.Parent = titleBar
 
 	local close = Instance.new("TextButton")
-	close.Size = UDim2.fromOffset(22, 18)
-	close.Position = UDim2.new(1, -26, 0, 3)
+	close.Size = UDim2.fromOffset(28, 24)
+	close.Position = UDim2.new(1, -32, 0, 4)
 	close.BackgroundTransparency = 1
 	close.Text = "×"
-	close.TextColor3 = Color3.fromRGB(220, 220, 230)
-	close.Font = Enum.Font.Code
-	close.TextSize = 16
+	close.TextColor3 = Color3.fromRGB(180, 180, 190)
+	close.Font = Enum.Font.Gotham
+	close.TextSize = 18
 	close.BorderSizePixel = 0
 	close.Parent = titleBar
-	applyFont(close)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
-	content.Position = UDim2.fromOffset(4, 26)
-	content.Size = UDim2.new(1, -8, 1, -30)
+	content.Position = UDim2.fromOffset(0, 32)
+	content.Size = UDim2.new(1, 0, 1, -32)
 	content.BackgroundTransparency = 1
 	content.ClipsDescendants = true
 	content.Parent = frame
@@ -1348,10 +1380,10 @@ function ReGui:Window(config)
 		minimized = v
 		content.Visible = not minimized
 		if minimized then
-			minBtn.Text = "▶"
+			minBtn.Text = "□"
 			frame.Size = UDim2.fromOffset(fullSize.X.Offset, 24)
 		else
-			minBtn.Text = "▼"
+			minBtn.Text = "─"
 			frame.Size = fullSize
 		end
 	end
