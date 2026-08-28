@@ -2,7 +2,6 @@ type table = {
     [any]: any
 }
 
---// Module
 local Module = {
     CommCallbacks = {}
 }
@@ -10,14 +9,11 @@ local Module = {
 local CommWrapper = {}
 CommWrapper.__index = CommWrapper
 
---// Serializer cache
 local SerializeCache = setmetatable({}, {__mode = "k"})
 local DeserializeCache = setmetatable({}, {__mode = "k"})
 
---// Services
 local CoreGui
 
---// Modules
 local Hook
 local Channel
 local Config
@@ -69,7 +65,7 @@ function Module:NewCommWrap(Channel: BindableEvent)
         Event = Channel.Event
     }
 
-    --// Create new wrapper class
+    
     local Wrapped = setmetatable(Base, CommWrapper)
     Wrapped:BeginQueueService()
 
@@ -77,7 +73,7 @@ function Module:NewCommWrap(Channel: BindableEvent)
 end
 
 function Module:MakeDebugIdHandler(): BindableFunction
-    --// Using BindableFunction as it does not require a thread permission change
+    
     local Remote = Instance.new("BindableFunction")
     function Remote.OnInvoke(Object: Instance): string
         return Object:GetDebugId()
@@ -96,13 +92,13 @@ function Module:GetDebugId(Object: Instance): string
 end
 
 function Module:GetHiddenParent(): Instance
-    --// Use gethui if it exists
+    
     if gethui then return gethui() end
     return CoreGui
 end
 
 function Module:CreateCommChannel(): (number, BindableEvent)
-    --// Use native if it exists
+    
     local Force = Config.ForceUseCustomComm
     if create_comm_channel and not Force then
         return create_comm_channel()
@@ -111,7 +107,7 @@ function Module:CreateCommChannel(): (number, BindableEvent)
     local Parent = self:GetHiddenParent()
     local ChannelId = math.random(1, 10000000)
 
-    --// BindableEvent
+    
     local Channel = Instance.new("BindableEvent", Parent)
     Channel.Name = ChannelId
 
@@ -119,7 +115,7 @@ function Module:CreateCommChannel(): (number, BindableEvent)
 end
 
 function Module:GetCommChannel(ChannelId: number): BindableEvent?
-    --// Use native if it exists
+    
     local Force = Config.ForceUseCustomComm
     if get_comm_channel and not Force then
         local Channel = get_comm_channel(ChannelId)
@@ -129,85 +125,188 @@ function Module:GetCommChannel(ChannelId: number): BindableEvent?
     local Parent = self:GetHiddenParent()
     local Channel = Parent:FindFirstChild(ChannelId)
 
-    --// Wrap the channel (Prevents thread permission errors)
+    
     local Wrapped = self:NewCommWrap(Channel)
     return Wrapped, true
-end
-
-function Module:CheckValue(Value, Inbound: boolean?)
-     --// No serializing  needed
-    if typeof(Value) ~= "table" then 
-        return Value 
-    end
-   
-    --// Deserialize
-    if Inbound then
-        return self:DeserializeTable(Value)
-    end
-
-    --// Serialize
-    return self:SerializeTable(Value)
 end
 
 local Tick = 0
 function Module:WaitCheck()
     Tick += 1
-    if Tick > 40 then
-        Tick = 0 -- I could use modulus here but the interger will be massive
-        wait()
+    if Tick > 60 then
+        Tick = 0
+        task.wait()
     end
+end
+
+-- C2: typed value envelope for transport / inspection
+function Module:SerializeValue(Value, Depth: number?, Seen: table?): any
+    Depth = Depth or 0
+    Seen = Seen or {}
+    local ty = typeof(Value)
+
+    if Depth > 10 then
+        return { __t = "truncated", reason = "depth" }
+    end
+
+    if ty == "nil" then
+        return { __t = "nil" }
+    elseif ty == "number" or ty == "string" or ty == "boolean" then
+        return Value
+    elseif ty == "Instance" then
+        local ok, full = pcall(function() return Value:GetFullName() end)
+        local ok2, cn = pcall(function() return Value.ClassName end)
+        return {
+            __t = "Instance",
+            class = ok2 and cn or "Instance",
+            name = tostring(Value),
+            path = ok and full or tostring(Value),
+        }
+    elseif ty == "Vector3" then
+        return { __t = "Vector3", x = Value.X, y = Value.Y, z = Value.Z }
+    elseif ty == "Vector2" then
+        return { __t = "Vector2", x = Value.X, y = Value.Y }
+    elseif ty == "CFrame" then
+        local x, y, z = Value.X, Value.Y, Value.Z
+        return { __t = "CFrame", x = x, y = y, z = z, str = tostring(Value) }
+    elseif ty == "Color3" then
+        return { __t = "Color3", r = Value.R, g = Value.G, b = Value.B }
+    elseif ty == "UDim2" then
+        return { __t = "UDim2", str = tostring(Value) }
+    elseif ty == "UDim" then
+        return { __t = "UDim", scale = Value.Scale, offset = Value.Offset }
+    elseif ty == "EnumItem" then
+        return { __t = "EnumItem", str = tostring(Value) }
+    elseif ty == "buffer" then
+        local ok, len = pcall(function() return buffer.len(Value) end)
+        return { __t = "buffer", len = ok and len or 0 }
+    elseif ty == "function" or ty == "thread" or ty == "userdata" then
+        return { __t = ty, str = tostring(Value) }
+    elseif ty == "table" then
+        if Seen[Value] then
+            return { __t = "cycle" }
+        end
+        Seen[Value] = true
+        local Cached = SerializeCache[Value]
+        if Cached then return Cached end
+
+        local Serialized = { __t = "table", items = {} }
+        SerializeCache[Value] = Serialized
+        local n = 0
+        for Index, V in next, Value do
+            n += 1
+            if n > 200 then
+                table.insert(Serialized.items, {
+                    Index = { __t = "truncated" },
+                    Value = { __t = "truncated", reason = "max_entries" },
+                })
+                break
+            end
+            self:WaitCheck()
+            table.insert(Serialized.items, {
+                Index = self:SerializeValue(Index, Depth + 1, Seen),
+                Value = self:SerializeValue(V, Depth + 1, Seen),
+            })
+        end
+        return Serialized
+    end
+
+    return { __t = ty, str = tostring(Value) }
+end
+
+function Module:DeserializeValue(Value): any
+    if typeof(Value) ~= "table" or Value.__t == nil then
+        return Value
+    end
+    local t = Value.__t
+    if t == "nil" then
+        return nil
+    elseif t == "table" then
+        local out = {}
+        for _, packet in ipairs(Value.items or {}) do
+            local k = self:DeserializeValue(packet.Index)
+            local v = self:DeserializeValue(packet.Value)
+            if k ~= nil then
+                out[k] = v
+            end
+        end
+        return out
+    elseif t == "Instance" then
+        return Value.path or Value.name or "<Instance>"
+    elseif t == "Vector3" then
+        return Vector3.new(Value.x, Value.y, Value.z)
+    elseif t == "Vector2" then
+        return Vector2.new(Value.x, Value.y)
+    elseif t == "Color3" then
+        return Color3.new(Value.r, Value.g, Value.b)
+    elseif t == "cycle" or t == "truncated" then
+        return Value
+    elseif t == "function" or t == "thread" or t == "userdata" or t == "buffer" then
+        return Value.str or ("<" .. t .. ">")
+    elseif t == "EnumItem" or t == "CFrame" or t == "UDim2" or t == "UDim" then
+        return Value.str or Value
+    end
+    return Value.str or Value
+end
+
+function Module:CheckValue(Value, Inbound: boolean?)
+    if Inbound then
+        return self:DeserializeValue(Value)
+    end
+    if typeof(Value) == "table" and Value.__t then
+        return Value
+    end
+    return self:SerializeValue(Value)
 end
 
 function Module:MakePacket(Index, Value): table
     self:WaitCheck()
     return {
-        Index = self:CheckValue(Index), 
-        Value = self:CheckValue(Value)
+        Index = self:SerializeValue(Index),
+        Value = self:SerializeValue(Value),
     }
 end
 
 function Module:ReadPacket(Packet: table): (any, any)
     if typeof(Packet) ~= "table" then return Packet end
-    
-    local Key = self:CheckValue(Packet.Index, true)
-    local Value = self:CheckValue(Packet.Value, true)
+    local Key = self:DeserializeValue(Packet.Index)
+    local Value = self:DeserializeValue(Packet.Value)
     self:WaitCheck()
-
     return Key, Value
 end
 
 function Module:SerializeTable(Table: table): table
-    --// Check cache for existing
-    local Cached = SerializeCache[Table]
-    if Cached then return Cached end
-
-    local Serialized = {}
-    SerializeCache[Table] = Serialized
-
-    for Index, Value in next, Table do
-        local Packet = self:MakePacket(Index, Value)
-        table.insert(Serialized, Packet)
+    if typeof(Table) ~= "table" then
+        return { self:SerializeValue(Table) }
     end
-
-    return Serialized
+    -- If already a typed snapshot list (array of args), encode each
+    local out = {}
+    local maxn = table.maxn(Table)
+    if maxn > 0 then
+        for i = 1, maxn do
+            out[i] = self:SerializeValue(Table[i])
+        end
+        -- also copy non-array keys
+        for k, v in next, Table do
+            if typeof(k) ~= "number" or k < 1 or k > maxn or k % 1 ~= 0 then
+                out[k] = self:SerializeValue(v)
+            end
+        end
+        return out
+    end
+    return self:SerializeValue(Table)
 end
 
 function Module:DeserializeTable(Serialized: table): table
-    --// Check for cached
-    local Cached = DeserializeCache[Serialized]
-    if Cached then return Cached end
-
-    local Table = {}
-    DeserializeCache[Serialized] = Table
-    
-    for _, Packet in next, Serialized do
-        local Index, Value = self:ReadPacket(Packet)
-        if Index == nil then continue end
-
-        Table[Index] = Value
+    if typeof(Serialized) ~= "table" then return Serialized end
+    if Serialized.__t == "table" then
+        return self:DeserializeValue(Serialized)
     end
-
-    return Table
+    local out = {}
+    for k, v in next, Serialized do
+        out[k] = self:DeserializeValue(v)
+    end
+    return out
 end
 
 function Module:SetChannel(NewChannel: number)
@@ -219,11 +318,22 @@ function Module:ConsolePrint(...)
 end
 
 function Module:QueueLog(Data)
-    spawn(function()
-        local SerializedArgs = self:SerializeTable(Data.Args)
-        Data.Args = SerializedArgs
-
-        self:Communicate("QueueLog", Data)
+    -- C1: Args should already be snapshotted in Process; encode for transport
+    task.spawn(function()
+        local ok, err = pcall(function()
+            if Data.Args and not Data.ArgsSerialized then
+                Data.Args = self:SerializeTable(Data.Args)
+                Data.ArgsSerialized = true
+            end
+            if Data.ReturnValues and typeof(Data.ReturnValues) == "table" and not Data.ReturnsSerialized then
+                Data.ReturnValues = self:SerializeTable(Data.ReturnValues)
+                Data.ReturnsSerialized = true
+            end
+            self:Communicate("QueueLog", Data)
+        end)
+        if not ok then
+            warn("[Wyvern Spy] QueueLog error:", err)
+        end
     end)
 end
 
@@ -242,7 +352,7 @@ function Module:ChannelIndex(Channel, Property: string)
         return Hook:Index(Channel, Property)
     end
 
-    --// Some executors return a UserData type
+    
     return Channel[Property]
 end
 
@@ -276,7 +386,7 @@ end
 function Module:CreateChannel(): number
     local ChannelID, Event = self:CreateCommChannel()
 
-    --// Connect GetCommCallback function
+    
     Event.Event:Connect(function(Type: string, ...)
         local Callback = self:GetCommCallback(Type)
         if Callback then
