@@ -1,3 +1,6 @@
+if getgenv and getgenv()._WyvernLoaded then return end
+if getgenv then getgenv()._WyvernLoaded = true end
+
 local Configuration = {
 	UseWorkspace = false,
 	NoActors = true,
@@ -44,7 +47,7 @@ local function HttpGet(Url)
 end
 
 local Base = Configuration.RepoUrl:gsub("/+$", "")
-local CACHE_VER = "20260828a"
+local CACHE_VER = "20260828b"
 
 Out("loading Files")
 local FilesSource = HttpGet(Base .. "/src/utils/Files.lua?v=" .. CACHE_VER)
