@@ -518,12 +518,13 @@ end
 
 function Process:GetRemoteData(Id: string)
     local RemoteOptions = self.RemoteOptions
+	if Id == nil then
+		return { Excluded = false, Blocked = false }
+	end
 
-    
 	local Existing = RemoteOptions[Id]
 	if Existing then return Existing end
-	
-    
+
 	local Data = {
 		Excluded = false,
 		Blocked = false
@@ -556,23 +557,24 @@ function Process:PromptDiscordInvite(InviteCode: string)
 end
 
 local ProcessCallback = newcclosure(function(Data: RemoteData, Remote, ...): table?
-    
     local OriginalFunc = Data.OriginalFunc
     local Id = Data.Id
     local Method = Data.Method
 
-    
-    local RemoteData = Process:GetRemoteData(Id)
-    if RemoteData.Blocked then return {} end
+    if Id ~= nil then
+        local RemoteData = Process:GetRemoteData(Id)
+        if RemoteData and RemoteData.Blocked then
+            return {}
+        end
+    end
 
-    
     local Spoof = Process:GetRemoteSpoof(Remote, Method, OriginalFunc, ...)
     if Spoof then return Spoof end
 
-    
-    if not OriginalFunc then return end
+    if not OriginalFunc then
+        return nil
+    end
 
-    
     return {
         OriginalFunc(Remote, ...)
     }
@@ -584,6 +586,18 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
     local IsReceive = Data.IsReceive
 
 	if TransferType and not self:RemoteAllowed(Remote, TransferType, Method) then return end
+
+	-- Resolve Id early (required before ProcessCallback / GetRemoteData)
+	local Id = Data.Id
+	if Id == nil and Communication and Communication.GetDebugId then
+		local ok, got = pcall(function()
+			return Communication:GetDebugId(Remote)
+		end)
+		if ok then
+			Id = got
+			Data.Id = Id
+		end
+	end
 
 	-- C3: respect pause / filters BEFORE expensive work (still call original below)
 	local SkipLog = false
@@ -606,7 +620,6 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
 		end
 	end
 
-	-- Always invoke original first-class path
 	local ExtraData = self.ExtraData
 	if ExtraData then
 		self:Merge(Data, ExtraData)
@@ -620,7 +633,6 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
 	end
 
 	-- Capture path: snapshot args NOW (C1) then queue
-	local Id = Communication:GetDebugId(Remote)
 	local ClassData = self:GetClassData(Remote)
 	local Timestamp = tick()
 
