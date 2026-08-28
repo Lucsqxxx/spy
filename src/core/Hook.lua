@@ -227,10 +227,19 @@ function Hook:HookRemoteTypeIndex(ClassName: string, FuncName: string)
 end
 
 function Hook:HookRemoteIndexes()
+	-- C4: hook every documented Send alias (FireServer + fireServer, etc.)
 	local RemoteClassData = Process.RemoteClassData
+	local Seen = {}
 	for ClassName, Data in RemoteClassData do
-		local FuncName = Data.Send[1]
-		self:HookRemoteTypeIndex(ClassName, FuncName)
+		for _, FuncName in Data.Send do
+			local key = ClassName .. "." .. FuncName
+			if not Seen[key] then
+				Seen[key] = true
+				pcall(function()
+					self:HookRemoteTypeIndex(ClassName, FuncName)
+				end)
+			end
+		end
 	end
 end
 
