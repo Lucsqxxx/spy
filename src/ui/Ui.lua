@@ -295,7 +295,7 @@ function Ui:CreateMainWindow()
 
 	--// Check if the font was successfully downloaded
 	self:FontWasSuccessful()
-	self:AuraCounterService()
+	-- Aura disabled (Cobalt-style static title)
 
 	--// UiVisible flag callback
 	Flags:SetFlagCallback("UiVisible", function(self, Visible)
@@ -311,7 +311,7 @@ function Ui:ShowModal(Lines: table)
 
 	--// Modal Window
 	local ModalWindow = Window:PopupModal({
-		Title = "Wyvern Spy"
+		Title = "Wyvern"
 	})
 	ModalWindow:Label({
 		Text = Message,
@@ -436,7 +436,7 @@ function Ui:DisplayAura()
     local AURADELAY = Rand:NextInteger(1, 5)
 
 	--// Title
-	local Title = `Wyvern Spy`
+	local Title = `Wyvern`
 	local Seasonal = self:TurnSeasonal(Title)
     Window:SetTitle(Seasonal)
 
@@ -452,40 +452,123 @@ function Ui:AuraCounterService()
 end
 
 function Ui:CreateWindowContent(Window)
-    --// Window group
-    -- Horizontal split: remotes list (left) + tabs (right) — matches original Wyvern Spy layout
-    local Layout = Window:List({
-        UiPadding = 4,
-        HorizontalFlex = Enum.UIFlexAlignment.Fill,
-        VerticalFlex = Enum.UIFlexAlignment.Fill,
-        FillDirection = Enum.FillDirection.Horizontal,
-        Fill = true
-    })
+	-- Cobalt-inspired: left rail (filters + list) | right detail tabs
+	local Layout = Window:List({
+		UiPadding = 0,
+		HorizontalFlex = Enum.UIFlexAlignment.Fill,
+		VerticalFlex = Enum.UIFlexAlignment.Fill,
+		FillDirection = Enum.FillDirection.Horizontal,
+		Fill = true,
+	})
 
-	--// Remotes list (left sidebar)
-    self.RemotesList = Layout:Canvas({
-        Scroll = true,
-        UiPadding = 4,
-        AutomaticSize = Enum.AutomaticSize.None,
-        FlexMode = Enum.UIFlexMode.None,
-        Size = UDim2.new(0, 150, 1, 0)
-    })
+	local Sidebar = Layout:List({
+		UiPadding = 8,
+		FillDirection = Enum.FillDirection.Vertical,
+		Size = UDim2.new(0, 240, 1, 0),
+		HorizontalFlex = Enum.UIFlexAlignment.Fill,
+	})
 
-	--// Tab box (Editor / Options / Remote)
+	-- Outgoing / Incoming segmented filter (Cobalt-style)
+	local FilterRow = Sidebar:Row({ Size = UDim2.new(1, 0, 0, 30) })
+	self.ListFilter = "All" -- All | Out | In
+	local function setFilter(mode)
+		self.ListFilter = mode
+		self:ApplyListFilter()
+	end
+	FilterRow:Button({
+		Text = "Outgoing",
+		Size = UDim2.new(0.5, -4, 1, 0),
+		Callback = function()
+			setFilter("Out")
+		end,
+	})
+	FilterRow:Button({
+		Text = "Incoming",
+		Size = UDim2.new(0.5, -4, 1, 0),
+		Callback = function()
+			setFilter("In")
+		end,
+	})
+
+	-- Search
+	local SearchBox = Sidebar:InputText({
+		Label = "",
+		Placeholder = "Search remotes…",
+		Value = "",
+		Size = UDim2.new(1, 0, 0, 28),
+		Callback = function(_, text)
+			self.ListSearch = (text or ""):lower()
+			self:ApplyListFilter()
+		end,
+	})
+	self.SearchBox = SearchBox
+	self.ListSearch = ""
+
+	self.RemotesList = Sidebar:Canvas({
+		Scroll = true,
+		UiPadding = 4,
+		AutomaticSize = Enum.AutomaticSize.None,
+		FlexMode = Enum.UIFlexMode.Fill,
+		Size = UDim2.new(1, 0, 1, -70),
+	})
+	self.RemotesListEmpty = self.RemotesList:Label({
+		Text = "No traffic yet",
+		TextColor3 = Color3.fromRGB(120, 120, 130),
+	})
+
 	local InfoSelector = Layout:TabSelector({
-        NoAnimation = true,
-        Size = UDim2.new(1, -156, 1, 0),
-    })
+		NoAnimation = true,
+		Size = UDim2.new(1, -248, 1, 0),
+	})
 
 	self.InfoSelector = InfoSelector
 	self.CanvasLayout = Layout
 
-	--// Make tabs
 	self:MakeEditorTab(InfoSelector)
 	self:MakeOptionsTab(InfoSelector)
-	
 	if Config.Debug then
 		self:ConsoleTab(InfoSelector)
+	end
+end
+
+function Ui:ApplyListFilter()
+	local mode = self.ListFilter or "All"
+	local q = self.ListSearch or ""
+	local Logs = self.Logs
+	if not Logs then return end
+	local any = false
+	for _, Header in pairs(Logs) do
+		local data = Header.Data
+		local show = true
+		if data then
+			if mode == "Out" and data.IsReceive then show = false end
+			if mode == "In" and not data.IsReceive then show = false end
+			if q ~= "" and show then
+				local name = string.lower(tostring(data.Remote or data.RemotePath or ""))
+				if not string.find(name, q, 1, true) then
+					show = false
+				end
+			end
+		end
+		local node = Header.TreeNode
+		if node and node.Instance then
+			node.Instance.Visible = show
+		end
+		if Header.Entries then
+			for _, entry in ipairs(Header.Entries) do
+				if entry.Selectable and entry.Selectable.Instance then
+					local es = show
+					if mode == "Out" and entry.IsReceive then es = false end
+					if mode == "In" and not entry.IsReceive then es = false end
+					entry.Selectable.Instance.Visible = es
+					if es then any = true end
+				end
+			end
+		end
+		if show then any = true end
+	end
+	if self.RemotesListEmpty and self.RemotesListEmpty.Instance then
+		self.RemotesListEmpty.Instance.Visible = not any
 	end
 end
 
@@ -1318,8 +1401,9 @@ function Ui:GetRemoteHeader(Data: Log)
 	if not NoTreeNodes then
 		HeaderData.TreeNode = RemotesList:TreeNode({
 			LayoutOrder = -1 * RemotesCount,
-			Title = RemoteName
+			Title = RemoteName .. "   x0"
 		})
+		HeaderData.RemoteName = RemoteName
 	end
 
 	function HeaderData:CheckLimit()
@@ -1332,14 +1416,17 @@ function Ui:GetRemoteHeader(Data: Log)
 	end
 
 	function HeaderData:LogAdded(Data)
-		--// Increment log count
 		self.LogCount += 1
 		self:CheckLimit()
-
-		--// Add entry
-		local Entries = self.Entries
-		table.insert(Entries, Data)
-		
+		table.insert(self.Entries, Data)
+		-- Cobalt-style count on header
+		if self.TreeNode and self.TreeNode.Instance then
+			local titleLbl = self.TreeNode.Instance:FindFirstChild("Title", true)
+				or self.TreeNode.Instance:FindFirstChildWhichIsA("TextLabel", true)
+			if titleLbl then
+				titleLbl.Text = (self.RemoteName or "Remote") .. "   x" .. tostring(self.LogCount)
+			end
+		end
 		return self
 	end
 
@@ -1428,6 +1515,10 @@ function Ui:CreateLog(Data: Log)
 	--// Paused
 	local Paused = Flags:GetFlagValue("Paused")
 	if Paused then return end
+
+	if self.RemotesListEmpty and self.RemotesListEmpty.Instance then
+		self.RemotesListEmpty.Instance.Visible = false
+	end
 
 	--// Check caller (Ignore exploit calls)
 	local LogExploit = Flags:GetFlagValue("LogExploit")
