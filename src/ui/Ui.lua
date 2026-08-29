@@ -523,25 +523,37 @@ function Ui:TypeBadge(Value): string
 end
 
 function Ui:TypeBadgeColor(Value): Color3
+	-- if/elseif only (no table keys) — avoids Luau reserved-word parse issues
 	local badge = self:TypeBadge(Value)
-	local map = {
-		string = Color3.fromRGB(180, 220, 150),
-		number = Color3.fromRGB(150, 200, 255),
-		boolean = Color3.fromRGB(230, 180, 120),
-		["nil"] = Color3.fromRGB(140, 140, 150),
-		table = Color3.fromRGB(200, 170, 255),
-		Instance = Color3.fromRGB(120, 200, 220),
-		Vector3 = Color3.fromRGB(130, 210, 190),
-		Vector2 = Color3.fromRGB(130, 210, 190),
-		CFrame = Color3.fromRGB(160, 190, 230),
-		Color3 = Color3.fromRGB(255, 170, 140),
-		EnumItem = Color3.fromRGB(220, 200, 140),
-		buffer = Color3.fromRGB(170, 170, 190),
-		["function"] = Color3.fromRGB(255, 150, 180),
-	}
-	if map[badge] then return map[badge] end
-	-- ClassName-ish (Part, RemoteEvent, etc.)
-	if typeof(Value) == "Instance" or (typeof(Value) == "table" and Value.__t == "Instance") then
+	if badge == "string" then
+		return Color3.fromRGB(180, 220, 150)
+	elseif badge == "number" then
+		return Color3.fromRGB(150, 200, 255)
+	elseif badge == "boolean" then
+		return Color3.fromRGB(230, 180, 120)
+	elseif badge == "nil" then
+		return Color3.fromRGB(140, 140, 150)
+	elseif badge == "table" then
+		return Color3.fromRGB(200, 170, 255)
+	elseif badge == "Instance" then
+		return Color3.fromRGB(120, 200, 220)
+	elseif badge == "Vector3" or badge == "Vector2" then
+		return Color3.fromRGB(130, 210, 190)
+	elseif badge == "CFrame" then
+		return Color3.fromRGB(160, 190, 230)
+	elseif badge == "Color3" then
+		return Color3.fromRGB(255, 170, 140)
+	elseif badge == "EnumItem" then
+		return Color3.fromRGB(220, 200, 140)
+	elseif badge == "buffer" then
+		return Color3.fromRGB(170, 170, 190)
+	elseif badge == "function" then
+		return Color3.fromRGB(255, 150, 180)
+	end
+	if typeof(Value) == "Instance" then
+		return Color3.fromRGB(120, 200, 220)
+	end
+	if typeof(Value) == "table" and Value.__t == "Instance" then
 		return Color3.fromRGB(120, 200, 220)
 	end
 	return Color3.fromRGB(180, 185, 195)
