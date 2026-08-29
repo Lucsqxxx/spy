@@ -341,6 +341,7 @@ function Process:CheckIsSupported(): boolean
 end
 
 function Process:GetClassData(Remote: Instance): table?
+	if typeof(Remote) ~= "Instance" then return nil end
     local RemoteClassData = self.RemoteClassData
     local ClassName = Hook:Index(Remote, "ClassName")
 
@@ -644,7 +645,7 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
 	end
 
 	local ArgsSnap = self:SnapshotArgs(...)
-	local Fingerprint = self:ArgFingerprint(Method, ArgsSnap)
+	local Fingerprint = self:ArgFingerprint(Method or "?", ArgsSnap)
 
 	self:Merge(Data, {
 		Remote = cloneref and cloneref(Remote) or Remote,
