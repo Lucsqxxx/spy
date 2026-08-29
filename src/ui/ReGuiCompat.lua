@@ -6,9 +6,22 @@ local ReGui = {
 	Themes = {},
 	Windows = {},
 	Initialised = true,
-	DefaultFont = Font.fromEnum(Enum.Font.Code),
-	DefaultTextSize = 13,
+	-- Sleek UI: BuilderSans; monospace reserved for code editor
+	DefaultFont = Font.fromEnum(Enum.Font.Gotham),
+	DefaultFontMedium = Font.fromEnum(Enum.Font.GothamMedium),
+	DefaultFontBold = Font.fromEnum(Enum.Font.GothamBold),
+	DefaultCodeFont = Font.fromEnum(Enum.Font.Code),
+	DefaultTextSize = 14,
 }
+
+pcall(function()
+	ReGui.DefaultFont = Font.fromEnum(Enum.Font.BuilderSans)
+	ReGui.DefaultFontMedium = Font.fromEnum(Enum.Font.BuilderSansMedium)
+	ReGui.DefaultFontBold = Font.fromEnum(Enum.Font.BuilderSansBold)
+end)
+pcall(function()
+	ReGui.DefaultCodeFont = Font.fromEnum(Enum.Font.RobotoMono)
+end)
 
 function ReGui:SetFont(fontFace, textSize)
 	if fontFace then
@@ -19,11 +32,41 @@ function ReGui:SetFont(fontFace, textSize)
 	end
 end
 
-local function applyFont(gui)
+local function safeFont(enumName, fallback)
+	local ok, f = pcall(function()
+		return Enum.Font[enumName]
+	end)
+	if ok and f then return f end
+	return fallback
+end
+
+local function applyFont(gui, style)
+	-- style: nil/"ui" | "medium" | "bold" | "code"
+	style = style or "ui"
 	pcall(function()
-		gui.FontFace = ReGui.DefaultFont
+		if style == "code" then
+			local f = safeFont("RobotoMono", Enum.Font.Code)
+			gui.Font = f
+			pcall(function() gui.FontFace = Font.fromEnum(f) end)
+		elseif style == "bold" then
+			local f = safeFont("BuilderSansBold", Enum.Font.GothamBold)
+			gui.Font = f
+			pcall(function() gui.FontFace = Font.fromEnum(f) end)
+		elseif style == "medium" then
+			local f = safeFont("BuilderSansMedium", Enum.Font.GothamMedium)
+			gui.Font = f
+			pcall(function() gui.FontFace = Font.fromEnum(f) end)
+		else
+			local f = safeFont("BuilderSans", Enum.Font.Gotham)
+			gui.Font = f
+			pcall(function() gui.FontFace = Font.fromEnum(f) end)
+		end
+		if not gui.TextSize or gui.TextSize < 12 then
+			gui.TextSize = ReGui.DefaultTextSize or 14
+		end
 	end)
 end
+
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -291,7 +334,7 @@ function Element:_create(class, config)
 		label.TextYAlignment = Enum.TextYAlignment.Center
 		label.TextColor3 = config.TextColor3 or C.Text
 		label.TextSize = 13
-		label.Font = Enum.Font.Gotham
+		label.Font = Enum.Font.BuilderSans
 		label.TextWrapped = config.TextWrapped == true
 		label.RichText = config.RichText or false
 		label.Text = tostring(config.Text or "")
@@ -315,7 +358,7 @@ function Element:_create(class, config)
 		label.TextYAlignment = Enum.TextYAlignment.Top
 		label.TextColor3 = C.TextDim
 		label.TextSize = 12
-		label.Font = Enum.Font.Gotham
+		label.Font = Enum.Font.BuilderSans
 		label.TextWrapped = true
 		label.Text = table.concat(lines, "\n")
 		label.Parent = host
@@ -337,7 +380,7 @@ function Element:_create(class, config)
 			t.Text = "— " .. tostring(config.Text) .. " —"
 			t.TextColor3 = C.Accent
 			t.TextSize = 12
-			t.Font = Enum.Font.GothamBold
+			t.Font = Enum.Font.BuilderSansBold
 			t.TextXAlignment = Enum.TextXAlignment.Left
 			t.Parent = frame
 		else
@@ -364,7 +407,7 @@ function Element:_create(class, config)
 		btn.BackgroundColor3 = C.Btn
 		btn.TextColor3 = C.Text
 		btn.TextSize = 12
-		btn.Font = Enum.Font.Code
+		btn.Font = Enum.Font.BuilderSansMedium
 		btn.Text = tostring(config.Text or config.Label or "Button")
 		btn.TextTruncate = Enum.TextTruncate.AtEnd
 		btn.BorderSizePixel = 0
@@ -403,7 +446,7 @@ function Element:_create(class, config)
 		btn.BackgroundTransparency = 1
 		btn.TextColor3 = config.TextColor3 or C.Text
 		btn.TextSize = 12
-		btn.Font = Enum.Font.Code
+		btn.Font = Enum.Font.BuilderSansMedium
 		btn.Text = tostring(config.Text or "")
 		btn.TextXAlignment = config.TextXAlignment or Enum.TextXAlignment.Left
 		btn.TextTruncate = Enum.TextTruncate.AtEnd
@@ -464,7 +507,7 @@ function Element:_create(class, config)
 		box.Text = ""
 		box.TextColor3 = Color3.new(1, 1, 1)
 		box.TextSize = 12
-		box.Font = Enum.Font.GothamBold
+		box.Font = Enum.Font.BuilderSansBold
 		box.BorderSizePixel = 0
 		box.AutoButtonColor = false
 		box.Parent = holder
@@ -478,7 +521,7 @@ function Element:_create(class, config)
 		lab.Text = tostring(config.Label or config.Text or "")
 		lab.TextColor3 = C.Text
 		lab.TextXAlignment = Enum.TextXAlignment.Left
-		lab.Font = Enum.Font.Gotham
+		lab.Font = Enum.Font.BuilderSans
 		lab.TextSize = 13
 		lab.Parent = holder
 
@@ -680,8 +723,8 @@ function Element:_create(class, config)
 		lineBox.TextYAlignment = Enum.TextYAlignment.Top
 		lineBox.TextColor3 = C.LineNum
 		lineBox.TextSize = config.FontSize or 13
-		lineBox.Font = Enum.Font.Code
-		applyFont(lineBox)
+		lineBox.Font = Enum.Font.RobotoMono
+		applyFont(lineBox, "code")
 		lineBox.Text = "1"
 		lineBox.Parent = gutter
 
@@ -701,8 +744,8 @@ function Element:_create(class, config)
 		box.TextXAlignment = Enum.TextXAlignment.Left
 		box.TextYAlignment = Enum.TextYAlignment.Top
 		box.TextSize = config.FontSize or 13
-		box.Font = Enum.Font.Code
-		applyFont(box)
+		box.Font = Enum.Font.RobotoMono
+		applyFont(box, "code")
 		box.ClearTextOnFocus = false
 		box.MultiLine = true
 		box.TextWrapped = false 
@@ -860,7 +903,7 @@ function Element:_create(class, config)
 		header.BackgroundTransparency = 1
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextTruncate = Enum.TextTruncate.AtEnd
-		header.Font = Enum.Font.GothamMedium
+		header.Font = Enum.Font.BuilderSansMedium
 		header.TextSize = 13
 		header.TextColor3 = C.Text
 		header.AutoButtonColor = false
@@ -950,7 +993,7 @@ function Element:_create(class, config)
 			btn.Text = name
 			btn.TextColor3 = C.Text
 			btn.TextSize = 12
-			btn.Font = Enum.Font.Gotham
+			btn.Font = Enum.Font.BuilderSansMedium
 			btn.BorderSizePixel = 0
 			btn.AutoButtonColor = false
 			btn.Parent = tabBar
@@ -1050,7 +1093,7 @@ function Element:_create(class, config)
 		box.PlaceholderColor3 = C.TextDim
 		box.TextColor3 = C.Text
 		box.TextSize = 13
-		box.Font = Enum.Font.Gotham
+		box.Font = Enum.Font.BuilderSans
 		box.ClearTextOnFocus = false
 		box.TextXAlignment = Enum.TextXAlignment.Left
 		box.Parent = holder
@@ -1080,7 +1123,7 @@ function Element:_create(class, config)
 		lab.Text = tostring(config.Label or config.Text or "")
 		lab.TextColor3 = C.Text
 		lab.TextXAlignment = Enum.TextXAlignment.Left
-		lab.Font = Enum.Font.Code
+		lab.Font = Enum.Font.BuilderSans
 		lab.TextSize = 12
 		lab.Parent = holder
 		applyFont(lab)
@@ -1090,7 +1133,7 @@ function Element:_create(class, config)
 		box.BackgroundColor3 = C.Input
 		box.TextColor3 = C.Text
 		box.Text = tostring(config.Value or 0)
-		box.Font = Enum.Font.Code
+		box.Font = Enum.Font.BuilderSans
 		box.TextSize = 12
 		box.ClearTextOnFocus = false
 		box.Parent = holder
@@ -1201,7 +1244,7 @@ function Element:PopupModal(config)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or "Wyvern Spy"
 	title.TextColor3 = C.Text
-	title.Font = Enum.Font.GothamBold
+	title.Font = Enum.Font.BuilderSansBold
 	title.TextSize = 15
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.ZIndex = 52
@@ -1213,7 +1256,7 @@ function Element:PopupModal(config)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 60)
 	closeBtn.Text = "×"
 	closeBtn.TextColor3 = Color3.fromRGB(255, 210, 210)
-	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.Font = Enum.Font.BuilderSansBold
 	closeBtn.TextSize = 16
 	closeBtn.BorderSizePixel = 0
 	closeBtn.ZIndex = 53
@@ -1380,10 +1423,11 @@ function ReGui:Window(config)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
 	title.TextColor3 = Color3.fromRGB(235, 235, 240)
-	title.Font = Enum.Font.GothamMedium
-	title.TextSize = 14
+	title.Font = Enum.Font.BuilderSansMedium
+	title.TextSize = 15
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = titleBar
+	applyFont(title, "medium")
 
 	local minBtn = Instance.new("TextButton")
 	minBtn.Name = "Minimize"
@@ -1392,7 +1436,7 @@ function ReGui:Window(config)
 	minBtn.BackgroundTransparency = 1
 	minBtn.Text = "─"
 	minBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
-	minBtn.Font = Enum.Font.Gotham
+	minBtn.Font = Enum.Font.BuilderSans
 	minBtn.TextSize = 14
 	minBtn.Parent = titleBar
 
@@ -1402,7 +1446,7 @@ function ReGui:Window(config)
 	close.BackgroundTransparency = 1
 	close.Text = "×"
 	close.TextColor3 = Color3.fromRGB(180, 180, 190)
-	close.Font = Enum.Font.Gotham
+	close.Font = Enum.Font.BuilderSans
 	close.TextSize = 18
 	close.BorderSizePixel = 0
 	close.Parent = titleBar
