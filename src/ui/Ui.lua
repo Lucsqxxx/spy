@@ -1267,7 +1267,8 @@ function Ui:SetFocusedRemote(Data)
 	local NoVariables = Flags:GetFlagValue("NoVariables")
 
 	--// Unpack info
-	local RemoteData = Process:GetRemoteData(Id)
+	local RemoteData = Process:GetRemoteData(Id) or { Excluded = false, Blocked = false }
+	ClassData = ClassData or {}
 	local IsRemoteFunction = ClassData.IsRemoteFunction
 	local RemoteName = self:FilterName(`{Remote}`, 50)
 
@@ -1510,9 +1511,13 @@ function Ui:SetFocusedRemote(Data)
 			{
 				Text = "Remove log",
 				Callback = function()
-					InfoSelector:RemoveTab(Tab)
-					Data.Selectable:Remove()
-					HeaderData:Remove()
+					pcall(function() InfoSelector:RemoveTab(Tab) end)
+					pcall(function()
+						if Data.Selectable then Data.Selectable:Remove() end
+					end)
+					pcall(function()
+						if HeaderData and HeaderData.Remove then HeaderData:Remove() end
+					end)
 					ActiveData = nil
 				end,
 			},
@@ -1860,8 +1865,11 @@ function Ui:CreateLog(Data: Log)
 	local Timestamp = Data.Timestamp
 	local IsExploit = Data.IsExploit
 	
-	local IsNilParent = Hook:Index(Remote, "Parent") == nil
-	local RemoteData = Process:GetRemoteData(Id)
+	local IsNilParent = false
+	pcall(function()
+		IsNilParent = Hook:Index(Remote, "Parent") == nil
+	end)
+	local RemoteData = Process:GetRemoteData(Id) or { Excluded = false, Blocked = false }
 
 	--// Paused
 	local Paused = Flags:GetFlagValue("Paused")
@@ -1896,8 +1904,9 @@ function Ui:CreateLog(Data: Log)
 	Data.ValueSwaps = Generation:MakeValueSwapsTable(Timestamp)
 
 	--// Generate log title
-	local Color = Config.MethodColors[Method:lower()]
-	local Text = NoTreeNodes and `{Remote} | {Method}` or Method
+	local MethodName = tostring(Method or "unknown")
+	local Color = (Config.MethodColors and Config.MethodColors[MethodName:lower()]) or Color3.fromRGB(200, 200, 210)
+	local Text = NoTreeNodes and `{Remote} | {MethodName}` or MethodName
 
 	--// FindStringForName check
 	local FindString = Flags:GetFlagValue("FindStringForName")
@@ -1966,12 +1975,16 @@ function Ui:CreateLog(Data: Log)
 		end
 	end)
 
-	Header:LogAdded(Data)
+	if Header and Header.LogAdded then
+		Header:LogAdded(Data)
+	end
 
 	--// Auto select check
 	local GroupSelected = ActiveData and ActiveData.HeaderData == Header
 	if SelectNewest and GroupSelected then
-		self:SetFocusedRemote(Data)
+		pcall(function()
+			self:SetFocusedRemote(Data)
+		end)
 	end
 end
 
