@@ -8,8 +8,8 @@ local Configuration = {
 	PreferLocal = false,
 	FolderName = "Wyvern Spy",
 	Directory = "Wyvern Spy",
-	RepoUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main",
-	ParserUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/refs/heads/main/dist/Parser.luau",
+	RepoUrl = "https://cdn.jsdelivr.net/gh/Lucsqxxx/spy@main",
+	ParserUrl = "https://cdn.jsdelivr.net/gh/Lucsqxxx/spy@main/dist/Parser.luau",
 }
 
 local Parameters = { ... }
@@ -47,7 +47,7 @@ local function HttpGet(Url)
 end
 
 local Base = Configuration.RepoUrl:gsub("/+$", "")
-local CACHE_VER = "20260829i"
+local CACHE_VER = "20260829j"
 
 Out("loading Files")
 local FilesSource = HttpGet(Base .. "/src/utils/Files.lua?v=" .. CACHE_VER)
