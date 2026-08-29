@@ -451,6 +451,76 @@ function Ui:AuraCounterService()
     end)
 end
 
+
+function Ui:TypePip(ClassData, Remote): string
+	local cn = ""
+	pcall(function()
+		if ClassData and ClassData.IsRemoteFunction then
+			cn = "F"
+		elseif Remote and typeof(Remote) == "Instance" then
+			local n = Remote.ClassName
+			if n == "UnreliableRemoteEvent" then
+				cn = "U"
+			elseif n == "RemoteFunction" or n == "BindableFunction" then
+				cn = "F"
+			elseif n == "BindableEvent" then
+				cn = "B"
+			else
+				cn = "E"
+			end
+		else
+			cn = "E"
+		end
+	end)
+	if cn == "" then cn = "?" end
+	return "[" .. cn .. "]"
+end
+
+function Ui:UpdateListStatus()
+	local label = self.RemotesListEmpty
+	if not label or not label.Instance then return end
+	local paused = false
+	pcall(function()
+		paused = Flags:GetFlagValue("Paused") == true
+	end)
+	local hasLogs = false
+	if self.Logs then
+		for _ in pairs(self.Logs) do
+			hasLogs = true
+			break
+		end
+	end
+	if paused and not hasLogs then
+		label.Instance.Text = "Paused — enable capture in Options"
+		label.Instance.Visible = true
+	elseif paused and hasLogs then
+		label.Instance.Text = "Paused — list frozen"
+		label.Instance.Visible = true
+	elseif not hasLogs then
+		label.Instance.Text = "No traffic yet"
+		label.Instance.Visible = true
+	else
+		label.Instance.Visible = false
+	end
+end
+
+function Ui:FormatArgPreview(Value, Limit: number?): string
+	Limit = Limit or 80
+	local ty = typeof(Value)
+	if ty == "table" and Value.__t then
+		ty = Value.__t
+		if Value.path then return "Instance " .. tostring(Value.path):sub(1, Limit) end
+		if Value.str then return tostring(Value.str):sub(1, Limit) end
+	end
+	if ty == "Instance" then
+		local ok, p = pcall(function() return Value:GetFullName() end)
+		return (ok and p or tostring(Value)):sub(1, Limit)
+	end
+	local s = tostring(Value)
+	if #s > Limit then s = s:sub(1, Limit) .. "…" end
+	return s
+end
+
 function Ui:CreateWindowContent(Window)
 	-- Cobalt-inspired: left rail (filters + list) | right detail tabs
 	local Layout = Window:List({
@@ -461,10 +531,18 @@ function Ui:CreateWindowContent(Window)
 		Fill = true,
 	})
 
+	local Mobile = false
+	pcall(function()
+		Mobile = ReGui:IsMobileDevice() == true
+	end)
+	self.IsMobileUi = Mobile
+	local sideW = Mobile and 180 or 240
+	local searchH = Mobile and 34 or 28
+
 	local Sidebar = Layout:List({
-		UiPadding = 8,
+		UiPadding = Mobile and 6 or 8,
 		FillDirection = Enum.FillDirection.Vertical,
-		Size = UDim2.new(0, 240, 1, 0),
+		Size = UDim2.new(0, sideW, 1, 0),
 		HorizontalFlex = Enum.UIFlexAlignment.Fill,
 	})
 
@@ -473,7 +551,7 @@ function Ui:CreateWindowContent(Window)
 		Label = "",
 		Placeholder = "Search remotes…",
 		Value = "",
-		Size = UDim2.new(1, 0, 0, 28),
+		Size = UDim2.new(1, 0, 0, searchH),
 		Callback = function(_, text)
 			self.ListSearch = (text or ""):lower()
 			self:ApplyListFilter()
@@ -487,7 +565,7 @@ function Ui:CreateWindowContent(Window)
 		UiPadding = 4,
 		AutomaticSize = Enum.AutomaticSize.None,
 		FlexMode = Enum.UIFlexMode.Fill,
-		Size = UDim2.new(1, 0, 1, -36),
+		Size = UDim2.new(1, 0, 1, -(searchH + 8)),
 	})
 	self.RemotesListEmpty = self.RemotesList:Label({
 		Text = "No traffic yet",
@@ -496,7 +574,7 @@ function Ui:CreateWindowContent(Window)
 
 	local InfoSelector = Layout:TabSelector({
 		NoAnimation = true,
-		Size = UDim2.new(1, -248, 1, 0),
+		Size = UDim2.new(1, -(sideW + 8), 1, 0),
 	})
 
 	self.InfoSelector = InfoSelector
@@ -507,6 +585,13 @@ function Ui:CreateWindowContent(Window)
 	if Config.Debug then
 		self:ConsoleTab(InfoSelector)
 	end
+	self:UpdateListStatus()
+	-- Refresh status when pause toggles
+	pcall(function()
+		Flags:SetFlagCallback("Paused", function()
+			self:UpdateListStatus()
+		end)
+	end)
 end
 
 function Ui:ApplyListFilter()
@@ -1197,10 +1282,23 @@ function Ui:SetFocusedRemote(Data)
 			{
 				Text = "Copy remote path",
 				Callback = function()
-					SetClipboard(Parser:MakePathString({
-						Object = Remote,
-						NoVariables = true
-					}))
+					local path = Data.RemotePath
+					if not path then
+						path = Parser:MakePathString({
+							Object = Remote,
+							NoVariables = true
+						})
+					end
+					SetClipboard(path)
+				end,
+			},
+			{
+				Text = "Copy args",
+				Callback = function()
+					local ok, script = pcall(function()
+						return Generation:TableScript(Module, Args)
+					end)
+					SetClipboard(ok and script or self:FormatArgPreview(Args, 500))
 				end,
 			},
 			{
@@ -1242,6 +1340,43 @@ function Ui:SetFocusedRemote(Data)
 			MaxColumns = 2
 		}
 	})
+
+	-- 3.3 Copy value / path per argument
+	Tab:Label({ Text = "Arguments — tap Copy on a row", TextColor3 = Color3.fromRGB(140, 140, 148) })
+	local argList = Args
+	if typeof(argList) == "table" then
+		local maxn = table.maxn(argList)
+		if maxn == 0 then
+			for k in next, argList do
+				maxn = math.max(maxn, typeof(k) == "number" and k or 0)
+			end
+		end
+		for i = 1, math.min(maxn, 24) do
+			local val = argList[i]
+			local preview = self:FormatArgPreview(val, 60)
+			local row = Tab:Row({ Size = UDim2.new(1, 0, 0, self.IsMobileUi and 32 or 26) })
+			row:Label({ Text = "[" .. i .. "] " .. preview })
+			row:Button({
+				Text = "Copy",
+				Size = UDim2.fromOffset(self.IsMobileUi and 56 or 48, self.IsMobileUi and 28 or 22),
+				Callback = function()
+					local text
+					if typeof(val) == "Instance" then
+						local ok, p = pcall(function() return val:GetFullName() end)
+						text = ok and p or tostring(val)
+					elseif typeof(val) == "table" then
+						local ok, s = pcall(function()
+							return Generation:TableScript(Module, { val })
+						end)
+						text = ok and s or self:FormatArgPreview(val, 400)
+					else
+						text = tostring(val)
+					end
+					SetClipboard(text)
+				end,
+			})
+		end
+	end
 	
 	--// Arguments table script
 	if TableArgs then
@@ -1369,11 +1504,13 @@ function Ui:GetRemoteHeader(Data: Log)
 
 	--// Create new treenode element
 	if not NoTreeNodes then
+		local Pip = self:TypePip(Data.ClassData, Remote)
 		HeaderData.TreeNode = RemotesList:TreeNode({
 			LayoutOrder = -1 * RemotesCount,
-			Title = RemoteName .. "   x0"
+			Title = Pip .. " " .. RemoteName .. "   x0"
 		})
 		HeaderData.RemoteName = RemoteName
+		HeaderData.TypePip = Pip
 	end
 
 	function HeaderData:CheckLimit()
@@ -1394,7 +1531,8 @@ function Ui:GetRemoteHeader(Data: Log)
 			local titleLbl = self.TreeNode.Instance:FindFirstChild("Title", true)
 				or self.TreeNode.Instance:FindFirstChildWhichIsA("TextLabel", true)
 			if titleLbl then
-				titleLbl.Text = (self.RemoteName or "Remote") .. "   x" .. tostring(self.LogCount)
+				local pip = self.TypePip or ""
+				titleLbl.Text = pip .. " " .. (self.RemoteName or "Remote") .. "   x" .. tostring(self.LogCount)
 			end
 		end
 		return self
@@ -1420,12 +1558,16 @@ function Ui:ClearLogs()
 	local Logs = self.Logs
 	local RemotesList = self.RemotesList
 
-	--// Clear all elements
 	RemotesCount = 0
 	RemotesList:ClearChildElements()
-
-	--// Clear logs from memory
 	table.clear(Logs)
+
+	-- restore empty label after clear
+	self.RemotesListEmpty = RemotesList:Label({
+		Text = "No traffic yet",
+		TextColor3 = Color3.fromRGB(120, 120, 130),
+	})
+	self:UpdateListStatus()
 end
 
 function Ui:QueueLog(Data)
@@ -1486,9 +1628,7 @@ function Ui:CreateLog(Data: Log)
 	local Paused = Flags:GetFlagValue("Paused")
 	if Paused then return end
 
-	if self.RemotesListEmpty and self.RemotesListEmpty.Instance then
-		self.RemotesListEmpty.Instance.Visible = false
-	end
+	self:UpdateListStatus()
 
 	--// Check caller (Ignore exploit calls)
 	local LogExploit = Flags:GetFlagValue("LogExploit")
