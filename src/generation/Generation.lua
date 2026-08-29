@@ -29,7 +29,7 @@ local Generation = {
 			{"%RemoteCall%"}
 		},
 		["Spam"] = {
-			{"-- Stop with Build > Undo Spam"},
+			{"-- Stop: Build > Undo Spam, or click SPAM ON in the title bar"},
 			{"getgenv()._WVS_SPAM = true"},
 			{"while getgenv()._WVS_SPAM do"},
 			{"%RemoteCall%", 2},
