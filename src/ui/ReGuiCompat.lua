@@ -194,7 +194,11 @@ function Element:__index(key)
 end
 
 function Element:_host()
+	-- Prefer explicit host (TreeNode body, Window content, etc.)
+	local override = rawget(self, "_hostOverride")
+	if override then return override end
 	local inst = self.Instance
+	if not inst then return nil end
 	local content = inst:FindFirstChild("Content")
 	if content then return content end
 	return inst
@@ -203,6 +207,10 @@ end
 function Element:_create(class, config)
 	config = config or {}
 	local host = self:_host()
+	if not host then
+		warn("[Wyvern UI] no host for", class)
+		return wrap(Instance.new("Frame"), class)
+	end
 
 	local function order(gui)
 		if config.LayoutOrder then gui.LayoutOrder = config.LayoutOrder end
@@ -414,10 +422,11 @@ function Element:_create(class, config)
 		btn.Text = tostring(config.Text or config.Label or "Button")
 		btn.TextTruncate = Enum.TextTruncate.AtEnd
 		btn.BorderSizePixel = 0
-		btn.AutoButtonColor = true
+		btn.AutoButtonColor = false
 		btn.Parent = host
 		order(btn)
 		corner(btn, 6)
+		pcall(function() btn.Style = Enum.ButtonStyle.Custom end)
 		applyFont(btn, "medium")
 		
 		if config.FlexFill then
@@ -982,6 +991,7 @@ function Element:_create(class, config)
 		local el = wrap(root, "TreeNode")
 		el._title = title
 		el._header = header
+		el._hostOverride = body
 		el._open = function() return open end
 		function el:_host() return body end
 		function el:SetTitle(t)
@@ -1574,6 +1584,7 @@ function ReGui:Window(config)
 
 	local win = wrap(frame, "Window")
 	function win:_host() return content end
+	win._hostOverride = content
 
 	local function setMinimized(v)
 		minimized = v
