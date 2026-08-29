@@ -31,29 +31,30 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 local C = {
-	-- Cobalt-inspired dark network-devtool palette
-	Bg = Color3.fromRGB(22, 22, 24),
-	BgDark = Color3.fromRGB(16, 16, 18),
-	Title = Color3.fromRGB(28, 28, 30),
-	TitleBot = Color3.fromRGB(24, 24, 26),
-	Border = Color3.fromRGB(48, 48, 52),
-	Text = Color3.fromRGB(230, 230, 235),
-	TextDim = Color3.fromRGB(140, 140, 148),
-	Accent = Color3.fromRGB(90, 140, 220),
-	Btn = Color3.fromRGB(36, 36, 40),
-	BtnHover = Color3.fromRGB(50, 50, 56),
-	Select = Color3.fromRGB(32, 36, 44),
-	SelectActive = Color3.fromRGB(42, 52, 68),
+	-- Refined dark theme
+	Bg = Color3.fromRGB(18, 18, 20),
+	BgDark = Color3.fromRGB(14, 14, 16),
+	Title = Color3.fromRGB(22, 22, 24),
+	TitleBot = Color3.fromRGB(20, 20, 22),
+	Border = Color3.fromRGB(42, 42, 48),
+	Text = Color3.fromRGB(228, 228, 232),
+	TextDim = Color3.fromRGB(130, 132, 140),
+	Accent = Color3.fromRGB(96, 140, 220),
+	Btn = Color3.fromRGB(32, 32, 38),
+	BtnHover = Color3.fromRGB(48, 48, 56),
+	Select = Color3.fromRGB(28, 32, 42),
+	SelectActive = Color3.fromRGB(40, 52, 72),
 	Input = Color3.fromRGB(12, 12, 14),
-	Check = Color3.fromRGB(90, 140, 220),
-	Green = Color3.fromRGB(100, 200, 140),
-	Yellow = Color3.fromRGB(220, 190, 80),
-	TabActive = Color3.fromRGB(40, 44, 52),
-	TabIdle = Color3.fromRGB(24, 24, 28),
-	RowAlt = Color3.fromRGB(20, 20, 22),
-	LineNum = Color3.fromRGB(90, 90, 98),
-	Gutter = Color3.fromRGB(18, 18, 20),
+	Check = Color3.fromRGB(96, 140, 220),
+	Green = Color3.fromRGB(110, 200, 150),
+	Yellow = Color3.fromRGB(220, 190, 90),
+	TabActive = Color3.fromRGB(38, 42, 52),
+	TabIdle = Color3.fromRGB(22, 22, 26),
+	RowAlt = Color3.fromRGB(16, 16, 18),
+	LineNum = Color3.fromRGB(88, 88, 96),
+	Gutter = Color3.fromRGB(16, 16, 18),
 }
+
 
 
 function ReGui:CheckConfig(Target, Defaults)
@@ -212,7 +213,7 @@ function Element:_create(class, config)
 		frame.ClipsDescendants = true
 		frame.Parent = host
 		order(frame)
-		corner(frame, 4)
+		corner(frame, 8)
 		if config.Border then stroke(frame, C.Border, 1) end
 		local layout = Instance.new("UIListLayout")
 		layout.Padding = UDim.new(0, 0)
@@ -844,15 +845,23 @@ function Element:_create(class, config)
 		root.BackgroundTransparency = 1
 		root.Size = UDim2.new(1, 0, 0, 0)
 		root.AutomaticSize = Enum.AutomaticSize.Y
+		root.ClipsDescendants = false
 		root.Parent = host
 		order(root)
 
+		local rowH = 20
+		pcall(function()
+			if ReGui:IsMobileDevice() then rowH = 28 end
+		end)
+
 		local header = Instance.new("TextButton")
-		header.Size = UDim2.new(1, 0, 0, 18)
+		header.Name = "Header"
+		header.Size = UDim2.new(1, 0, 0, rowH)
 		header.BackgroundTransparency = 1
 		header.TextXAlignment = Enum.TextXAlignment.Left
-		header.Font = Enum.Font.GothamBold
-		header.TextSize = 12
+		header.TextTruncate = Enum.TextTruncate.AtEnd
+		header.Font = Enum.Font.GothamMedium
+		header.TextSize = 13
 		header.TextColor3 = C.Text
 		header.AutoButtonColor = false
 		header.Parent = root
@@ -860,14 +869,14 @@ function Element:_create(class, config)
 		local open = true
 		local title = tostring(config.Title or config.Text or "Node")
 		local function refresh()
-			header.Text = (open and "▼  " or "▶  ") .. title
+			header.Text = (open and "▾  " or "▸  ") .. title
 		end
 		refresh()
 
 		local body = Instance.new("Frame")
 		body.Name = "Content"
 		body.BackgroundTransparency = 1
-		body.Position = UDim2.fromOffset(8, 18)
+		body.Position = UDim2.fromOffset(8, rowH)
 		body.Size = UDim2.new(1, -8, 0, 0)
 		body.AutomaticSize = Enum.AutomaticSize.Y
 		body.Visible = open
@@ -884,7 +893,14 @@ function Element:_create(class, config)
 		end)
 
 		local el = wrap(root, "TreeNode")
+		el._title = title
+		el._header = header
 		function el:_host() return body end
+		function el:SetTitle(t)
+			title = tostring(t or "")
+			el._title = title
+			refresh()
+		end
 		function el:Remove() root:Destroy() end
 		return el
 	end
@@ -940,22 +956,33 @@ function Element:_create(class, config)
 			btn.Parent = tabBar
 			corner(btn, 3)
 
-			local page = Instance.new("Frame")
-			page.Size = UDim2.new(1, -10, 1, -10)
-			page.Position = UDim2.fromOffset(5, 5)
+			-- Scrollable tab body (fixes Options / Remote tabs on mobile)
+			local page = Instance.new("ScrollingFrame")
+			page.Name = "TabPage"
+			page.Size = UDim2.new(1, -8, 1, -8)
+			page.Position = UDim2.fromOffset(4, 4)
 			page.BackgroundTransparency = 1
+			page.BorderSizePixel = 0
 			page.Visible = false
 			page.ClipsDescendants = true
+			page.ScrollBarThickness = 5
+			page.ScrollBarImageColor3 = C.Border
+			page.ScrollingDirection = Enum.ScrollingDirection.Y
+			page.CanvasSize = UDim2.new(0, 0, 0, 0)
+			page.AutomaticCanvasSize = Enum.AutomaticSize.Y
 			page.Parent = body
 			local pl = Instance.new("UIListLayout")
-			pl.Padding = UDim.new(0, 5)
+			pl.Padding = UDim.new(0, 6)
 			pl.SortOrder = Enum.SortOrder.LayoutOrder
 			pl.FillDirection = Enum.FillDirection.Vertical
 			pl.VerticalAlignment = Enum.VerticalAlignment.Top
 			pl.Parent = page
-			pcall(function()
-				pl.VerticalFlex = Enum.UIFlexAlignment.Fill
-			end)
+			local pp = Instance.new("UIPadding")
+			pp.PaddingTop = UDim.new(0, 4)
+			pp.PaddingBottom = UDim.new(0, 12)
+			pp.PaddingLeft = UDim.new(0, 4)
+			pp.PaddingRight = UDim.new(0, 8)
+			pp.Parent = page
 
 			local tabEl = wrap(page, "Tab")
 			tabEl._name = name
@@ -1346,18 +1373,10 @@ function ReGui:Window(config)
 	titleBar.BorderSizePixel = 0
 	titleBar.Parent = frame
 
-	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.fromOffset(20, 20)
-	icon.Position = UDim2.fromOffset(10, 6)
-	icon.BackgroundTransparency = 1
-	icon.Text = "⚡"
-	icon.TextSize = 14
-	icon.Parent = titleBar
-
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.Size = UDim2.new(1, -100, 1, 0)
-	title.Position = UDim2.fromOffset(34, 0)
+	title.Position = UDim2.fromOffset(12, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
 	title.TextColor3 = Color3.fromRGB(235, 235, 240)
