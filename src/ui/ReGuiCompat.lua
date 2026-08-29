@@ -437,11 +437,11 @@ function Element:_create(class, config)
 	
 	if class == "Selectable" then
 		local btn = Instance.new("TextButton")
-		local rowH = 18
+		local rowH = 22
 		pcall(function()
-			if ReGui:IsMobileDevice() then rowH = 28 end
+			if ReGui:IsMobileDevice() then rowH = 30 end
 		end)
-		btn.Size = config.Size or UDim2.new(1, -2, 0, rowH)
+		btn.Size = config.Size or UDim2.new(1, -4, 0, rowH)
 		btn.BackgroundColor3 = C.BgDark
 		btn.BackgroundTransparency = 1
 		btn.TextColor3 = config.TextColor3 or C.Text
@@ -1403,17 +1403,17 @@ function ReGui:Window(config)
 	frame.BackgroundColor3 = C.Bg
 	frame.BorderSizePixel = 0
 	frame.Active = true
-	frame.Draggable = true
+	frame.Draggable = false -- M3: drag only via title bar (list scroll won't move window)
 	frame.Parent = screen
-	corner(frame, 4)
+	corner(frame, 10)
 	stroke(frame, C.Border, 1)
 
-	
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
-	titleBar.Size = UDim2.new(1, 0, 0, 32)
+	titleBar.Size = UDim2.new(1, 0, 0, 34)
 	titleBar.BackgroundColor3 = C.Title
 	titleBar.BorderSizePixel = 0
+	titleBar.Active = true
 	titleBar.Parent = frame
 
 	local title = Instance.new("TextLabel")
@@ -1428,6 +1428,59 @@ function ReGui:Window(config)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = titleBar
 	applyFont(title, "medium")
+
+	-- M3: title-bar-only drag
+	do
+		local UIS = game:GetService("UserInputService")
+		local dragging = false
+		local dragStart, startPos
+		titleBar.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				dragStart = input.Position
+				startPos = frame.Position
+			end
+		end)
+		titleBar.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = false
+			end
+		end)
+		UIS.InputChanged:Connect(function(input)
+			if not dragging then return end
+			if input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch then
+				local d = input.Position - dragStart
+				frame.Position = UDim2.new(
+					startPos.X.Scale, startPos.X.Offset + d.X,
+					startPos.Y.Scale, startPos.Y.Offset + d.Y
+				)
+			end
+		end)
+	end
+
+	local statusChip = Instance.new("TextLabel")
+	statusChip.Name = "StatusChip"
+	statusChip.Size = UDim2.fromOffset(0, 20)
+	statusChip.AutomaticSize = Enum.AutomaticSize.X
+	statusChip.Position = UDim2.new(1, -160, 0.5, -10)
+	statusChip.BackgroundColor3 = Color3.fromRGB(40, 28, 28)
+	statusChip.BackgroundTransparency = 1
+	statusChip.Text = ""
+	statusChip.TextColor3 = Color3.fromRGB(255, 140, 140)
+	statusChip.TextSize = 11
+	statusChip.Font = Enum.Font.BuilderSansMedium
+	statusChip.Visible = false
+	statusChip.Parent = titleBar
+	local scPad = Instance.new("UIPadding")
+	scPad.PaddingLeft = UDim.new(0, 8)
+	scPad.PaddingRight = UDim.new(0, 8)
+	scPad.Parent = statusChip
+	local scCorner = Instance.new("UICorner")
+	scCorner.CornerRadius = UDim.new(0, 6)
+	scCorner.Parent = statusChip
 
 	local minBtn = Instance.new("TextButton")
 	minBtn.Name = "Minimize"
@@ -1453,8 +1506,8 @@ function ReGui:Window(config)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
-	content.Position = UDim2.fromOffset(0, 32)
-	content.Size = UDim2.new(1, 0, 1, -32)
+	content.Position = UDim2.fromOffset(0, 34)
+	content.Size = UDim2.new(1, 0, 1, -34)
 	content.BackgroundTransparency = 1
 	content.ClipsDescendants = true
 	content.Parent = frame
