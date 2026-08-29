@@ -573,6 +573,13 @@ function Ui:CreateWindowContent(Window)
 		FlexMode = Enum.UIFlexMode.Fill,
 		Size = UDim2.new(1, 0, 1, -(searchH + 8)),
 	})
+	pcall(function()
+		local inst = self.RemotesList.Instance
+		if inst and inst:IsA("ScrollingFrame") then
+			inst.ScrollBarThickness = Mobile and 8 or 5
+			inst.ScrollingDirection = Enum.ScrollingDirection.Y
+		end
+	end)
 	self.RemotesListEmpty = self.RemotesList:Label({
 		Text = "No traffic yet",
 		TextColor3 = Color3.fromRGB(120, 120, 130),
@@ -1604,7 +1611,7 @@ function Ui:GetRemoteHeader(Data: Log)
 		local Pip = self:TypePip(Data.ClassData, Remote)
 		HeaderData.TreeNode = RemotesList:TreeNode({
 			LayoutOrder = -1 * RemotesCount,
-			Title = Pip .. " " .. RemoteName .. "   x0"
+			Title = string.format("%s %s  ·  0", Pip, RemoteName)
 		})
 		HeaderData.RemoteName = RemoteName
 		HeaderData.TypePip = Pip
@@ -1623,13 +1630,19 @@ function Ui:GetRemoteHeader(Data: Log)
 		self.LogCount += 1
 		self:CheckLimit()
 		table.insert(self.Entries, Data)
-		-- Cobalt-style count on header
-		if self.TreeNode and self.TreeNode.Instance then
-			local titleLbl = self.TreeNode.Instance:FindFirstChild("Title", true)
-				or self.TreeNode.Instance:FindFirstChildWhichIsA("TextLabel", true)
-			if titleLbl then
-				local pip = self.TypePip or ""
-				titleLbl.Text = pip .. " " .. (self.RemoteName or "Remote") .. "   x" .. tostring(self.LogCount)
+		-- Count on header (SetTitle keeps full string; avoids stuck x0 / truncation glitches)
+		if self.TreeNode then
+			local pip = self.TypePip or ""
+			local name = self.RemoteName or "Remote"
+			local count = self.LogCount or 0
+			local label = string.format("%s %s  ·  %d", pip, name, count)
+			if self.TreeNode.SetTitle then
+				self.TreeNode:SetTitle(label)
+			elseif self.TreeNode.Instance then
+				local h = self.TreeNode.Instance:FindFirstChild("Header")
+				if h then
+					h.Text = "▾  " .. label
+				end
 			end
 		end
 		return self
