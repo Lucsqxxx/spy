@@ -468,28 +468,6 @@ function Ui:CreateWindowContent(Window)
 		HorizontalFlex = Enum.UIFlexAlignment.Fill,
 	})
 
-	-- Outgoing / Incoming segmented filter (Cobalt-style)
-	local FilterRow = Sidebar:Row({ Size = UDim2.new(1, 0, 0, 30) })
-	self.ListFilter = "All" -- All | Out | In
-	local function setFilter(mode)
-		self.ListFilter = mode
-		self:ApplyListFilter()
-	end
-	FilterRow:Button({
-		Text = "Outgoing",
-		Size = UDim2.new(0.5, -4, 1, 0),
-		Callback = function()
-			setFilter("Out")
-		end,
-	})
-	FilterRow:Button({
-		Text = "Incoming",
-		Size = UDim2.new(0.5, -4, 1, 0),
-		Callback = function()
-			setFilter("In")
-		end,
-	})
-
 	-- Search
 	local SearchBox = Sidebar:InputText({
 		Label = "",
@@ -509,7 +487,7 @@ function Ui:CreateWindowContent(Window)
 		UiPadding = 4,
 		AutomaticSize = Enum.AutomaticSize.None,
 		FlexMode = Enum.UIFlexMode.Fill,
-		Size = UDim2.new(1, 0, 1, -70),
+		Size = UDim2.new(1, 0, 1, -36),
 	})
 	self.RemotesListEmpty = self.RemotesList:Label({
 		Text = "No traffic yet",
@@ -532,7 +510,6 @@ function Ui:CreateWindowContent(Window)
 end
 
 function Ui:ApplyListFilter()
-	local mode = self.ListFilter or "All"
 	local q = self.ListSearch or ""
 	local Logs = self.Logs
 	if not Logs then return end
@@ -540,14 +517,10 @@ function Ui:ApplyListFilter()
 	for _, Header in pairs(Logs) do
 		local data = Header.Data
 		local show = true
-		if data then
-			if mode == "Out" and data.IsReceive then show = false end
-			if mode == "In" and not data.IsReceive then show = false end
-			if q ~= "" and show then
-				local name = string.lower(tostring(data.Remote or data.RemotePath or ""))
-				if not string.find(name, q, 1, true) then
-					show = false
-				end
+		if q ~= "" and data then
+			local name = string.lower(tostring(data.Remote or data.RemotePath or Header.RemoteName or ""))
+			if not string.find(name, q, 1, true) then
+				show = false
 			end
 		end
 		local node = Header.TreeNode
@@ -557,11 +530,8 @@ function Ui:ApplyListFilter()
 		if Header.Entries then
 			for _, entry in ipairs(Header.Entries) do
 				if entry.Selectable and entry.Selectable.Instance then
-					local es = show
-					if mode == "Out" and entry.IsReceive then es = false end
-					if mode == "In" and not entry.IsReceive then es = false end
-					entry.Selectable.Instance.Visible = es
-					if es then any = true end
+					entry.Selectable.Instance.Visible = show
+					if show then any = true end
 				end
 			end
 		end
