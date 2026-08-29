@@ -132,7 +132,46 @@ function Ui:CheckScale()
 end
 
 function Ui:SetClipboard(Content: string)
-	SetClipboard(Content)
+	pcall(function()
+		SetClipboard(Content)
+	end)
+	self:ShowToast("Copied")
+end
+
+function Ui:ShowToast(Message: string, Duration: number?)
+	Duration = Duration or 1.4
+	local Window = self.Window
+	if not Window or not Window.Instance then
+		pcall(warn, "[Wyvern] " .. tostring(Message))
+		return
+	end
+	pcall(function()
+		local host = Window.Instance
+		local old = host:FindFirstChild("WyvernToast")
+		if old then old:Destroy() end
+		local toast = Instance.new("TextLabel")
+		toast.Name = "WyvernToast"
+		toast.AnchorPoint = Vector2.new(0.5, 1)
+		toast.Position = UDim2.new(0.5, 0, 1, -12)
+		toast.Size = UDim2.fromOffset(160, 28)
+		toast.BackgroundColor3 = Color3.fromRGB(36, 36, 42)
+		toast.TextColor3 = Color3.fromRGB(230, 230, 235)
+		toast.Font = Enum.Font.GothamMedium
+		toast.TextSize = 13
+		toast.Text = tostring(Message)
+		toast.ZIndex = 50
+		toast.Parent = host
+		local c = Instance.new("UICorner")
+		c.CornerRadius = UDim.new(0, 6)
+		c.Parent = toast
+		local s = Instance.new("UIStroke")
+		s.Color = Color3.fromRGB(60, 60, 68)
+		s.Thickness = 1
+		s.Parent = toast
+		task.delay(Duration, function()
+			pcall(function() toast:Destroy() end)
+		end)
+	end)
 end
 
 
@@ -816,10 +855,35 @@ function Ui:MakeEditorTab(InfoSelector)
 					local Script = CodeEditor:GetText()
 					local Func, Error = loadstring(Script, "WyvernSpy-USERSCRIPT")
 					if not Func then
-						self:ShowModal({"Error running script!\n", Error})
+						-- ED-10: surface line number from compiler error
+						local line = nil
+						local errStr = tostring(Error or "")
+						local a, b = string.match(errStr, "%:(%d+)%s*:")
+						if not a then a = string.match(errStr, "[Ll]ine%s*(%d+)") end
+						line = tonumber(a)
+						local msg = {"Error running script!", errStr}
+						if line then
+							table.insert(msg, "→ Near line " .. tostring(line))
+							pcall(function()
+								if CodeEditor.HighlightLine then
+									CodeEditor:HighlightLine(line)
+								elseif CodeEditor._box then
+									-- soft hint via toast only
+								end
+							end)
+						end
+						self:ShowModal(msg)
+						self:ShowToast(line and ("Error line " .. line) or "Script error", 2)
 						return
 					end
-					Func()
+					local ok, runErr = pcall(Func)
+					if not ok then
+						local errStr = tostring(runErr or "")
+						local a = string.match(errStr, "%:(%d+)%s*:") or string.match(errStr, "[Ll]ine%s*(%d+)")
+						local line = tonumber(a)
+						self:ShowModal({"Runtime error!", errStr, line and ("→ Near line " .. line) or nil})
+						self:ShowToast(line and ("Error line " .. line) or "Runtime error", 2)
+					end
 				end
 			},
 			{
@@ -848,6 +912,20 @@ function Ui:MakeEditorTab(InfoSelector)
 							local Script = CodeEditor:GetText()
 							local Tile = ActiveData and ActiveData.Task or "Wyvern Spy"
 							self:MakeEditorPopoutWindow(Script, { Title = Tile })
+						end,
+						["Toggle wrap"] = function()
+							-- ED-5
+							pcall(function()
+								if CodeEditor.SetWrapped then
+									local on = not (CodeEditor._wrapped == true)
+									CodeEditor:SetWrapped(on)
+									self:ShowToast(on and "Wrap on" or "Wrap off")
+								elseif CodeEditor._box then
+									CodeEditor._box.TextWrapped = not CodeEditor._box.TextWrapped
+									CodeEditor._wrapped = CodeEditor._box.TextWrapped
+									self:ShowToast(CodeEditor._wrapped and "Wrap on" or "Wrap off")
+								end
+							end)
 						end,
 					})
 				end
