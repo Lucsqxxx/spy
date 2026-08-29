@@ -89,8 +89,8 @@ local Files
 local ActiveData = nil
 local RemotesCount = 0
 
-local TextFont = Font.fromEnum(Enum.Font.Code)
-local FontSuccess = false
+local TextFont = Font.fromEnum(Enum.Font.BuilderSans)
+local FontSuccess = true -- system BuilderSans; custom font optional
 local CommChannel
 
 function Ui:Init(Data)
@@ -176,25 +176,24 @@ end
 
 
 function Ui:LoadFont()
-	local FontFile = self.FontJsonFile
-
-	--// Get FontFace AssetId (json or direct ttf path)
-	local AssetId = Files:LoadCustomasset(FontFile)
-	if not AssetId then
-		-- try ttf next to json
-		local ttf = FontFile and FontFile:gsub("%.json$", ".ttf"):gsub("ProggyClean%.json", "ProggyClean.ttf")
-		if ttf and ttf ~= FontFile then
-			AssetId = Files:LoadCustomasset(ttf)
-		end
-	end
-	if not AssetId then return end
-
-	--// Create custom FontFace
-	local Ok, NewFont = pcall(Font.new, AssetId)
-	if not Ok or not NewFont then return end
-	TextFont = NewFont
+	-- Prefer sleek system UI font; optional custom override if present
+	local okF, face = pcall(Font.fromEnum, Enum.Font.BuilderSans)
+	TextFont = (okF and face) or Font.fromEnum(Enum.Font.Gotham)
 	FontSuccess = true
-	warn("[Wyvern Spy] Custom font loaded (ProggyClean/ImGui)")
+	pcall(function()
+		if ReGui and ReGui.SetFont then
+			ReGui:SetFont(TextFont, 14)
+		end
+	end)
+	local FontFile = self.FontJsonFile
+	if not FontFile or not Files then return end
+	local AssetId = Files:LoadCustomasset(FontFile)
+	if not AssetId then return end
+	local Ok, NewFont = pcall(Font.new, AssetId)
+	if Ok and NewFont then
+		-- Custom font only applied to code editor path if user ships one
+		warn("[Wyvern Spy] Optional custom font asset loaded")
+	end
 end
 
 function Ui:SetFontFile(FontFile: string)
@@ -838,7 +837,7 @@ function Ui:MakeEditorTab(InfoSelector)
 		Editable = true,
 		FontSize = 13,
 		Colors = SyntaxColors,
-		FontFace = TextFont,
+		FontFace = Font.fromEnum(Enum.Font.RobotoMono),
 		Text = Default
 	})
 
