@@ -528,7 +528,7 @@ function Ui:TypeBadgeColor(Value): Color3
 		string = Color3.fromRGB(180, 220, 150),
 		number = Color3.fromRGB(150, 200, 255),
 		boolean = Color3.fromRGB(230, 180, 120),
-		nil = Color3.fromRGB(140, 140, 150),
+		["nil"] = Color3.fromRGB(140, 140, 150),
 		table = Color3.fromRGB(200, 170, 255),
 		Instance = Color3.fromRGB(120, 200, 220),
 		Vector3 = Color3.fromRGB(130, 210, 190),
