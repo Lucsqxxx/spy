@@ -1739,31 +1739,40 @@ function Ui:GetRemoteHeader(Data: Log)
 
 	function HeaderData:CheckLimit()
 		local Entries = self.Entries
-		if #Entries < LogLimit then return end
-			
-		--// Get and remove last element
-		local Log = table.remove(Entries, 1)
-		Log.Selectable:Remove()
+		-- prune oldest until under limit (safe remove)
+		while #Entries >= LogLimit do
+			local Log = table.remove(Entries, 1)
+			if Log and Log.Selectable then
+				pcall(function()
+					Log.Selectable:Remove()
+				end)
+			end
+		end
 	end
 
 	function HeaderData:LogAdded(Data)
 		self.LogCount += 1
-		self:CheckLimit()
 		table.insert(self.Entries, Data)
-		-- Count on header (SetTitle keeps full string; avoids stuck x0 / truncation glitches)
+		self:CheckLimit()
 		if self.TreeNode then
 			local pip = self.TypePip or ""
 			local name = self.RemoteName or "Remote"
 			local count = self.LogCount or 0
 			local label = string.format("%s %s  ·  %d", pip, name, count)
-			if self.TreeNode.SetTitle then
-				self.TreeNode:SetTitle(label)
-			elseif self.TreeNode.Instance then
-				local h = self.TreeNode.Instance:FindFirstChild("Header")
-				if h then
-					h.Text = "▾  " .. label
+			pcall(function()
+				if self.TreeNode.SetTitle then
+					self.TreeNode:SetTitle(label)
+				elseif self.TreeNode.Instance then
+					local h = self.TreeNode.Instance:FindFirstChild("Header", true)
+					if h and h:IsA("TextLabel") then
+						local open = true
+						pcall(function()
+							open = self.TreeNode._open and self.TreeNode._open()
+						end)
+						h.Text = (open and "[-] " or "[+] ") .. label
+					end
 				end
-			end
+			end)
 		end
 		return self
 	end
@@ -1926,23 +1935,30 @@ function Ui:CreateLog(Data: Log)
 	end
 
 	Data.HeaderData = Header
-	Data.Selectable = Parent:Selectable({
-		Text = Text,
-        LayoutOrder = -1 * LogCount,
-		TextColor3 = Color,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Callback = function()
-			self:SetFocusedRemote(Data)
-		end,
-    })
+	local orderN = -1 * ((Header.LogCount or 0) + 1)
+	local okSel, sel = pcall(function()
+		return Parent:Selectable({
+			Text = Text,
+			LayoutOrder = orderN,
+			TextColor3 = Color,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Callback = function()
+				self:SetFocusedRemote(Data)
+			end,
+		})
+	end)
+	if not okSel or not sel then
+		return
+	end
+	Data.Selectable = sel
 
 	-- Watch / highlight new logs briefly
 	pcall(function()
-		if Flags:GetFlagValue("WatchNew") and Data.Selectable.SetSelected then
+		if Flags:GetFlagValue("WatchNew") and Data.Selectable and Data.Selectable.SetSelected then
 			Data.Selectable:SetSelected(true)
 			task.delay(1.2, function()
 				pcall(function()
-					if ActiveData ~= Data then
+					if ActiveData ~= Data and Data.Selectable and Data.Selectable._alive ~= false then
 						Data.Selectable:SetSelected(false)
 					end
 				end)
