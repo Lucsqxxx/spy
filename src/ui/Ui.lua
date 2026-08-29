@@ -135,13 +135,6 @@ function Ui:SetClipboard(Content: string)
 	SetClipboard(Content)
 end
 
-function Ui:TurnSeasonal(Text: string): string
-    local SeasonLabels = self.SeasonLabels
-    local Month = os.date("%B")
-    local Base = SeasonLabels[Month]
-
-    return Base:format(Text)
-end
 
 function Ui:LoadFont()
 	local FontFile = self.FontJsonFile
@@ -295,7 +288,6 @@ function Ui:CreateMainWindow()
 
 	--// Check if the font was successfully downloaded
 	self:FontWasSuccessful()
-	-- Aura disabled (Cobalt-style static title)
 
 	--// UiVisible flag callback
 	Flags:SetFlagCallback("UiVisible", function(self, Visible)
@@ -426,31 +418,6 @@ function Ui:CreateElements(Parent, Options)
 	end
 end
 
---// Boiiii what did you say about Wyvern Spy 💀💀
-function Ui:DisplayAura()
-    local Window = self.Window
-    local Rand = self.RandomSeed
-
-	--// Aura (boiiiii)
-    local AURA = Rand:NextInteger(1, 9999999)
-    local AURADELAY = Rand:NextInteger(1, 5)
-
-	--// Title
-	local Title = `Wyvern`
-	local Seasonal = self:TurnSeasonal(Title)
-    Window:SetTitle(Seasonal)
-
-    wait(AURADELAY)
-end
-
-function Ui:AuraCounterService()
-    task.spawn(function()
-        while true do
-            self:DisplayAura()
-        end
-    end)
-end
-
 
 function Ui:TypePip(ClassData, Remote): string
 	local cn = ""
@@ -549,7 +516,7 @@ function Ui:CreateWindowContent(Window)
 	-- Search
 	local SearchBox = Sidebar:InputText({
 		Label = "",
-		Placeholder = "Search remotes…",
+		Placeholder = "Search name, method, args…",
 		Value = "",
 		Size = UDim2.new(1, 0, 0, searchH),
 		Callback = function(_, text)
@@ -594,36 +561,79 @@ function Ui:CreateWindowContent(Window)
 	end)
 end
 
+function Ui:EntrySearchBlob(entry): string
+	local parts = {}
+	if entry then
+		parts[#parts + 1] = tostring(entry.Remote or "")
+		parts[#parts + 1] = tostring(entry.RemotePath or "")
+		parts[#parts + 1] = tostring(entry.Method or "")
+		local args = entry.Args
+		if typeof(args) == "table" then
+			local n = math.min(table.maxn(args), 6)
+			for i = 1, n do
+				local v = args[i]
+				if typeof(v) == "string" then
+					parts[#parts + 1] = v
+				elseif typeof(v) == "number" or typeof(v) == "boolean" then
+					parts[#parts + 1] = tostring(v)
+				elseif typeof(v) == "Instance" then
+					parts[#parts + 1] = tostring(v)
+				elseif typeof(v) == "table" and v.__t == "Instance" and v.path then
+					parts[#parts + 1] = tostring(v.path)
+				end
+			end
+		end
+	end
+	return string.lower(table.concat(parts, " "))
+end
+
 function Ui:ApplyListFilter()
 	local q = self.ListSearch or ""
 	local Logs = self.Logs
 	if not Logs then return end
 	local any = false
 	for _, Header in pairs(Logs) do
-		local data = Header.Data
-		local show = true
-		if q ~= "" and data then
-			local name = string.lower(tostring(data.Remote or data.RemotePath or Header.RemoteName or ""))
-			if not string.find(name, q, 1, true) then
-				show = false
+		local headerShow = (q == "")
+		if q ~= "" then
+			local blob = string.lower(tostring(Header.RemoteName or ""))
+			if Header.Data then
+				blob ..= " " .. self:EntrySearchBlob(Header.Data)
 			end
+			if Header.Entries then
+				for _, entry in ipairs(Header.Entries) do
+					blob ..= " " .. self:EntrySearchBlob(entry)
+				end
+			end
+			headerShow = string.find(blob, q, 1, true) ~= nil
 		end
+
 		local node = Header.TreeNode
 		if node and node.Instance then
-			node.Instance.Visible = show
+			node.Instance.Visible = headerShow
 		end
 		if Header.Entries then
 			for _, entry in ipairs(Header.Entries) do
 				if entry.Selectable and entry.Selectable.Instance then
-					entry.Selectable.Instance.Visible = show
-					if show then any = true end
+					local es = headerShow
+					if q ~= "" and headerShow then
+						-- keep entry visible if its own blob matches OR header matched via another entry
+						es = true
+					end
+					entry.Selectable.Instance.Visible = es
+					if es then any = true end
 				end
 			end
 		end
-		if show then any = true end
+		if headerShow then any = true end
 	end
 	if self.RemotesListEmpty and self.RemotesListEmpty.Instance then
-		self.RemotesListEmpty.Instance.Visible = not any
+		-- only force empty visibility when no match and not using UpdateListStatus paused text
+		if q ~= "" then
+			self.RemotesListEmpty.Instance.Text = any and "" or "No matches"
+			self.RemotesListEmpty.Instance.Visible = not any
+		else
+			self:UpdateListStatus()
+		end
 	end
 end
 
@@ -1353,12 +1363,13 @@ function Ui:SetFocusedRemote(Data)
 		end
 		for i = 1, math.min(maxn, 24) do
 			local val = argList[i]
-			local preview = self:FormatArgPreview(val, 60)
+			local preview = self:FormatArgPreview(val, 50)
+			local argPath = "args[" .. tostring(i) .. "]"
 			local row = Tab:Row({ Size = UDim2.new(1, 0, 0, self.IsMobileUi and 32 or 26) })
-			row:Label({ Text = "[" .. i .. "] " .. preview })
+			row:Label({ Text = argPath .. "  " .. preview })
 			row:Button({
 				Text = "Copy",
-				Size = UDim2.fromOffset(self.IsMobileUi and 56 or 48, self.IsMobileUi and 28 or 22),
+				Size = UDim2.fromOffset(self.IsMobileUi and 52 or 46, self.IsMobileUi and 28 or 22),
 				Callback = function()
 					local text
 					if typeof(val) == "Instance" then
@@ -1373,6 +1384,14 @@ function Ui:SetFocusedRemote(Data)
 						text = tostring(val)
 					end
 					SetClipboard(text)
+				end,
+			})
+			row:Button({
+				Text = "Path",
+				Size = UDim2.fromOffset(self.IsMobileUi and 52 or 46, self.IsMobileUi and 28 or 22),
+				Callback = function()
+					-- D5: Lua-style path for scripting (args[i] or nested hint)
+					SetClipboard(argPath)
 				end,
 			})
 		end
