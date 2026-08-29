@@ -332,6 +332,7 @@ function Ui:CreateMainWindow()
 		Window:SetVisible(Visible)
 	end)
 
+	self:BeginSpamWatch()
 	return Window
 end
 
@@ -509,6 +510,18 @@ function Ui:UpdateListStatus()
 	end
 end
 
+function Ui:TypeBadge(Value): string
+	local ty = typeof(Value)
+	if ty == "table" and type(Value) == "table" and Value.__t then
+		return tostring(Value.__t)
+	end
+	if ty == "Instance" then
+		local ok, cn = pcall(function() return Value.ClassName end)
+		return ok and cn or "Instance"
+	end
+	return ty
+end
+
 function Ui:FormatArgPreview(Value, Limit: number?): string
 	Limit = Limit or 80
 	local ty = typeof(Value)
@@ -524,6 +537,69 @@ function Ui:FormatArgPreview(Value, Limit: number?): string
 	local s = tostring(Value)
 	if #s > Limit then s = s:sub(1, Limit) .. "…" end
 	return s
+end
+
+
+function Ui:UpdateSpamIndicator()
+	local active = false
+	pcall(function()
+		active = getgenv and getgenv()._WVS_SPAM == true
+	end)
+	self.SpamActive = active
+	pcall(function()
+		local win = self.Window and self.Window.Instance
+		if not win then return end
+		local chip = win:FindFirstChild("StatusChip", true)
+		if not chip then return end
+		if active then
+			chip.Visible = true
+			chip.BackgroundTransparency = 0.15
+			chip.Text = "SPAM ON — click to stop"
+			chip.TextColor3 = Color3.fromRGB(255, 150, 150)
+		else
+			chip.Visible = false
+			chip.Text = ""
+		end
+	end)
+end
+
+function Ui:StopSpam()
+	pcall(function()
+		if getgenv then getgenv()._WVS_SPAM = false end
+	end)
+	self.SpamActive = false
+	self:UpdateSpamIndicator()
+	self:ShowToast("Spam stopped")
+end
+
+function Ui:BeginSpamWatch()
+	if self._spamWatch then return end
+	self._spamWatch = true
+	task.spawn(function()
+		while self._spamWatch do
+			self:UpdateSpamIndicator()
+			-- click StatusChip to stop
+			pcall(function()
+				local win = self.Window and self.Window.Instance
+				local chip = win and win:FindFirstChild("StatusChip", true)
+				if chip and not chip:GetAttribute("Bound") then
+					chip:SetAttribute("Bound", true)
+					if chip:IsA("TextLabel") then
+						-- make clickable overlay
+						local hit = Instance.new("TextButton")
+						hit.Size = UDim2.fromScale(1, 1)
+						hit.BackgroundTransparency = 1
+						hit.Text = ""
+						hit.Parent = chip
+						hit.MouseButton1Click:Connect(function()
+							self:StopSpam()
+						end)
+					end
+				end
+			end)
+			task.wait(0.4)
+		end
+	end)
 end
 
 function Ui:CreateWindowContent(Window)
@@ -554,7 +630,7 @@ function Ui:CreateWindowContent(Window)
 	-- Search
 	local SearchBox = Sidebar:InputText({
 		Label = "",
-		Placeholder = "Search name, method, args…",
+		Placeholder = "Search…",
 		Value = "",
 		Size = UDim2.new(1, 0, 0, searchH),
 		Callback = function(_, text)
@@ -1298,6 +1374,12 @@ function Ui:SetFocusedRemote(Data)
 	function Data:MakeScript(ScriptType: string)
 		local Script = Generation:RemoteScript(Module, self, ScriptType)
 		SetIDEText(Script, `Editing: {RemoteName}.lua`)
+		if ScriptType == "Spam" then
+			Ui:ShowToast("Run script to start spam")
+		elseif ScriptType == "UndoSpam" then
+			Ui:StopSpam()
+			Ui:ShowToast("Undo Spam ready — or already stopped")
+		end
 	end
 	function Data:RepeatCall()
 		local Signal = Hook:Index(Remote, Method)
@@ -1436,7 +1518,7 @@ function Ui:SetFocusedRemote(Data)
 	})
 
 	-- 3.3 Copy value / path per argument
-	Tab:Label({ Text = "Arguments — tap Copy on a row", TextColor3 = Color3.fromRGB(140, 140, 148) })
+	Tab:Label({ Text = "Arguments", TextColor3 = Color3.fromRGB(150, 152, 160) })
 	local argList = Args
 	if typeof(argList) == "table" then
 		local maxn = table.maxn(argList)
@@ -1447,13 +1529,18 @@ function Ui:SetFocusedRemote(Data)
 		end
 		for i = 1, math.min(maxn, 24) do
 			local val = argList[i]
-			local preview = self:FormatArgPreview(val, 50)
+			local badge = self:TypeBadge(val)
+			local preview = self:FormatArgPreview(val, 42)
 			local argPath = "args[" .. tostring(i) .. "]"
-			local row = Tab:Row({ Size = UDim2.new(1, 0, 0, self.IsMobileUi and 32 or 26) })
-			row:Label({ Text = argPath .. "  " .. preview })
+			local rowH = self.IsMobileUi and 34 or 28
+			local row = Tab:Row({ Size = UDim2.new(1, 0, 0, rowH) })
+			row:Label({
+				Text = string.format("%s  [%s]  %s", argPath, badge, preview),
+				TextColor3 = Color3.fromRGB(210, 212, 220),
+			})
 			row:Button({
 				Text = "Copy",
-				Size = UDim2.fromOffset(self.IsMobileUi and 52 or 46, self.IsMobileUi and 28 or 22),
+				Size = UDim2.fromOffset(self.IsMobileUi and 52 or 48, self.IsMobileUi and 28 or 24),
 				Callback = function()
 					local text
 					if typeof(val) == "Instance" then
@@ -1467,15 +1554,14 @@ function Ui:SetFocusedRemote(Data)
 					else
 						text = tostring(val)
 					end
-					SetClipboard(text)
+					self:SetClipboard(text)
 				end,
 			})
 			row:Button({
 				Text = "Path",
-				Size = UDim2.fromOffset(self.IsMobileUi and 52 or 46, self.IsMobileUi and 28 or 22),
+				Size = UDim2.fromOffset(self.IsMobileUi and 52 or 48, self.IsMobileUi and 28 or 24),
 				Callback = function()
-					-- D5: Lua-style path for scripting (args[i] or nested hint)
-					SetClipboard(argPath)
+					self:SetClipboard(argPath)
 				end,
 			})
 		end
