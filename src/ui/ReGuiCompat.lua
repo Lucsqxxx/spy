@@ -220,6 +220,8 @@ function Element:_create(class, config)
 			frame.CanvasSize = UDim2.new()
 			frame.BackgroundColor3 = C.BgDark
 			frame.BackgroundTransparency = 0
+			frame.BorderSizePixel = 0
+			frame.ClipsDescendants = true
 		else
 			frame = Instance.new("Frame")
 			frame.BackgroundTransparency = 1
@@ -453,13 +455,19 @@ function Element:_create(class, config)
 		btn.TextTruncate = Enum.TextTruncate.AtEnd
 		btn.BorderSizePixel = 0
 		btn.AutoButtonColor = false
+		btn.Text = tostring(config.Text or "")
 		btn.Parent = host
+		pcall(function()
+			btn.Style = Enum.ButtonStyle.Custom
+		end)
 		order(btn)
 		pad(btn, 6, 4, 0, 0)
-		applyFont(btn)
+		applyFont(btn, "medium")
 		local el = wrap(btn, "Selectable")
 		el._btn = btn
+		el._alive = true
 		function el:SetSelected(v)
+			if not el._alive then return end
 			el._selected = not not v
 			if el._selected then
 				btn.BackgroundTransparency = 0
@@ -468,12 +476,14 @@ function Element:_create(class, config)
 				btn.BackgroundTransparency = 1
 			end
 		end
-		function el:Remove() btn:Destroy() end
+		function el:Remove()
+			el._alive = false
+			pcall(function() btn:Destroy() end)
+		end
 		btn.MouseEnter:Connect(function()
-			if not el._selected then
-				btn.BackgroundTransparency = 0.5
-				btn.BackgroundColor3 = C.Select
-			end
+			if not el._alive or el._selected then return end
+			btn.BackgroundTransparency = 0.55
+			btn.BackgroundColor3 = C.Select
 		end)
 		btn.MouseLeave:Connect(function()
 			if not el._selected then
@@ -886,66 +896,102 @@ function Element:_create(class, config)
 
 	if class == "TreeNode" then
 		local root = Instance.new("Frame")
+		root.Name = "TreeNode"
 		root.BackgroundTransparency = 1
-		root.Size = UDim2.new(1, 0, 0, 0)
+		root.BorderSizePixel = 0
+		root.Size = UDim2.new(1, -2, 0, 0)
 		root.AutomaticSize = Enum.AutomaticSize.Y
-		root.ClipsDescendants = false
+		root.ClipsDescendants = true
 		root.Parent = host
 		order(root)
 
-		local rowH = 20
+		local rowH = 22
 		pcall(function()
 			if ReGui:IsMobileDevice() then rowH = 28 end
 		end)
 
-		local header = Instance.new("TextButton")
+		-- Header bar (frame, not styled Roblox button chrome)
+		local headerBar = Instance.new("Frame")
+		headerBar.Name = "HeaderBar"
+		headerBar.Size = UDim2.new(1, 0, 0, rowH)
+		headerBar.BackgroundColor3 = C.BgDark
+		headerBar.BackgroundTransparency = 0.35
+		headerBar.BorderSizePixel = 0
+		headerBar.Parent = root
+
+		local header = Instance.new("TextLabel")
 		header.Name = "Header"
-		header.Size = UDim2.new(1, 0, 0, rowH)
+		header.Size = UDim2.new(1, -8, 1, 0)
+		header.Position = UDim2.fromOffset(6, 0)
 		header.BackgroundTransparency = 1
+		header.BorderSizePixel = 0
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextTruncate = Enum.TextTruncate.AtEnd
 		header.Font = Enum.Font.BuilderSansMedium
 		header.TextSize = 13
 		header.TextColor3 = C.Text
-		header.AutoButtonColor = false
-		header.Parent = root
+		header.Parent = headerBar
+		applyFont(header, "medium")
+
+		-- Invisible hit target (no default button look / icons)
+		local hit = Instance.new("TextButton")
+		hit.Name = "Hit"
+		hit.Size = UDim2.fromScale(1, 1)
+		hit.BackgroundTransparency = 1
+		hit.BorderSizePixel = 0
+		hit.Text = ""
+		hit.AutoButtonColor = false
+		hit.Parent = headerBar
+		pcall(function()
+			hit.Style = Enum.ButtonStyle.Custom
+		end)
 
 		local open = true
 		local title = tostring(config.Title or config.Text or "Node")
 		local function refresh()
-			header.Text = (open and "▾  " or "▸  ") .. title
+			-- ASCII only — unicode arrows can show as Roblox/missing glyphs
+			header.Text = (open and "[-] " or "[+] ") .. title
 		end
 		refresh()
 
 		local body = Instance.new("Frame")
 		body.Name = "Content"
 		body.BackgroundTransparency = 1
-		body.Position = UDim2.fromOffset(8, rowH)
+		body.BorderSizePixel = 0
+		body.Position = UDim2.fromOffset(6, rowH)
 		body.Size = UDim2.new(1, -8, 0, 0)
 		body.AutomaticSize = Enum.AutomaticSize.Y
 		body.Visible = open
+		body.ClipsDescendants = false
 		body.Parent = root
 		local bl = Instance.new("UIListLayout")
-		bl.Padding = UDim.new(0, 1)
+		bl.Padding = UDim.new(0, 2)
 		bl.SortOrder = Enum.SortOrder.LayoutOrder
 		bl.Parent = body
 
-		header.MouseButton1Click:Connect(function()
+		hit.MouseButton1Click:Connect(function()
 			open = not open
 			body.Visible = open
 			refresh()
+			-- force layout refresh so category does not collapse blank
+			pcall(function()
+				root.AutomaticSize = Enum.AutomaticSize.Y
+			end)
 		end)
 
 		local el = wrap(root, "TreeNode")
 		el._title = title
 		el._header = header
+		el._open = function() return open end
 		function el:_host() return body end
 		function el:SetTitle(t)
 			title = tostring(t or "")
 			el._title = title
 			refresh()
 		end
-		function el:Remove() root:Destroy() end
+		function el:Remove()
+			pcall(function() root:Destroy() end)
+		end
 		return el
 	end
 
@@ -1407,7 +1453,7 @@ function ReGui:Window(config)
 	frame.Draggable = false -- M3: drag only via title bar (list scroll won't move window)
 	frame.Parent = screen
 	corner(frame, 10)
-	stroke(frame, C.Border, 1)
+	stroke(frame, Color3.fromRGB(50, 52, 60), 1)
 
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
