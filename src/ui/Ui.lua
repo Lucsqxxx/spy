@@ -522,6 +522,31 @@ function Ui:TypeBadge(Value): string
 	return ty
 end
 
+function Ui:TypeBadgeColor(Value): Color3
+	local badge = self:TypeBadge(Value)
+	local map = {
+		string = Color3.fromRGB(180, 220, 150),
+		number = Color3.fromRGB(150, 200, 255),
+		boolean = Color3.fromRGB(230, 180, 120),
+		nil = Color3.fromRGB(140, 140, 150),
+		table = Color3.fromRGB(200, 170, 255),
+		Instance = Color3.fromRGB(120, 200, 220),
+		Vector3 = Color3.fromRGB(130, 210, 190),
+		Vector2 = Color3.fromRGB(130, 210, 190),
+		CFrame = Color3.fromRGB(160, 190, 230),
+		Color3 = Color3.fromRGB(255, 170, 140),
+		EnumItem = Color3.fromRGB(220, 200, 140),
+		buffer = Color3.fromRGB(170, 170, 190),
+		["function"] = Color3.fromRGB(255, 150, 180),
+	}
+	if map[badge] then return map[badge] end
+	-- ClassName-ish (Part, RemoteEvent, etc.)
+	if typeof(Value) == "Instance" or (typeof(Value) == "table" and Value.__t == "Instance") then
+		return Color3.fromRGB(120, 200, 220)
+	end
+	return Color3.fromRGB(180, 185, 195)
+end
+
 function Ui:FormatArgPreview(Value, Limit: number?): string
 	Limit = Limit or 80
 	local ty = typeof(Value)
@@ -553,11 +578,13 @@ function Ui:UpdateSpamIndicator()
 		if not chip then return end
 		if active then
 			chip.Visible = true
-			chip.BackgroundTransparency = 0.15
-			chip.Text = "SPAM ON — click to stop"
-			chip.TextColor3 = Color3.fromRGB(255, 150, 150)
+			chip.BackgroundTransparency = 0
+			chip.BackgroundColor3 = Color3.fromRGB(48, 22, 26)
+			chip.Text = "  SPAM · tap to stop  "
+			chip.TextColor3 = Color3.fromRGB(255, 160, 165)
 		else
 			chip.Visible = false
+			chip.BackgroundTransparency = 1
 			chip.Text = ""
 		end
 	end)
@@ -578,26 +605,17 @@ function Ui:BeginSpamWatch()
 	task.spawn(function()
 		while self._spamWatch do
 			self:UpdateSpamIndicator()
-			-- click StatusChip to stop
 			pcall(function()
 				local win = self.Window and self.Window.Instance
 				local chip = win and win:FindFirstChild("StatusChip", true)
-				if chip and not chip:GetAttribute("Bound") then
+				if chip and chip:IsA("TextButton") and not chip:GetAttribute("Bound") then
 					chip:SetAttribute("Bound", true)
-					if chip:IsA("TextLabel") then
-						-- make clickable overlay
-						local hit = Instance.new("TextButton")
-						hit.Size = UDim2.fromScale(1, 1)
-						hit.BackgroundTransparency = 1
-						hit.Text = ""
-						hit.Parent = chip
-						hit.MouseButton1Click:Connect(function()
-							self:StopSpam()
-						end)
-					end
+					chip.MouseButton1Click:Connect(function()
+						self:StopSpam()
+					end)
 				end
 			end)
-			task.wait(0.4)
+			task.wait(0.35)
 		end
 	end)
 end
@@ -1530,12 +1548,17 @@ function Ui:SetFocusedRemote(Data)
 		for i = 1, math.min(maxn, 24) do
 			local val = argList[i]
 			local badge = self:TypeBadge(val)
-			local preview = self:FormatArgPreview(val, 42)
+			local badgeColor = self:TypeBadgeColor(val)
+			local preview = self:FormatArgPreview(val, 40)
 			local argPath = "args[" .. tostring(i) .. "]"
 			local rowH = self.IsMobileUi and 34 or 28
 			local row = Tab:Row({ Size = UDim2.new(1, 0, 0, rowH) })
 			row:Label({
-				Text = string.format("%s  [%s]  %s", argPath, badge, preview),
+				Text = string.format("[%s]", badge),
+				TextColor3 = badgeColor,
+			})
+			row:Label({
+				Text = string.format("%s  %s", argPath, preview),
 				TextColor3 = Color3.fromRGB(210, 212, 220),
 			})
 			row:Button({
