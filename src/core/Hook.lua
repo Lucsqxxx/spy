@@ -288,17 +288,18 @@ function Hook:MultiConnect(Remotes)
 end
 
 function Hook:ConnectClientRecive(Remote)
-	
 	local Allowed = Process:RemoteAllowed(Remote, "Receive")
 	if not Allowed then return end
 
-	
     local ClassData = Process:GetClassData(Remote)
+	if not ClassData or not ClassData.Receive then
+		return
+	end
     local IsRemoteFunction = ClassData.IsRemoteFunction
 	local NoReciveHook = ClassData.NoReciveHook
     local Method = ClassData.Receive[1]
+	if not Method then return end
 
-	
 	if NoReciveHook then return end
 
 	
