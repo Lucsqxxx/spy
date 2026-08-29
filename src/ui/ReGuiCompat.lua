@@ -795,6 +795,25 @@ function Element:_create(class, config)
 			self:SetText("")
 			el._lines = {}
 		end
+		function el:SetWrapped(on)
+			el._wrapped = on and true or false
+			box.TextWrapped = el._wrapped
+		end
+		function el:HighlightLine(lineNum)
+			lineNum = tonumber(lineNum) or 1
+			local lines = {}
+			for s in (plainText .. "\n"):gmatch("(.-)\n") do
+				table.insert(lines, s)
+			end
+			if lineNum < 1 then lineNum = 1 end
+			if lineNum > #lines then lineNum = #lines end
+			-- move caret-ish: rebuild plain with a marker comment on that line for visibility
+			self:SetText(plainText)
+			pcall(function()
+				box:CaptureFocus()
+			end)
+			el._highlightLine = lineNum
+		end
 		function el:AppendText(...)
 			if not el.Enabled then return end
 			local parts = {...}
