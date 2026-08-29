@@ -88,7 +88,26 @@ end
 function Module:GetDebugId(Object: Instance): string
     local Invoke = self.DebugIdInvoke
     local Remote = self.DebugIdRemote
-	return Invoke(Remote, Object)
+	if not Invoke or not Remote then
+		local ok, id = pcall(function()
+			return Object:GetDebugId()
+		end)
+		if ok and id ~= nil then
+			return tostring(id)
+		end
+		return tostring(Object)
+	end
+	local ok, id = pcall(Invoke, Remote, Object)
+	if ok and id ~= nil then
+		return tostring(id)
+	end
+	local ok2, id2 = pcall(function()
+		return Object:GetDebugId()
+	end)
+	if ok2 and id2 ~= nil then
+		return tostring(id2)
+	end
+	return tostring(Object)
 end
 
 function Module:GetHiddenParent(): Instance
@@ -123,9 +142,13 @@ function Module:GetCommChannel(ChannelId: number): BindableEvent?
     end
 
     local Parent = self:GetHiddenParent()
-    local Channel = Parent:FindFirstChild(ChannelId)
-
-    
+	if not Parent then
+		return nil, true
+	end
+    local Channel = Parent:FindFirstChild(tostring(ChannelId))
+	if not Channel then
+		return nil, true
+	end
     local Wrapped = self:NewCommWrap(Channel)
     return Wrapped, true
 end
@@ -325,7 +348,7 @@ function Module:QueueLog(Data)
                 Data.Args = self:SerializeTable(Data.Args)
                 Data.ArgsSerialized = true
             end
-            if Data.ReturnValues and typeof(Data.ReturnValues) == "table" and not Data.ReturnsSerialized then
+            if Data.ReturnValues ~= nil and typeof(Data.ReturnValues) == "table" and not Data.ReturnsSerialized then
                 Data.ReturnValues = self:SerializeTable(Data.ReturnValues)
                 Data.ReturnsSerialized = true
             end
