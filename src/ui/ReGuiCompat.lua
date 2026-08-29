@@ -74,29 +74,30 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 local C = {
-	-- Refined dark theme
-	Bg = Color3.fromRGB(18, 18, 20),
-	BgDark = Color3.fromRGB(14, 14, 16),
-	Title = Color3.fromRGB(22, 22, 24),
-	TitleBot = Color3.fromRGB(20, 20, 22),
-	Border = Color3.fromRGB(42, 42, 48),
-	Text = Color3.fromRGB(228, 228, 232),
-	TextDim = Color3.fromRGB(130, 132, 140),
-	Accent = Color3.fromRGB(96, 140, 220),
-	Btn = Color3.fromRGB(32, 32, 38),
-	BtnHover = Color3.fromRGB(48, 48, 56),
-	Select = Color3.fromRGB(28, 32, 42),
-	SelectActive = Color3.fromRGB(40, 52, 72),
-	Input = Color3.fromRGB(12, 12, 14),
-	Check = Color3.fromRGB(96, 140, 220),
-	Green = Color3.fromRGB(110, 200, 150),
-	Yellow = Color3.fromRGB(220, 190, 90),
-	TabActive = Color3.fromRGB(38, 42, 52),
-	TabIdle = Color3.fromRGB(22, 22, 26),
-	RowAlt = Color3.fromRGB(16, 16, 18),
-	LineNum = Color3.fromRGB(88, 88, 96),
-	Gutter = Color3.fromRGB(16, 16, 18),
+	-- Elegant dark (sleek, low-noise)
+	Bg = Color3.fromRGB(16, 16, 18),
+	BgDark = Color3.fromRGB(12, 12, 14),
+	Title = Color3.fromRGB(20, 20, 22),
+	TitleBot = Color3.fromRGB(18, 18, 20),
+	Border = Color3.fromRGB(38, 40, 48),
+	Text = Color3.fromRGB(232, 233, 238),
+	TextDim = Color3.fromRGB(128, 130, 140),
+	Accent = Color3.fromRGB(110, 150, 230),
+	Btn = Color3.fromRGB(30, 32, 40),
+	BtnHover = Color3.fromRGB(44, 48, 60),
+	Select = Color3.fromRGB(26, 30, 40),
+	SelectActive = Color3.fromRGB(42, 56, 82),
+	Input = Color3.fromRGB(10, 10, 12),
+	Check = Color3.fromRGB(110, 150, 230),
+	Green = Color3.fromRGB(120, 210, 160),
+	Yellow = Color3.fromRGB(230, 200, 100),
+	TabActive = Color3.fromRGB(36, 42, 54),
+	TabIdle = Color3.fromRGB(20, 20, 24),
+	RowAlt = Color3.fromRGB(14, 14, 16),
+	LineNum = Color3.fromRGB(90, 92, 100),
+	Gutter = Color3.fromRGB(14, 14, 16),
 }
+
 
 
 
@@ -213,8 +214,8 @@ function Element:_create(class, config)
 		local frame
 		if scroll then
 			frame = Instance.new("ScrollingFrame")
-			frame.ScrollBarThickness = 3
-			frame.ScrollBarImageColor3 = C.Border
+			frame.ScrollBarThickness = 6
+			frame.ScrollBarImageColor3 = Color3.fromRGB(70, 74, 88)
 			frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 			frame.CanvasSize = UDim2.new()
 			frame.BackgroundColor3 = C.BgDark
@@ -414,8 +415,8 @@ function Element:_create(class, config)
 		btn.AutoButtonColor = true
 		btn.Parent = host
 		order(btn)
-		corner(btn, 4)
-		applyFont(btn)
+		corner(btn, 6)
+		applyFont(btn, "medium")
 		
 		if config.FlexFill then
 			pcall(function()
@@ -1461,22 +1462,25 @@ function ReGui:Window(config)
 		end)
 	end
 
-	local statusChip = Instance.new("TextLabel")
+	local statusChip = Instance.new("TextButton")
 	statusChip.Name = "StatusChip"
-	statusChip.Size = UDim2.fromOffset(0, 20)
+	statusChip.Size = UDim2.fromOffset(0, 22)
 	statusChip.AutomaticSize = Enum.AutomaticSize.X
-	statusChip.Position = UDim2.new(1, -160, 0.5, -10)
-	statusChip.BackgroundColor3 = Color3.fromRGB(40, 28, 28)
+	statusChip.Position = UDim2.new(1, -200, 0.5, -11)
+	statusChip.BackgroundColor3 = Color3.fromRGB(48, 22, 26)
 	statusChip.BackgroundTransparency = 1
 	statusChip.Text = ""
-	statusChip.TextColor3 = Color3.fromRGB(255, 140, 140)
+	statusChip.TextColor3 = Color3.fromRGB(255, 160, 165)
 	statusChip.TextSize = 11
 	statusChip.Font = Enum.Font.BuilderSansMedium
 	statusChip.Visible = false
+	statusChip.AutoButtonColor = true
+	statusChip.BorderSizePixel = 0
 	statusChip.Parent = titleBar
+	corner(statusChip, 6)
 	local scPad = Instance.new("UIPadding")
-	scPad.PaddingLeft = UDim.new(0, 8)
-	scPad.PaddingRight = UDim.new(0, 8)
+	scPad.PaddingLeft = UDim.new(0, 10)
+	scPad.PaddingRight = UDim.new(0, 10)
 	scPad.Parent = statusChip
 	local scCorner = Instance.new("UICorner")
 	scCorner.CornerRadius = UDim.new(0, 6)
@@ -1510,6 +1514,7 @@ function ReGui:Window(config)
 	content.Size = UDim2.new(1, 0, 1, -34)
 	content.BackgroundTransparency = 1
 	content.ClipsDescendants = true
+	content.Active = false
 	content.Parent = frame
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal
