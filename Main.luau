@@ -47,7 +47,7 @@ local function HttpGet(Url)
 end
 
 local Base = Configuration.RepoUrl:gsub("/+$", "")
-local CACHE_VER = "20260829h"
+local CACHE_VER = "20260829i"
 
 Out("loading Files")
 local FilesSource = HttpGet(Base .. "/src/utils/Files.lua?v=" .. CACHE_VER)
