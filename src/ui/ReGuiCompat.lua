@@ -393,7 +393,11 @@ function Element:_create(class, config)
 	
 	if class == "Selectable" then
 		local btn = Instance.new("TextButton")
-		btn.Size = config.Size or UDim2.new(1, -2, 0, 18)
+		local rowH = 18
+		pcall(function()
+			if ReGui:IsMobileDevice() then rowH = 28 end
+		end)
+		btn.Size = config.Size or UDim2.new(1, -2, 0, rowH)
 		btn.BackgroundColor3 = C.BgDark
 		btn.BackgroundTransparency = 1
 		btn.TextColor3 = config.TextColor3 or C.Text
@@ -1290,7 +1294,16 @@ end
 function ReGui:Window(config)
 	config = config or {}
 	local screen = parentGui()
-	local size = config.Size or UDim2.fromOffset(820, 520)
+	local size = config.Size
+	if not size then
+		if self:IsMobileDevice() then
+			local cam = workspace.CurrentCamera
+			local vs = cam and cam.ViewportSize or Vector2.new(800, 600)
+			size = UDim2.fromOffset(math.floor(vs.X * 0.94), math.floor(vs.Y * 0.72))
+		else
+			size = UDim2.fromOffset(820, 520)
+		end
+	end
 	local minimized = false
 	local fullSize = size
 
