@@ -437,6 +437,12 @@ function Element:_create(class, config)
 			end)
 		end
 		local el = wrap(btn, "Button")
+		btn.MouseEnter:Connect(function()
+			tween(btn, TWEEN_FAST, { BackgroundColor3 = C.BtnHover })
+		end)
+		btn.MouseLeave:Connect(function()
+			tween(btn, TWEEN_FAST, { BackgroundColor3 = C.Btn })
+		end)
 		if config.Callback then
 			btn.MouseButton1Click:Connect(function()
 				pcall(config.Callback, el)
@@ -914,24 +920,37 @@ function Element:_create(class, config)
 		root.Parent = host
 		order(root)
 
-		local rowH = 22
+		local rowH = 24
 		pcall(function()
-			if ReGui:IsMobileDevice() then rowH = 28 end
+			if ReGui:IsMobileDevice() then rowH = 30 end
 		end)
 
-		-- Header bar (frame, not styled Roblox button chrome)
 		local headerBar = Instance.new("Frame")
 		headerBar.Name = "HeaderBar"
 		headerBar.Size = UDim2.new(1, 0, 0, rowH)
-		headerBar.BackgroundColor3 = C.BgDark
-		headerBar.BackgroundTransparency = 0.35
+		headerBar.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
+		headerBar.BackgroundTransparency = 0.25
 		headerBar.BorderSizePixel = 0
 		headerBar.Parent = root
+		corner(headerBar, 6)
+
+		-- caret column (clean, no [+]/[-])
+		local caret = Instance.new("TextLabel")
+		caret.Name = "Caret"
+		caret.Size = UDim2.fromOffset(18, rowH)
+		caret.Position = UDim2.fromOffset(4, 0)
+		caret.BackgroundTransparency = 1
+		caret.Text = "›"
+		caret.TextColor3 = C.Accent
+		caret.TextSize = 16
+		caret.Font = Enum.Font.GothamBold
+		caret.TextXAlignment = Enum.TextXAlignment.Center
+		caret.Parent = headerBar
 
 		local header = Instance.new("TextLabel")
 		header.Name = "Header"
-		header.Size = UDim2.new(1, -8, 1, 0)
-		header.Position = UDim2.fromOffset(6, 0)
+		header.Size = UDim2.new(1, -28, 1, 0)
+		header.Position = UDim2.fromOffset(22, 0)
 		header.BackgroundTransparency = 1
 		header.BorderSizePixel = 0
 		header.TextXAlignment = Enum.TextXAlignment.Left
@@ -942,7 +961,6 @@ function Element:_create(class, config)
 		header.Parent = headerBar
 		applyFont(header, "medium")
 
-		-- Invisible hit target (no default button look / icons)
 		local hit = Instance.new("TextButton")
 		hit.Name = "Hit"
 		hit.Size = UDim2.fromScale(1, 1)
@@ -951,15 +969,21 @@ function Element:_create(class, config)
 		hit.Text = ""
 		hit.AutoButtonColor = false
 		hit.Parent = headerBar
-		pcall(function()
-			hit.Style = Enum.ButtonStyle.Custom
-		end)
+		pcall(function() hit.Style = Enum.ButtonStyle.Custom end)
 
-		local open = true
+		-- start collapsed so new remotes do not auto-expand
+		local open = false
+		pcall(function()
+			-- optional AutoExpand later via config
+		end)
 		local title = tostring(config.Title or config.Text or "Node")
 		local function refresh()
-			-- ASCII only — unicode arrows can show as Roblox/missing glyphs
-			header.Text = (open and "[-] " or "[+] ") .. title
+			header.Text = title
+			caret.Text = open and "˅" or "›"
+			caret.Rotation = 0
+			tween(headerBar, TWEEN_FAST, {
+				BackgroundTransparency = open and 0.1 or 0.25
+			})
 		end
 		refresh()
 
@@ -967,10 +991,10 @@ function Element:_create(class, config)
 		body.Name = "Content"
 		body.BackgroundTransparency = 1
 		body.BorderSizePixel = 0
-		body.Position = UDim2.fromOffset(6, rowH)
-		body.Size = UDim2.new(1, -8, 0, 0)
+		body.Position = UDim2.fromOffset(6, rowH + 2)
+		body.Size = UDim2.new(1, -10, 0, 0)
 		body.AutomaticSize = Enum.AutomaticSize.Y
-		body.Visible = open
+		body.Visible = false
 		body.ClipsDescendants = false
 		body.Parent = root
 		local bl = Instance.new("UIListLayout")
@@ -982,10 +1006,12 @@ function Element:_create(class, config)
 			open = not open
 			body.Visible = open
 			refresh()
-			-- force layout refresh so category does not collapse blank
-			pcall(function()
-				root.AutomaticSize = Enum.AutomaticSize.Y
-			end)
+		end)
+		hit.MouseEnter:Connect(function()
+			tween(headerBar, TWEEN_FAST, { BackgroundTransparency = 0.05 })
+		end)
+		hit.MouseLeave:Connect(function()
+			tween(headerBar, TWEEN_FAST, { BackgroundTransparency = open and 0.1 or 0.25 })
 		end)
 
 		local el = wrap(root, "TreeNode")
@@ -1462,8 +1488,9 @@ function ReGui:Window(config)
 	frame.Active = true
 	frame.Draggable = false -- M3: drag only via title bar (list scroll won't move window)
 	frame.Parent = screen
-	corner(frame, 10)
-	stroke(frame, Color3.fromRGB(50, 52, 60), 1)
+	corner(frame, 12)
+	stroke(frame, Color3.fromRGB(55, 58, 68), 1)
+	frame.ClipsDescendants = true
 
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
@@ -1472,6 +1499,14 @@ function ReGui:Window(config)
 	titleBar.BorderSizePixel = 0
 	titleBar.Active = true
 	titleBar.Parent = frame
+	corner(titleBar, 12)
+	-- mask bottom of title corner under content
+	local titleMask = Instance.new("Frame")
+	titleMask.Size = UDim2.new(1, 0, 0, 12)
+	titleMask.Position = UDim2.new(0, 0, 1, -12)
+	titleMask.BackgroundColor3 = C.Title
+	titleMask.BorderSizePixel = 0
+	titleMask.Parent = titleBar
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -1588,13 +1623,21 @@ function ReGui:Window(config)
 
 	local function setMinimized(v)
 		minimized = v
-		content.Visible = not minimized
+		local tw = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		if minimized then
 			minBtn.Text = "□"
-			frame.Size = UDim2.fromOffset(fullSize.X.Offset, 24)
+			content.Visible = false
+			grab.Visible = false
+			tween(frame, tw, {
+				Size = UDim2.fromOffset(math.max(fullSize.X.Offset, 220), 34)
+			})
 		else
 			minBtn.Text = "─"
-			frame.Size = fullSize
+			content.Visible = true
+			grab.Visible = true
+			tween(frame, tw, {
+				Size = fullSize
+			})
 		end
 	end
 
