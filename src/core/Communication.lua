@@ -72,10 +72,10 @@ function Module:NewCommWrap(Channel: BindableEvent)
     return Wrapped
 end
 
-function Module:MakeDebugIdHandler(): BindableFunction
+function Module:MakeDebugIdHandler()
     
     local Remote = Instance.new("BindableFunction")
-    function Remote.OnInvoke(Object: Instance): string
+    function Remote.OnInvoke(Object: Instance)
         return Object:GetDebugId()
     end
 
@@ -85,7 +85,7 @@ function Module:MakeDebugIdHandler(): BindableFunction
     return Remote
 end
 
-function Module:GetDebugId(Object: Instance): string
+function Module:GetDebugId(Object: Instance)
     local Invoke = self.DebugIdInvoke
     local Remote = self.DebugIdRemote
 	if not Invoke or not Remote then
@@ -110,13 +110,13 @@ function Module:GetDebugId(Object: Instance): string
 	return tostring(Object)
 end
 
-function Module:GetHiddenParent(): Instance
+function Module:GetHiddenParent()
     
     if gethui then return gethui() end
     return CoreGui
 end
 
-function Module:CreateCommChannel(): (number, BindableEvent)
+function Module:CreateCommChannel()
     
     local Force = Config.ForceUseCustomComm
     if create_comm_channel and not Force then
@@ -133,7 +133,7 @@ function Module:CreateCommChannel(): (number, BindableEvent)
     return ChannelId, Channel
 end
 
-function Module:GetCommChannel(ChannelId: number): BindableEvent?
+function Module:GetCommChannel(ChannelId: number)
     
     local Force = Config.ForceUseCustomComm
     if get_comm_channel and not Force then
@@ -162,7 +162,7 @@ function Module:WaitCheck()
     end
 end
 
-function Module:SerializeValue(Value, Depth: number?, Seen: table?): any
+function Module:SerializeValue(Value, Depth: number?, Seen: table?)
     Depth = Depth or 0
     Seen = Seen or {}
     local ty = typeof(Value)
@@ -236,7 +236,7 @@ function Module:SerializeValue(Value, Depth: number?, Seen: table?): any
     return { __t = ty, str = tostring(Value) }
 end
 
-function Module:DeserializeValue(Value): any
+function Module:DeserializeValue(Value)
     if typeof(Value) ~= "table" or Value.__t == nil then
         return Value
     end
@@ -281,7 +281,7 @@ function Module:CheckValue(Value, Inbound: boolean?)
     return self:SerializeValue(Value)
 end
 
-function Module:MakePacket(Index, Value): table
+function Module:MakePacket(Index, Value)
     self:WaitCheck()
     return {
         Index = self:SerializeValue(Index),
@@ -289,7 +289,7 @@ function Module:MakePacket(Index, Value): table
     }
 end
 
-function Module:ReadPacket(Packet: table): (any, any)
+function Module:ReadPacket(Packet: table)
     if typeof(Packet) ~= "table" then return Packet end
     local Key = self:DeserializeValue(Packet.Index)
     local Value = self:DeserializeValue(Packet.Value)
@@ -297,7 +297,7 @@ function Module:ReadPacket(Packet: table): (any, any)
     return Key, Value
 end
 
-function Module:SerializeTable(Table: table): table
+function Module:SerializeTable(Table: table)
     if typeof(Table) ~= "table" then
         return { self:SerializeValue(Table) }
     end
@@ -319,7 +319,7 @@ function Module:SerializeTable(Table: table): table
     return self:SerializeValue(Table)
 end
 
-function Module:DeserializeTable(Serialized: table): table
+function Module:DeserializeTable(Serialized: table)
     if typeof(Serialized) ~= "table" then return Serialized end
     if Serialized.__t == "table" then
         return self:DeserializeValue(Serialized)
@@ -375,7 +375,7 @@ function Module:AddCommCallback(Type: string, Callback: (...any) -> ...any)
     CommCallbacks[Type] = Callback
 end
 
-function Module:GetCommCallback(Type: string): (...any) -> ...any
+function Module:GetCommCallback(Type: string) -> ...any
     local CommCallbacks = self.CommCallbacks
     return CommCallbacks[Type]
 end
@@ -397,12 +397,12 @@ function Module:Communicate(...)
     setthreadidentity(identity)
 end
 
-function Module:AddConnection(Callback): RBXScriptConnection
+function Module:AddConnection(Callback)
     local Event = self:ChannelIndex(Channel, "Event")
     return Event:Connect(Callback)
 end
 
-function Module:AddTypeCallback(Type: string, Callback): RBXScriptConnection
+function Module:AddTypeCallback(Type: string, Callback)
     local Event = self:ChannelIndex(Channel, "Event")
     return Event:Connect(function(RecivedType: string, ...)
         if RecivedType ~= Type then return end
@@ -416,7 +416,7 @@ function Module:AddTypeCallbacks(Types: table)
     end
 end
 
-function Module:CreateChannel(): number
+function Module:CreateChannel()
     local ChannelID, Event = self:CreateCommChannel()
     -- Must set Channel so QueueLog/Communicate can Fire
     Channel = Event
