@@ -227,7 +227,7 @@ function Hook:HookRemoteTypeIndex(ClassName: string, FuncName: string)
 end
 
 function Hook:HookRemoteIndexes()
-	-- C4: hook every documented Send alias (FireServer + fireServer, etc.)
+	
 	local RemoteClassData = Process.RemoteClassData
 	local Seen = {}
 	for ClassName, Data in RemoteClassData do
@@ -339,7 +339,10 @@ function Hook:BeginService(Libraries, ExtraData, ChannelId, ...)
 			Communication = Communication,
 			Process = ProcessLib,
 			Config = Config,
-			Hook = self
+			Hook = self,
+			Flags = Libraries.Flags or (Modules and Modules.Flags),
+			Ui = Libraries.Ui or (Modules and Modules.Ui),
+			Configuration = Libraries.Configuration or (Modules and Modules.Configuration),
 		},
 		Services = setmetatable({}, {
 			__index = function(self, Name: string): Instance
