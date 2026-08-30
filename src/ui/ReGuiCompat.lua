@@ -698,8 +698,8 @@ function Element:_create(class, config)
 		end
 		scroll.BackgroundColor3 = (typeof(colors.Background) == "Color3" and colors.Background) or C.Input
 		scroll.BorderSizePixel = 0
-		scroll.ScrollBarThickness = 6
-		scroll.ScrollBarImageColor3 = C.Border
+		scroll.ScrollBarThickness = 8
+		scroll.ScrollBarImageColor3 = Color3.fromRGB(70, 74, 88)
 		scroll.ScrollingDirection = Enum.ScrollingDirection.XY
 		scroll.AutomaticCanvasSize = Enum.AutomaticSize.XY
 		scroll.CanvasSize = UDim2.new()
@@ -744,7 +744,7 @@ function Element:_create(class, config)
 		lineBox.TextXAlignment = Enum.TextXAlignment.Right
 		lineBox.TextYAlignment = Enum.TextYAlignment.Top
 		lineBox.TextColor3 = C.LineNum
-		lineBox.TextSize = config.FontSize or 13
+		lineBox.TextSize = config.FontSize or 14
 		lineBox.Font = Enum.Font.RobotoMono
 		applyFont(lineBox, "code")
 		lineBox.Text = "1"
@@ -765,7 +765,7 @@ function Element:_create(class, config)
 		box.PlaceholderColor3 = C.TextDim
 		box.TextXAlignment = Enum.TextXAlignment.Left
 		box.TextYAlignment = Enum.TextYAlignment.Top
-		box.TextSize = config.FontSize or 13
+		box.TextSize = config.FontSize or 14
 		box.Font = Enum.Font.RobotoMono
 		applyFont(box, "code")
 		box.ClearTextOnFocus = false
@@ -916,13 +916,16 @@ function Element:_create(class, config)
 		root.Parent = host
 		order(root)
 
-		local rowH = 24
+		local rowH = 26
 		pcall(function()
-			if ReGui:IsMobileDevice() then rowH = 30 end
+			if ReGui:IsMobileDevice() then rowH = 32 end
 		end)
 
 		local open = false
 		local title = tostring(config.Title or config.Text or "Node")
+		local countVal = tonumber(config.Count) or 0
+		local iconLetter = tostring(config.IconLetter or "?")
+		local iconColor = config.IconColor or Color3.fromRGB(160, 160, 170)
 
 		local headerBtn = Instance.new("TextButton")
 		headerBtn.Name = "Header"
@@ -939,20 +942,40 @@ function Element:_create(class, config)
 
 		local caret = Instance.new("TextLabel")
 		caret.Name = "Caret"
-		caret.Size = UDim2.fromOffset(20, rowH)
-		caret.Position = UDim2.fromOffset(4, 0)
+		caret.Size = UDim2.fromOffset(16, rowH)
+		caret.Position = UDim2.fromOffset(2, 0)
 		caret.BackgroundTransparency = 1
 		caret.Text = ">"
-		caret.TextColor3 = C.Accent
-		caret.TextSize = 14
+		caret.TextColor3 = C.TextDim
+		caret.TextSize = 12
 		caret.Font = Enum.Font.GothamBold
 		caret.ZIndex = 3
 		caret.Parent = headerBtn
 
+		-- Remote type icon (colored rounded square)
+		local iconBg = Instance.new("Frame")
+		iconBg.Name = "TypeIcon"
+		iconBg.Size = UDim2.fromOffset(18, 18)
+		iconBg.Position = UDim2.new(0, 18, 0.5, -9)
+		iconBg.BackgroundColor3 = iconColor
+		iconBg.BorderSizePixel = 0
+		iconBg.ZIndex = 3
+		iconBg.Parent = headerBtn
+		corner(iconBg, 4)
+		local iconLbl = Instance.new("TextLabel")
+		iconLbl.Size = UDim2.fromScale(1, 1)
+		iconLbl.BackgroundTransparency = 1
+		iconLbl.Text = iconLetter
+		iconLbl.TextColor3 = Color3.fromRGB(20, 20, 24)
+		iconLbl.TextSize = 11
+		iconLbl.Font = Enum.Font.GothamBold
+		iconLbl.ZIndex = 4
+		iconLbl.Parent = iconBg
+
 		local header = Instance.new("TextLabel")
 		header.Name = "Title"
-		header.Size = UDim2.new(1, -28, 1, 0)
-		header.Position = UDim2.fromOffset(24, 0)
+		header.Size = UDim2.new(1, -78, 1, 0)
+		header.Position = UDim2.fromOffset(40, 0)
 		header.BackgroundTransparency = 1
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextTruncate = Enum.TextTruncate.AtEnd
@@ -963,6 +986,28 @@ function Element:_create(class, config)
 		header.ZIndex = 3
 		header.Parent = headerBtn
 		applyFont(header, "medium")
+
+		-- Count badge: gray rounded square with number only
+		local countBg = Instance.new("Frame")
+		countBg.Name = "CountBadge"
+		countBg.AnchorPoint = Vector2.new(1, 0.5)
+		countBg.Position = UDim2.new(1, -6, 0.5, 0)
+		countBg.Size = UDim2.fromOffset(22, 18)
+		countBg.BackgroundColor3 = Color3.fromRGB(48, 50, 58)
+		countBg.BorderSizePixel = 0
+		countBg.ZIndex = 3
+		countBg.Parent = headerBtn
+		corner(countBg, 4)
+		local countLbl = Instance.new("TextLabel")
+		countLbl.Name = "Count"
+		countLbl.Size = UDim2.fromScale(1, 1)
+		countLbl.BackgroundTransparency = 1
+		countLbl.Text = tostring(countVal)
+		countLbl.TextColor3 = Color3.fromRGB(180, 182, 190)
+		countLbl.TextSize = 11
+		countLbl.Font = Enum.Font.GothamMedium
+		countLbl.ZIndex = 4
+		countLbl.Parent = countBg
 
 		local body = Instance.new("Frame")
 		body.Name = "Content"
@@ -983,6 +1028,10 @@ function Element:_create(class, config)
 			caret.Text = open and "v" or ">"
 			headerBtn.BackgroundTransparency = open and 0.05 or 0.2
 			body.Visible = open
+			countLbl.Text = tostring(countVal)
+			-- widen badge for big numbers
+			local digits = #tostring(countVal)
+			countBg.Size = UDim2.fromOffset(math.max(22, 10 + digits * 7), 18)
 		end
 		refresh()
 
@@ -1001,6 +1050,14 @@ function Element:_create(class, config)
 			title = tostring(t or "")
 			el._title = title
 			refresh()
+		end
+		function el:SetCount(n)
+			countVal = tonumber(n) or 0
+			refresh()
+		end
+		function el:SetIcon(letter, color)
+			if letter then iconLbl.Text = tostring(letter) end
+			if color then iconBg.BackgroundColor3 = color end
 		end
 		function el:Remove()
 			pcall(function() root:Destroy() end)
@@ -1481,7 +1538,7 @@ function ReGui:Window(config)
 
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
-	titleBar.Size = UDim2.new(1, 0, 0, 34)
+	titleBar.Size = UDim2.new(1, 0, 0, 40)
 	titleBar.BackgroundColor3 = C.Title
 	titleBar.BorderSizePixel = 0
 	titleBar.Active = true
@@ -1495,10 +1552,36 @@ function ReGui:Window(config)
 	titleMask.BorderSizePixel = 0
 	titleMask.Parent = titleBar
 
+	-- Wyvern logo mark (purple rounded square + dragon glyph)
+	local logo = Instance.new("Frame")
+	logo.Name = "Logo"
+	logo.Size = UDim2.fromOffset(26, 26)
+	logo.Position = UDim2.fromOffset(10, 7)
+	logo.BackgroundColor3 = Color3.fromRGB(110, 70, 200)
+	logo.BorderSizePixel = 0
+	logo.Parent = titleBar
+	corner(logo, 7)
+	local logoGlyph = Instance.new("TextLabel")
+	logoGlyph.Size = UDim2.fromScale(1, 1)
+	logoGlyph.BackgroundTransparency = 1
+	logoGlyph.Text = "W"
+	logoGlyph.TextColor3 = Color3.fromRGB(245, 240, 255)
+	logoGlyph.TextSize = 15
+	logoGlyph.Font = Enum.Font.GothamBold
+	logoGlyph.Parent = logo
+	-- wing accent
+	local wing = Instance.new("TextLabel")
+	wing.Size = UDim2.fromOffset(14, 14)
+	wing.Position = UDim2.fromOffset(38, 4)
+	wing.BackgroundTransparency = 1
+	wing.Text = "🐉"
+	wing.TextSize = 12
+	wing.Parent = titleBar
+
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
-	title.Size = UDim2.new(1, -100, 1, 0)
-	title.Position = UDim2.fromOffset(12, 0)
+	title.Size = UDim2.new(1, -130, 1, 0)
+	title.Position = UDim2.fromOffset(54, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
 	title.TextColor3 = Color3.fromRGB(235, 235, 240)
@@ -1574,30 +1657,56 @@ function ReGui:Window(config)
 
 	local minBtn = Instance.new("TextButton")
 	minBtn.Name = "Minimize"
-	minBtn.Size = UDim2.fromOffset(28, 24)
-	minBtn.Position = UDim2.new(1, -64, 0, 4)
-	minBtn.BackgroundTransparency = 1
+	minBtn.Size = UDim2.fromOffset(36, 28)
+	minBtn.Position = UDim2.new(1, -84, 0, 6)
+	minBtn.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
+	minBtn.BackgroundTransparency = 0.35
 	minBtn.Text = "─"
-	minBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
-	minBtn.Font = Enum.Font.BuilderSans
-	minBtn.TextSize = 14
+	minBtn.TextColor3 = Color3.fromRGB(210, 212, 220)
+	minBtn.Font = Enum.Font.GothamBold
+	minBtn.TextSize = 16
+	minBtn.BorderSizePixel = 0
+	minBtn.AutoButtonColor = false
 	minBtn.Parent = titleBar
+	corner(minBtn, 6)
+	minBtn.MouseEnter:Connect(function()
+		minBtn.BackgroundTransparency = 0.05
+		minBtn.BackgroundColor3 = Color3.fromRGB(55, 58, 70)
+	end)
+	minBtn.MouseLeave:Connect(function()
+		minBtn.BackgroundTransparency = 0.35
+		minBtn.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
+	end)
 
 	local close = Instance.new("TextButton")
-	close.Size = UDim2.fromOffset(28, 24)
-	close.Position = UDim2.new(1, -32, 0, 4)
-	close.BackgroundTransparency = 1
+	close.Name = "Close"
+	close.Size = UDim2.fromOffset(36, 28)
+	close.Position = UDim2.new(1, -42, 0, 6)
+	close.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
+	close.BackgroundTransparency = 0.35
 	close.Text = "×"
-	close.TextColor3 = Color3.fromRGB(180, 180, 190)
-	close.Font = Enum.Font.BuilderSans
+	close.TextColor3 = Color3.fromRGB(230, 200, 200)
+	close.Font = Enum.Font.GothamBold
 	close.TextSize = 18
 	close.BorderSizePixel = 0
+	close.AutoButtonColor = false
 	close.Parent = titleBar
+	corner(close, 6)
+	close.MouseEnter:Connect(function()
+		close.BackgroundTransparency = 0
+		close.BackgroundColor3 = Color3.fromRGB(180, 55, 65)
+		close.TextColor3 = Color3.fromRGB(255, 255, 255)
+	end)
+	close.MouseLeave:Connect(function()
+		close.BackgroundTransparency = 0.35
+		close.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
+		close.TextColor3 = Color3.fromRGB(230, 200, 200)
+	end)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
-	content.Position = UDim2.fromOffset(0, 34)
-	content.Size = UDim2.new(1, 0, 1, -34)
+	content.Position = UDim2.fromOffset(0, 40)
+	content.Size = UDim2.new(1, 0, 1, -40)
 	content.BackgroundTransparency = 1
 	content.ClipsDescendants = true
 	content.Active = false
@@ -1629,7 +1738,7 @@ function ReGui:Window(config)
 			content.Visible = false
 			content.Size = UDim2.new(1, 0, 0, 0)
 			if grab then grab.Visible = false end
-			local target = UDim2.fromOffset(curW, 34)
+			local target = UDim2.fromOffset(curW, 40)
 			-- hard set first (some executors drop tweens on Size)
 			frame.Size = target
 			pcall(function()
@@ -1639,7 +1748,7 @@ function ReGui:Window(config)
 		else
 			minBtn.Text = "─"
 			content.Visible = true
-			content.Size = UDim2.new(1, 0, 1, -34)
+			content.Size = UDim2.new(1, 0, 1, -40)
 			if grab then grab.Visible = true end
 			local target = fullSize
 			if typeof(target) ~= "UDim2" or (target.X.Offset < 100 and target.Y.Offset < 100) then
