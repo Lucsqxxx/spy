@@ -1552,36 +1552,28 @@ function ReGui:Window(config)
 	titleMask.BorderSizePixel = 0
 	titleMask.Parent = titleBar
 
-	-- Wyvern logo mark (purple rounded square + dragon glyph)
-	local logo = Instance.new("Frame")
+	local logo = Instance.new("ImageLabel")
 	logo.Name = "Logo"
-	logo.Size = UDim2.fromOffset(26, 26)
-	logo.Position = UDim2.fromOffset(10, 7)
-	logo.BackgroundColor3 = Color3.fromRGB(110, 70, 200)
+	logo.Size = UDim2.fromOffset(28, 28)
+	logo.Position = UDim2.fromOffset(10, 6)
+	logo.BackgroundTransparency = 1
 	logo.BorderSizePixel = 0
+	logo.ScaleType = Enum.ScaleType.Fit
 	logo.Parent = titleBar
-	corner(logo, 7)
-	local logoGlyph = Instance.new("TextLabel")
-	logoGlyph.Size = UDim2.fromScale(1, 1)
-	logoGlyph.BackgroundTransparency = 1
-	logoGlyph.Text = "W"
-	logoGlyph.TextColor3 = Color3.fromRGB(245, 240, 255)
-	logoGlyph.TextSize = 15
-	logoGlyph.Font = Enum.Font.GothamBold
-	logoGlyph.Parent = logo
-	-- wing accent
-	local wing = Instance.new("TextLabel")
-	wing.Size = UDim2.fromOffset(14, 14)
-	wing.Position = UDim2.fromOffset(38, 4)
-	wing.BackgroundTransparency = 1
-	wing.Text = "🐉"
-	wing.TextSize = 12
-	wing.Parent = titleBar
+	local logoAsset = config.LogoAsset or ReGui.LogoAsset
+	if logoAsset and logoAsset ~= "" then
+		logo.Image = logoAsset
+	else
+		-- solid mark until asset loads (no text/emoji)
+		logo.BackgroundTransparency = 0
+		logo.BackgroundColor3 = Color3.fromRGB(90, 55, 180)
+		corner(logo, 8)
+	end
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.Size = UDim2.new(1, -130, 1, 0)
-	title.Position = UDim2.fromOffset(54, 0)
+	title.Position = UDim2.fromOffset(44, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
 	title.TextColor3 = Color3.fromRGB(235, 235, 240)
