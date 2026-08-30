@@ -924,8 +924,7 @@ function Element:_create(class, config)
 		local open = false
 		local title = tostring(config.Title or config.Text or "Node")
 		local countVal = tonumber(config.Count) or 0
-		local iconLetter = tostring(config.IconLetter or "?")
-		local iconColor = config.IconColor or Color3.fromRGB(160, 160, 170)
+		local iconImage = config.IconImage or "rbxassetid://110803789420086"
 
 		local headerBtn = Instance.new("TextButton")
 		headerBtn.Name = "Header"
@@ -952,25 +951,17 @@ function Element:_create(class, config)
 		caret.ZIndex = 3
 		caret.Parent = headerBtn
 
-		-- Remote type icon (colored rounded square)
-		local iconBg = Instance.new("Frame")
-		iconBg.Name = "TypeIcon"
-		iconBg.Size = UDim2.fromOffset(18, 18)
-		iconBg.Position = UDim2.new(0, 18, 0.5, -9)
-		iconBg.BackgroundColor3 = iconColor
-		iconBg.BorderSizePixel = 0
-		iconBg.ZIndex = 3
-		iconBg.Parent = headerBtn
-		corner(iconBg, 4)
-		local iconLbl = Instance.new("TextLabel")
-		iconLbl.Size = UDim2.fromScale(1, 1)
-		iconLbl.BackgroundTransparency = 1
-		iconLbl.Text = iconLetter
-		iconLbl.TextColor3 = Color3.fromRGB(20, 20, 24)
-		iconLbl.TextSize = 11
-		iconLbl.Font = Enum.Font.GothamBold
-		iconLbl.ZIndex = 4
-		iconLbl.Parent = iconBg
+		-- Cobalt-style class icon (real image, not text)
+		local icon = Instance.new("ImageLabel")
+		icon.Name = "TypeIcon"
+		icon.Size = UDim2.fromOffset(18, 18)
+		icon.Position = UDim2.new(0, 18, 0.5, -9)
+		icon.BackgroundTransparency = 1
+		icon.BorderSizePixel = 0
+		icon.ScaleType = Enum.ScaleType.Fit
+		icon.Image = iconImage
+		icon.ZIndex = 3
+		icon.Parent = headerBtn
 
 		local header = Instance.new("TextLabel")
 		header.Name = "Title"
@@ -987,7 +978,6 @@ function Element:_create(class, config)
 		header.Parent = headerBtn
 		applyFont(header, "medium")
 
-		-- Count badge: gray rounded square with number only
 		local countBg = Instance.new("Frame")
 		countBg.Name = "CountBadge"
 		countBg.AnchorPoint = Vector2.new(1, 0.5)
@@ -1029,7 +1019,6 @@ function Element:_create(class, config)
 			headerBtn.BackgroundTransparency = open and 0.05 or 0.2
 			body.Visible = open
 			countLbl.Text = tostring(countVal)
-			-- widen badge for big numbers
 			local digits = #tostring(countVal)
 			countBg.Size = UDim2.fromOffset(math.max(22, 10 + digits * 7), 18)
 		end
@@ -1055,9 +1044,11 @@ function Element:_create(class, config)
 			countVal = tonumber(n) or 0
 			refresh()
 		end
-		function el:SetIcon(letter, color)
-			if letter then iconLbl.Text = tostring(letter) end
-			if color then iconBg.BackgroundColor3 = color end
+		function el:SetIconImage(img)
+			if img then
+				iconImage = img
+				icon.Image = img
+			end
 		end
 		function el:Remove()
 			pcall(function() root:Destroy() end)
