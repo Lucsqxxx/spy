@@ -90,7 +90,7 @@ local Module = {
 }
 }
 
-function Module:GetFlagValue(Name: string): FlagValue
+function Module:GetFlagValue(Name: string)
     local Flag = self:GetFlag(Name)
     return Flag.Value
 end
@@ -111,7 +111,7 @@ function Module:SetFlagCallbacks(Dict: {})
     end
 end
 
-function Module:GetFlag(Name: string): Flag
+function Module:GetFlag(Name: string)
     local AllFlags = self:GetFlags()
     local Flag = AllFlags[Name]
     assert(Flag, "Flag does not exist!")
@@ -123,7 +123,7 @@ function Module:AddFlag(Name: string, Flag: Flag)
     AllFlags[Name] = Flag
 end
 
-function Module:GetFlags(): Flags
+function Module:GetFlags()
     return self.Flags
 end
 
