@@ -446,59 +446,48 @@ function Ui:CreateElements(Parent, Options)
 	end
 end
 
-function Ui:RemoteKind(ClassData, Remote): (string, Color3, string)
-	-- Every class Wyvern logs (Process.RemoteClassData) gets a color + letter icon
-	local className = nil
+function Ui:RemoteKind(ClassData, Remote): (string, string)
+	-- Cobalt-style Roblox class icons (official dark explorer icons)
+	local className = "RemoteEvent"
 	pcall(function()
 		if Remote and typeof(Remote) == "Instance" then
 			className = Remote.ClassName
 		end
 	end)
-	if not className and ClassData then
-		if ClassData.IsRemoteFunction and ClassData.NoReciveHook then
-			className = "BindableFunction"
-		elseif ClassData.IsRemoteFunction then
-			className = "RemoteFunction"
-		elseif ClassData.NoReciveHook then
-			className = "BindableEvent"
+	local known = {
+		RemoteEvent = true,
+		RemoteFunction = true,
+		UnreliableRemoteEvent = true,
+		BindableEvent = true,
+		BindableFunction = true,
+	}
+	if not known[className] then
+		if ClassData then
+			if ClassData.IsRemoteFunction and ClassData.NoReciveHook then
+				className = "BindableFunction"
+			elseif ClassData.IsRemoteFunction then
+				className = "RemoteFunction"
+			elseif ClassData.NoReciveHook then
+				className = "BindableEvent"
+			else
+				className = "RemoteEvent"
+			end
 		else
 			className = "RemoteEvent"
 		end
 	end
 
-	local map = {
-		RemoteEvent = {
-			kind = "E",
-			letter = "E",
-			color = Color3.fromRGB(242, 200, 40),
-		},
-		RemoteFunction = {
-			kind = "F",
-			letter = "F",
-			color = Color3.fromRGB(120, 100, 255),
-		},
-		UnreliableRemoteEvent = {
-			kind = "U",
-			letter = "U",
-			color = Color3.fromRGB(255, 150, 60),
-		},
-		BindableEvent = {
-			kind = "B",
-			letter = "B",
-			color = Color3.fromRGB(80, 210, 140),
-		},
-		BindableFunction = {
-			kind = "BF",
-			letter = "f",
-			color = Color3.fromRGB(70, 170, 255),
-		},
+	local icons = {
+		RemoteEvent = "rbxassetid://110803789420086",
+		RemoteFunction = "rbxassetid://108537517159060",
+		UnreliableRemoteEvent = "rbxassetid://126244162339059",
+		BindableEvent = "rbxassetid://116839398727495",
+		BindableFunction = "rbxassetid://112264959079193",
 	}
-
-	local info = map[className] or map.RemoteEvent
-	return info.kind, info.color, info.letter
+	return className, icons[className] or icons.RemoteEvent
 end
 
-function Ui:TypePip(ClassData, Remote): string
+function Ui:TypePipfunction Ui:TypePip(ClassData, Remote): string
 	local kind = self:RemoteKind(ClassData, Remote)
 	return kind
 end
@@ -1753,18 +1742,16 @@ function Ui:GetRemoteHeader(Data: Log)
 
 	
 	if not NoTreeNodes then
-		local kind, iconColor, iconLetter = self:RemoteKind(Data.ClassData, Remote)
+		local className, iconImage = self:RemoteKind(Data.ClassData, Remote)
 		HeaderData.TreeNode = RemotesList:TreeNode({
 			LayoutOrder = -1 * RemotesCount,
 			Title = RemoteName,
-			IconLetter = iconLetter,
-			IconColor = iconColor,
+			IconImage = iconImage,
 			Count = 0,
 		})
 		HeaderData.RemoteName = RemoteName
-		HeaderData.TypePip = kind
-		HeaderData.IconColor = iconColor
-		HeaderData.IconLetter = iconLetter
+		HeaderData.TypePip = className
+		HeaderData.IconImage = iconImage
 	end
 
 	function HeaderData:CheckLimit()
