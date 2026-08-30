@@ -73,7 +73,7 @@ function Hook:PushConfig(Overwrites)
     Merge(self, Overwrites)
 end
 
-function Hook:ReplaceMetaMethod(Object: Instance, Call: string, Callback: MetaFunc): MetaFunc
+function Hook:ReplaceMetaMethod(Object: Instance, Call: string, Callback: MetaFunc)
 	local Metatable = getrawmetatable(Object)
 	local OriginalFunc = clonefunction(Metatable[Call])
 	
@@ -96,7 +96,7 @@ function Hook:HookFunction(Func: UnkFunc, Callback: UnkFunc)
 	return OriginalFunc
 end
 
-function Hook:HookMetaCall(Object: Instance, Call: string, Callback: MetaFunc): MetaFunc
+function Hook:HookMetaCall(Object: Instance, Call: string, Callback: MetaFunc)
 	local Metatable = getrawmetatable(Object)
 	local Unhooked
 	
@@ -106,7 +106,7 @@ function Hook:HookMetaCall(Object: Instance, Call: string, Callback: MetaFunc): 
 	return Unhooked
 end
 
-function Hook:HookMetaMethod(Object: Instance, Call: string, Callback: MetaFunc): MetaFunc
+function Hook:HookMetaMethod(Object: Instance, Call: string, Callback: MetaFunc)
 	local Func = newcclosure(Callback)
 	
 	
