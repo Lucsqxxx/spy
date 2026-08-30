@@ -1454,6 +1454,7 @@ function ReGui:Window(config)
 		end
 	end
 	local minimized = false
+	local ignoreDrag = false
 	local fullSize = size
 	-- normalize to offset so minimize/restore works
 	if typeof(size) == "UDim2" and size.X.Offset == 0 and size.X.Scale > 0 then
@@ -1476,6 +1477,7 @@ function ReGui:Window(config)
 	corner(frame, 12)
 	stroke(frame, Color3.fromRGB(55, 58, 68), 1)
 	frame.ClipsDescendants = true
+	frame.AutomaticSize = Enum.AutomaticSize.None
 
 	local titleBar = Instance.new("Frame")
 	titleBar.Name = "TitleBar"
@@ -1512,8 +1514,16 @@ function ReGui:Window(config)
 		local dragging = false
 		local dragStart, startPos
 		titleBar.InputBegan:Connect(function(input)
+			if ignoreDrag then return end
 			if input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.Touch then
+				-- don't start drag from control buttons
+				local p = input.Position
+				local abs = titleBar.AbsolutePosition
+				local asz = titleBar.AbsoluteSize
+				if p.X > abs.X + asz.X - 90 then
+					return
+				end
 				dragging = true
 				dragStart = input.Position
 				startPos = frame.Position
@@ -1607,36 +1617,63 @@ function ReGui:Window(config)
 	win._hostOverride = content
 
 	local function setMinimized(v)
-		minimized = v
-		local tw = TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		minimized = not not v
+		local abs = frame.AbsoluteSize
+		local curW = math.max(abs.X, 200)
+		local curH = math.max(abs.Y, 34)
 		if minimized then
-			-- store pixel size so restore always works
-			local abs = frame.AbsoluteSize
-			fullSize = UDim2.fromOffset(math.max(abs.X, 220), math.max(abs.Y, 200))
+			if curH > 40 then
+				fullSize = UDim2.fromOffset(curW, curH)
+			end
 			minBtn.Text = "□"
 			content.Visible = false
+			content.Size = UDim2.new(1, 0, 0, 0)
 			if grab then grab.Visible = false end
-			frame.Size = UDim2.fromOffset(fullSize.X.Offset, fullSize.Y.Offset)
-			tween(frame, tw, {
-				Size = UDim2.fromOffset(math.clamp(fullSize.X.Offset, 220, 600), 34)
-			})
+			local target = UDim2.fromOffset(curW, 34)
+			-- hard set first (some executors drop tweens on Size)
+			frame.Size = target
+			pcall(function()
+				local tw = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				game:GetService("TweenService"):Create(frame, tw, { Size = target }):Play()
+			end)
 		else
 			minBtn.Text = "─"
 			content.Visible = true
+			content.Size = UDim2.new(1, 0, 1, -34)
 			if grab then grab.Visible = true end
 			local target = fullSize
-			if target.X.Offset < 100 then
+			if typeof(target) ~= "UDim2" or (target.X.Offset < 100 and target.Y.Offset < 100) then
 				target = UDim2.fromOffset(820, 520)
 				fullSize = target
 			end
-			tween(frame, tw, { Size = target })
+			frame.Size = target
+			pcall(function()
+				local tw = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				game:GetService("TweenService"):Create(frame, tw, { Size = target }):Play()
+			end)
 		end
 	end
 
-	minBtn.MouseButton1Click:Connect(function()
+	local function bindBtn(btn, fn)
+		btn.ZIndex = 10
+		btn.Active = true
+		btn.AutoButtonColor = true
+		btn.MouseButton1Click:Connect(fn)
+		btn.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch then
+				ignoreDrag = true
+			end
+		end)
+		btn.InputEnded:Connect(function()
+			ignoreDrag = false
+		end)
+	end
+
+	bindBtn(minBtn, function()
 		setMinimized(not minimized)
 	end)
-	close.MouseButton1Click:Connect(function()
+	bindBtn(close, function()
 		frame.Visible = false
 	end)
 
