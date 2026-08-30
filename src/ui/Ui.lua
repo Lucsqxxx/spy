@@ -446,7 +446,7 @@ function Ui:CreateElements(Parent, Options)
 	end
 end
 
-function Ui:RemoteKind(ClassData, Remote): (string, string)
+function Ui:RemoteKind(ClassData, Remote)
 	-- Cobalt-style Roblox class icons (official dark explorer icons)
 	local className = "RemoteEvent"
 	pcall(function()
@@ -487,7 +487,7 @@ function Ui:RemoteKind(ClassData, Remote): (string, string)
 	return className, icons[className] or icons.RemoteEvent
 end
 
-function Ui:TypePipfunction Ui:TypePip(ClassData, Remote): string
+function Ui:TypePip(ClassData, Remote): string
 	local kind = self:RemoteKind(ClassData, Remote)
 	return kind
 end
