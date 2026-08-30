@@ -1,22 +1,18 @@
---[[
-	Sigma Spy – User Configuration
-	This file is copied to the workspace folder on first run.
-	Edit the copy in your executor’s workspace to customize.
-]]
+
 
 return {
-	-- Hooking
-	ForceUseCustomComm = false,   -- Force custom BindableEvent channel
-	ReplaceMetaCallFunc = false,  -- Alternative metamethod replacement style
-	NoReceiveHooking = false,     -- Disable OnClientEvent / OnClientInvoke hooks
+	
+	ForceUseCustomComm = false,   
+	ReplaceMetaCallFunc = false,  
+	NoReceiveHooking = false,     
 	BlackListedServices = {
 		"RobloxReplicatedStorage",
 	},
 
-	-- Processing
+	
 	ForceKonstantDecompiler = false,
 
-	-- Generated script variable name patterns (%.d → random digits)
+	
 	VariableNames = {
 		"arg%.d",
 		"value%.d",
@@ -24,11 +20,11 @@ return {
 		"payload%.d",
 		"param%.d",
 		"result%.d",
-		"sigma%.d",
+		"wyvern%.d",
 		"remote%.d",
 	},
 
-	-- Code editor syntax colors
+	
 	SyntaxColors = {
 		Text           = Color3.fromRGB(204, 204, 204),
 		Background     = Color3.fromRGB(20, 20, 20),
@@ -51,7 +47,7 @@ return {
 		Bracket        = Color3.fromRGB(204, 204, 204),
 	},
 
-	-- Log method badge colors
+	
 	MethodColors = {
 		["fireserver"]     = Color3.fromRGB(242, 255, 0),
 		["invokeserver"]   = Color3.fromRGB(99, 86, 245),
@@ -63,7 +59,7 @@ return {
 		["fire"]           = Color3.fromRGB(245, 141, 77),
 	},
 
-	-- UI theme
+	
 	ThemeConfig = {
 		BaseTheme = "ImGui",
 		TextSize  = 12,
