@@ -1,3 +1,5 @@
+local Configuration
+local Modules
 local Ui = {
 	DefaultEditorContent = [=[--[[
 	Wyvern Spy
@@ -75,9 +77,9 @@ local FontSuccess = true
 local CommChannel
 
 function Ui:Init(Data)
-    local Modules = Data.Modules
+	Modules = Data.Modules
+	Configuration = Data.Configuration or (Modules and Modules.Configuration)
 
-	
 	Flags = Modules.Flags
 	Generation = Modules.Generation
 	Process = Modules.Process
@@ -86,11 +88,14 @@ function Ui:Init(Data)
 	Communication = Modules.Communication
 	Files = Modules.Files
 
-	
-	
-	local CompatUrl = `{Data.Configuration.RepoUrl}/src/ui/ReGuiCompat.lua`
+	local CompatUrl = `{Configuration.RepoUrl}/src/ui/ReGuiCompat.lua`
 	local CompatSource = game:HttpGet(CompatUrl)
 	ReGui = loadstring(CompatSource, "ReGuiCompat")()
+	pcall(function()
+		if Configuration and Configuration._LogoAsset then
+			ReGui.LogoAsset = Configuration._LogoAsset
+		end
+	end)
 	warn("[Wyvern Spy] Using ReGuiCompat (no prefab asset)")
 
 	self:LoadFont()
@@ -248,9 +253,14 @@ end
 function Ui:CreateWindow(WindowConfig)
     local BaseConfig = self.BaseConfig
 	local Config = Process:DeepCloneTable(BaseConfig)
-	Process:Merge(Config, WindowConfig)
+	Process:Merge(Config, WindowConfig or {})
+	pcall(function()
+		if Configuration and Configuration._LogoAsset then
+			Config.LogoAsset = Configuration._LogoAsset
+			ReGui.LogoAsset = Configuration._LogoAsset
+		end
+	end)
 
-	
 	local Window = ReGui:Window(Config)
 
 	
