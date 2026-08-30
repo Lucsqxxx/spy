@@ -912,7 +912,7 @@ function Element:_create(class, config)
 		root.BorderSizePixel = 0
 		root.Size = UDim2.new(1, -2, 0, 0)
 		root.AutomaticSize = Enum.AutomaticSize.Y
-		root.ClipsDescendants = true
+		root.ClipsDescendants = false
 		root.Parent = host
 		order(root)
 
@@ -921,93 +921,74 @@ function Element:_create(class, config)
 			if ReGui:IsMobileDevice() then rowH = 30 end
 		end)
 
-		local headerBar = Instance.new("Frame")
-		headerBar.Name = "HeaderBar"
-		headerBar.Size = UDim2.new(1, 0, 0, rowH)
-		headerBar.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
-		headerBar.BackgroundTransparency = 0.25
-		headerBar.BorderSizePixel = 0
-		headerBar.Parent = root
-		corner(headerBar, 6)
+		local open = false
+		local title = tostring(config.Title or config.Text or "Node")
 
-		
+		local headerBtn = Instance.new("TextButton")
+		headerBtn.Name = "Header"
+		headerBtn.Size = UDim2.new(1, 0, 0, rowH)
+		headerBtn.BackgroundColor3 = Color3.fromRGB(24, 26, 32)
+		headerBtn.BackgroundTransparency = 0.2
+		headerBtn.BorderSizePixel = 0
+		headerBtn.AutoButtonColor = false
+		headerBtn.Text = ""
+		headerBtn.ZIndex = 2
+		headerBtn.Parent = root
+		corner(headerBtn, 6)
+		pcall(function() headerBtn.Style = Enum.ButtonStyle.Custom end)
+
 		local caret = Instance.new("TextLabel")
 		caret.Name = "Caret"
-		caret.Size = UDim2.fromOffset(18, rowH)
+		caret.Size = UDim2.fromOffset(20, rowH)
 		caret.Position = UDim2.fromOffset(4, 0)
 		caret.BackgroundTransparency = 1
-		caret.Text = "›"
+		caret.Text = ">"
 		caret.TextColor3 = C.Accent
-		caret.TextSize = 16
+		caret.TextSize = 14
 		caret.Font = Enum.Font.GothamBold
-		caret.TextXAlignment = Enum.TextXAlignment.Center
-		caret.Parent = headerBar
+		caret.ZIndex = 3
+		caret.Parent = headerBtn
 
 		local header = Instance.new("TextLabel")
-		header.Name = "Header"
+		header.Name = "Title"
 		header.Size = UDim2.new(1, -28, 1, 0)
-		header.Position = UDim2.fromOffset(22, 0)
+		header.Position = UDim2.fromOffset(24, 0)
 		header.BackgroundTransparency = 1
-		header.BorderSizePixel = 0
 		header.TextXAlignment = Enum.TextXAlignment.Left
 		header.TextTruncate = Enum.TextTruncate.AtEnd
 		header.Font = Enum.Font.BuilderSansMedium
 		header.TextSize = 13
 		header.TextColor3 = C.Text
-		header.Parent = headerBar
+		header.Text = title
+		header.ZIndex = 3
+		header.Parent = headerBtn
 		applyFont(header, "medium")
-
-		local hit = Instance.new("TextButton")
-		hit.Name = "Hit"
-		hit.Size = UDim2.fromScale(1, 1)
-		hit.BackgroundTransparency = 1
-		hit.BorderSizePixel = 0
-		hit.Text = ""
-		hit.AutoButtonColor = false
-		hit.Parent = headerBar
-		pcall(function() hit.Style = Enum.ButtonStyle.Custom end)
-
-		
-		local open = false
-		pcall(function()
-			
-		end)
-		local title = tostring(config.Title or config.Text or "Node")
-		local function refresh()
-			header.Text = title
-			caret.Text = open and "˅" or "›"
-			caret.Rotation = 0
-			tween(headerBar, TWEEN_FAST, {
-				BackgroundTransparency = open and 0.1 or 0.25
-			})
-		end
-		refresh()
 
 		local body = Instance.new("Frame")
 		body.Name = "Content"
 		body.BackgroundTransparency = 1
 		body.BorderSizePixel = 0
-		body.Position = UDim2.fromOffset(6, rowH + 2)
+		body.Position = UDim2.fromOffset(8, rowH + 2)
 		body.Size = UDim2.new(1, -10, 0, 0)
 		body.AutomaticSize = Enum.AutomaticSize.Y
 		body.Visible = false
-		body.ClipsDescendants = false
 		body.Parent = root
 		local bl = Instance.new("UIListLayout")
 		bl.Padding = UDim.new(0, 2)
 		bl.SortOrder = Enum.SortOrder.LayoutOrder
 		bl.Parent = body
 
-		hit.MouseButton1Click:Connect(function()
-			open = not open
+		local function refresh()
+			header.Text = title
+			caret.Text = open and "v" or ">"
+			headerBtn.BackgroundTransparency = open and 0.05 or 0.2
 			body.Visible = open
+		end
+		refresh()
+
+		headerBtn.MouseButton1Click:Connect(function()
+			open = not open
 			refresh()
-		end)
-		hit.MouseEnter:Connect(function()
-			tween(headerBar, TWEEN_FAST, { BackgroundTransparency = 0.05 })
-		end)
-		hit.MouseLeave:Connect(function()
-			tween(headerBar, TWEEN_FAST, { BackgroundTransparency = open and 0.1 or 0.25 })
 		end)
 
 		local el = wrap(root, "TreeNode")
@@ -1474,6 +1455,14 @@ function ReGui:Window(config)
 	end
 	local minimized = false
 	local fullSize = size
+	-- normalize to offset so minimize/restore works
+	if typeof(size) == "UDim2" and size.X.Offset == 0 and size.X.Scale > 0 then
+		pcall(function()
+			local vs = workspace.CurrentCamera.ViewportSize
+			fullSize = UDim2.fromOffset(math.floor(vs.X * size.X.Scale), math.floor(vs.Y * size.Y.Scale))
+			size = fullSize
+		end)
+	end
 
 	local frame = Instance.new("Frame")
 	frame.Name = "Window"
@@ -1619,21 +1608,28 @@ function ReGui:Window(config)
 
 	local function setMinimized(v)
 		minimized = v
-		local tw = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		local tw = TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		if minimized then
+			-- store pixel size so restore always works
+			local abs = frame.AbsoluteSize
+			fullSize = UDim2.fromOffset(math.max(abs.X, 220), math.max(abs.Y, 200))
 			minBtn.Text = "□"
 			content.Visible = false
-			grab.Visible = false
+			if grab then grab.Visible = false end
+			frame.Size = UDim2.fromOffset(fullSize.X.Offset, fullSize.Y.Offset)
 			tween(frame, tw, {
-				Size = UDim2.fromOffset(math.max(fullSize.X.Offset, 220), 34)
+				Size = UDim2.fromOffset(math.clamp(fullSize.X.Offset, 220, 600), 34)
 			})
 		else
 			minBtn.Text = "─"
 			content.Visible = true
-			grab.Visible = true
-			tween(frame, tw, {
-				Size = fullSize
-			})
+			if grab then grab.Visible = true end
+			local target = fullSize
+			if target.X.Offset < 100 then
+				target = UDim2.fromOffset(820, 520)
+				fullSize = target
+			end
+			tween(frame, tw, { Size = target })
 		end
 	end
 
