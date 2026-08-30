@@ -277,7 +277,7 @@ type AskConfig = {
 	Content: table,
 	Options: table
 }
-function Ui:AskUser(Config: AskConfig): string
+function Ui:AskUser(Config: AskConfig)
 	local Window = self.Window
 	local Answered = false
 
@@ -487,7 +487,7 @@ function Ui:RemoteKind(ClassData, Remote)
 	return className, icons[className] or icons.RemoteEvent
 end
 
-function Ui:TypePip(ClassData, Remote): string
+function Ui:TypePip(ClassData, Remote)
 	local kind = self:RemoteKind(ClassData, Remote)
 	return kind
 end
@@ -520,7 +520,7 @@ function Ui:UpdateListStatus()
 	end
 end
 
-function Ui:TypeBadge(Value): string
+function Ui:TypeBadge(Value)
 	local ty = typeof(Value)
 	if ty == "table" and type(Value) == "table" and Value.__t then
 		return tostring(Value.__t)
@@ -532,7 +532,7 @@ function Ui:TypeBadge(Value): string
 	return ty
 end
 
-function Ui:TypeBadgeColor(Value): Color3
+function Ui:TypeBadgeColor(Value)
 	
 	local badge = self:TypeBadge(Value)
 	if badge == "string" then
@@ -569,7 +569,7 @@ function Ui:TypeBadgeColor(Value): Color3
 	return Color3.fromRGB(180, 185, 195)
 end
 
-function Ui:FormatArgPreview(Value, Limit: number?): string
+function Ui:FormatArgPreview(Value, Limit: number?)
 	Limit = Limit or 80
 	local ty = typeof(Value)
 	if ty == "table" and Value.__t then
@@ -721,7 +721,7 @@ function Ui:CreateWindowContent(Window)
 	end)
 end
 
-function Ui:EntrySearchBlob(entry): string
+function Ui:EntrySearchBlob(entry)
 	local parts = {}
 	if entry then
 		parts[#parts + 1] = tostring(entry.Remote or "")
@@ -1058,7 +1058,7 @@ function Ui:MakeEditorTab(InfoSelector)
 	self.CodeEditor = CodeEditor
 end
 
-function Ui:ShouldFocus(Tab): boolean
+function Ui:ShouldFocus(Tab)
 	local InfoSelector = self.InfoSelector
 	local ActiveTab = InfoSelector.ActiveTab
 
@@ -1169,7 +1169,7 @@ function Ui:MakeButtonMenu(Button: Instance, Unpack: table, Options: MenuOptions
 	end
 end
 
-function Ui:RemovePreviousTab(Title: string): boolean
+function Ui:RemovePreviousTab(Title: string)
 	
 	if not ActiveData then 
 		return false 
@@ -1223,7 +1223,7 @@ type DisplayTableConfig = {
 	ToDisplay: table,
 	Table: table
 }
-function Ui:DisplayTable(Parent, Config: DisplayTableConfig): table
+function Ui:DisplayTable(Parent, Config: DisplayTableConfig)
 	
 	local Rows = Config.Rows
 	local Flags = Config.Flags
@@ -1347,7 +1347,7 @@ function Ui:SetFocusedRemote(Data)
 			return Data[Name](Data, Process:Unpack(Args))
 		end
 	end
-	local function ScriptCheck(Script, NoMissingCheck: boolean): boolean?
+	local function ScriptCheck(Script, NoMissingCheck: boolean)
 		
 		if IsReceive then 
 			Ui:ShowModal({
@@ -1851,7 +1851,7 @@ function Ui:BeginLogService()
 	end)()
 end
 
-function Ui:FilterName(Name: string, CharacterLimit: number?): string
+function Ui:FilterName(Name: string, CharacterLimit: number?)
 	local Trimmed = Name:sub(1, CharacterLimit or 20)
 	local Filtred = Trimmed:gsub("[\n\r]", "")
 	Filtred = Generation:MakePrintable(Filtred)
