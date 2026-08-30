@@ -6,7 +6,7 @@ local ReGui = {
 	Themes = {},
 	Windows = {},
 	Initialised = true,
-	-- Sleek UI: BuilderSans; monospace reserved for code editor
+	
 	DefaultFont = Font.fromEnum(Enum.Font.Gotham),
 	DefaultFontMedium = Font.fromEnum(Enum.Font.GothamMedium),
 	DefaultFontBold = Font.fromEnum(Enum.Font.GothamBold),
@@ -41,7 +41,7 @@ local function safeFont(enumName, fallback)
 end
 
 local function applyFont(gui, style)
-	-- style: nil/"ui" | "medium" | "bold" | "code"
+	
 	style = style or "ui"
 	pcall(function()
 		if style == "code" then
@@ -67,14 +67,13 @@ local function applyFont(gui, style)
 	end)
 end
 
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 local C = {
-	-- Elegant dark (sleek, low-noise)
+	
 	Bg = Color3.fromRGB(16, 16, 18),
 	BgDark = Color3.fromRGB(12, 12, 14),
 	Title = Color3.fromRGB(20, 20, 22),
@@ -97,9 +96,6 @@ local C = {
 	LineNum = Color3.fromRGB(90, 92, 100),
 	Gutter = Color3.fromRGB(14, 14, 16),
 }
-
-
-
 
 function ReGui:CheckConfig(Target, Defaults)
 	if typeof(Target) ~= "table" then return Target end
@@ -194,7 +190,7 @@ function Element:__index(key)
 end
 
 function Element:_host()
-	-- Prefer explicit host (TreeNode body, Window content, etc.)
+	
 	local override = rawget(self, "_hostOverride")
 	if override then return override end
 	local inst = self.Instance
@@ -877,7 +873,7 @@ function Element:_create(class, config)
 			end
 			if lineNum < 1 then lineNum = 1 end
 			if lineNum > #lines then lineNum = #lines end
-			-- move caret-ish: rebuild plain with a marker comment on that line for visibility
+			
 			self:SetText(plainText)
 			pcall(function()
 				box:CaptureFocus()
@@ -934,7 +930,7 @@ function Element:_create(class, config)
 		headerBar.Parent = root
 		corner(headerBar, 6)
 
-		-- caret column (clean, no [+]/[-])
+		
 		local caret = Instance.new("TextLabel")
 		caret.Name = "Caret"
 		caret.Size = UDim2.fromOffset(18, rowH)
@@ -971,10 +967,10 @@ function Element:_create(class, config)
 		hit.Parent = headerBar
 		pcall(function() hit.Style = Enum.ButtonStyle.Custom end)
 
-		-- start collapsed so new remotes do not auto-expand
+		
 		local open = false
 		pcall(function()
-			-- optional AutoExpand later via config
+			
 		end)
 		local title = tostring(config.Title or config.Text or "Node")
 		local function refresh()
@@ -1082,7 +1078,7 @@ function Element:_create(class, config)
 			btn.Parent = tabBar
 			corner(btn, 3)
 
-			-- Scrollable tab body (fixes Options / Remote tabs on mobile)
+			
 			local page = Instance.new("ScrollingFrame")
 			page.Name = "TabPage"
 			page.Size = UDim2.new(1, -8, 1, -8)
@@ -1486,7 +1482,7 @@ function ReGui:Window(config)
 	frame.BackgroundColor3 = C.Bg
 	frame.BorderSizePixel = 0
 	frame.Active = true
-	frame.Draggable = false -- M3: drag only via title bar (list scroll won't move window)
+	frame.Draggable = false 
 	frame.Parent = screen
 	corner(frame, 12)
 	stroke(frame, Color3.fromRGB(55, 58, 68), 1)
@@ -1500,7 +1496,7 @@ function ReGui:Window(config)
 	titleBar.Active = true
 	titleBar.Parent = frame
 	corner(titleBar, 12)
-	-- mask bottom of title corner under content
+	
 	local titleMask = Instance.new("Frame")
 	titleMask.Size = UDim2.new(1, 0, 0, 12)
 	titleMask.Position = UDim2.new(0, 0, 1, -12)
@@ -1521,7 +1517,7 @@ function ReGui:Window(config)
 	title.Parent = titleBar
 	applyFont(title, "medium")
 
-	-- M3: title-bar-only drag
+	
 	do
 		local UIS = game:GetService("UserInputService")
 		local dragging = false
@@ -1648,7 +1644,7 @@ function ReGui:Window(config)
 		frame.Visible = false
 	end)
 
-	-- Resize grab (bottom-right)
+	
 	local grab = Instance.new("TextButton")
 	grab.Name = "ResizeGrab"
 	grab.Size = UDim2.fromOffset(16, 16)
