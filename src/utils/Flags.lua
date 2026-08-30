@@ -27,7 +27,7 @@ local Module = {
         },
         SelectNewest = {
             Value = false,
-            Label = "Auto select newest",
+            Label = "Auto-open newest log",
         },
         DecompilePopout = { -- Lovre SHUSH
             Value = false,
@@ -80,8 +80,12 @@ local Module = {
             Label = "Logs per remote"
         },
         WatchNew = {
-            Value = true,
+            Value = false,
             Label = "Highlight new logs"
+        },
+        AutoExpand = {
+            Value = false,
+            Label = "Auto-expand groups"
         }
 }
 }
