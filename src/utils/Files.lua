@@ -36,7 +36,7 @@ function Files:PushConfig(Config: table)
 	end
 end
 
-function Files:UrlFetch(Url: string): string
+function Files:UrlFetch(Url: string)
     local Final = {
         Url = Url:gsub(" ", "%%20"), 
         Method = 'GET'
@@ -68,7 +68,7 @@ function Files:MakePath(Path: string)
 	return `{Folder}/{Path}`
 end
 
-function Files:LoadCustomasset(Path: string): string?
+function Files:LoadCustomasset(Path: string)
 	if not getcustomasset then return end
 	if not Path then return end
 
@@ -83,7 +83,7 @@ function Files:LoadCustomasset(Path: string): string?
 	return AssetId
 end
 
-function Files:GetFile(Path: string, CustomAsset: boolean?): string?
+function Files:GetFile(Path: string, CustomAsset: boolean?)
 	local RepoUrl = self.RepoUrl
 	local UseWorkspace = self.UseWorkspace
 
@@ -111,7 +111,7 @@ function Files:GetFile(Path: string, CustomAsset: boolean?): string?
 	return Content
 end
 
-function Files:GetTemplate(Name: string): string
+function Files:GetTemplate(Name: string)
     return self:GetFile(`templates/{Name}.lua`)
 end
 
@@ -151,11 +151,11 @@ function Files:TemplateCheck(Path: string, TemplateName: string)
 	end)
 end
 
-function Files:GetAsset(Name: string, CustomAsset: boolean?): string
+function Files:GetAsset(Name: string, CustomAsset: boolean?)
     return self:GetFile(`assets/{Name}`, CustomAsset)
 end
 
-function Files:GetModule(Name: string, TemplateName: string): string
+function Files:GetModule(Name: string, TemplateName: string)
 	local Path = `{Name}.lua`
 
 	if TemplateName then
@@ -171,7 +171,7 @@ function Files:GetModule(Name: string, TemplateName: string): string
 	return self:GetFile(Path)
 end
 
-function Files:LoadLibraries(Scripts: table, ...): table
+function Files:LoadLibraries(Scripts: table, ...)
 	local Modules = {}
 	for Name, Content in next, Scripts do
 		local IsBase64 = typeof(Content) == "table" and Content[1] == "base64"
@@ -212,7 +212,7 @@ function Files:LoadModules(Modules: {}, Data: {})
     end
 end
 
-function Files:CreateFont(Name: string, AssetId: string): string?
+function Files:CreateFont(Name: string, AssetId: string)
 	if not AssetId then return end
 
 	local FileName = `assets/{Name}.json`
@@ -235,7 +235,7 @@ function Files:CreateFont(Name: string, AssetId: string): string?
 	return JsonPath
 end
 
-function Files:CompileModule(Scripts): string
+function Files:CompileModule(Scripts)
     local Out = "local Libraries = {"
     for Name, Content in Scripts do
 		if typeof(Content) ~= "string" then continue end
@@ -245,7 +245,7 @@ function Files:CompileModule(Scripts): string
     return Out
 end
 
-function Files:MakeActorScript(Scripts, ChannelId: number): string
+function Files:MakeActorScript(Scripts, ChannelId: number)
 	local ActorCode = Files:CompileModule(Scripts)
 	ActorCode ..= [[
 	local ExtraData = {
