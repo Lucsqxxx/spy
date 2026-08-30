@@ -925,7 +925,7 @@ function Ui:MakeEditorTab(InfoSelector)
 
 	
 	local ButtonsRow = EditorTab:Row({
-		Size = UDim2.new(1, 0, 0, 28),
+		Size = UDim2.new(1, 0, 0, 32),
 	})
 	self:CreateButtons(ButtonsRow, {
 		NoTable = true,
@@ -1709,13 +1709,18 @@ function Ui:GetRemoteHeader(Data: Log)
 
 	
 	if not NoTreeNodes then
-		local Pip = self:TypePip(Data.ClassData, Remote)
+		local kind, iconColor, iconLetter = self:RemoteKind(Data.ClassData, Remote)
 		HeaderData.TreeNode = RemotesList:TreeNode({
 			LayoutOrder = -1 * RemotesCount,
-			Title = string.format("%s %s  ·  0", Pip, RemoteName)
+			Title = RemoteName,
+			IconLetter = iconLetter,
+			IconColor = iconColor,
+			Count = 0,
 		})
 		HeaderData.RemoteName = RemoteName
-		HeaderData.TypePip = Pip
+		HeaderData.TypePip = kind
+		HeaderData.IconColor = iconColor
+		HeaderData.IconLetter = iconLetter
 	end
 
 	function HeaderData:CheckLimit()
@@ -1736,22 +1741,14 @@ function Ui:GetRemoteHeader(Data: Log)
 		table.insert(self.Entries, Data)
 		self:CheckLimit()
 		if self.TreeNode then
-			local pip = self.TypePip or ""
 			local name = self.RemoteName or "Remote"
 			local count = self.LogCount or 0
-			local label = string.format("%s %s  ·  %d", pip, name, count)
 			pcall(function()
 				if self.TreeNode.SetTitle then
-					self.TreeNode:SetTitle(label)
-				elseif self.TreeNode.Instance then
-					local h = self.TreeNode.Instance:FindFirstChild("Header", true)
-					if h and h:IsA("TextLabel") then
-						local open = true
-						pcall(function()
-							open = self.TreeNode._open and self.TreeNode._open()
-						end)
-						h.Text = label
-					end
+					self.TreeNode:SetTitle(name)
+				end
+				if self.TreeNode.SetCount then
+					self.TreeNode:SetCount(count)
 				end
 			end)
 		end
