@@ -42,11 +42,11 @@ local Module = {
             Label = "Log exploit calls",
         },
         LogRecives = {
-            Value = true,
+            Value = false,
             Label = "Log receives",
         },
         Paused = {
-            Value = false,
+            Value = true,
             Label = "Paused",
             Keybind = Enum.KeyCode.Q
         },
@@ -86,6 +86,10 @@ local Module = {
         AutoExpand = {
             Value = false,
             Label = "Auto-expand groups"
+        },
+        HooksEnabled = {
+            Value = false,
+            Label = "Enable capture (hooks)"
         }
 }
 }
