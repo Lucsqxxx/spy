@@ -446,27 +446,61 @@ function Ui:CreateElements(Parent, Options)
 	end
 end
 
-function Ui:TypePip(ClassData, Remote): string
-	
-	local cn = "E"
+function Ui:RemoteKind(ClassData, Remote): (string, Color3, string)
+	-- Every class Wyvern logs (Process.RemoteClassData) gets a color + letter icon
+	local className = nil
 	pcall(function()
-		if ClassData and ClassData.IsRemoteFunction then
-			cn = "F"
-		elseif Remote and typeof(Remote) == "Instance" then
-			local n = Remote.ClassName
-			if n == "UnreliableRemoteEvent" then
-				cn = "U"
-			elseif n == "RemoteFunction" or n == "BindableFunction" then
-				cn = "F"
-			elseif n == "BindableEvent" then
-				cn = "B"
-			else
-				cn = "E"
-			end
+		if Remote and typeof(Remote) == "Instance" then
+			className = Remote.ClassName
 		end
 	end)
-	local icons = { E = "◆", F = "●", U = "◇", B = "■" }
-	return (icons[cn] or "·") .. cn
+	if not className and ClassData then
+		if ClassData.IsRemoteFunction and ClassData.NoReciveHook then
+			className = "BindableFunction"
+		elseif ClassData.IsRemoteFunction then
+			className = "RemoteFunction"
+		elseif ClassData.NoReciveHook then
+			className = "BindableEvent"
+		else
+			className = "RemoteEvent"
+		end
+	end
+
+	local map = {
+		RemoteEvent = {
+			kind = "E",
+			letter = "E",
+			color = Color3.fromRGB(242, 200, 40),
+		},
+		RemoteFunction = {
+			kind = "F",
+			letter = "F",
+			color = Color3.fromRGB(120, 100, 255),
+		},
+		UnreliableRemoteEvent = {
+			kind = "U",
+			letter = "U",
+			color = Color3.fromRGB(255, 150, 60),
+		},
+		BindableEvent = {
+			kind = "B",
+			letter = "B",
+			color = Color3.fromRGB(80, 210, 140),
+		},
+		BindableFunction = {
+			kind = "BF",
+			letter = "f",
+			color = Color3.fromRGB(70, 170, 255),
+		},
+	}
+
+	local info = map[className] or map.RemoteEvent
+	return info.kind, info.color, info.letter
+end
+
+function Ui:TypePip(ClassData, Remote): string
+	local kind = self:RemoteKind(ClassData, Remote)
+	return kind
 end
 
 function Ui:UpdateListStatus()
