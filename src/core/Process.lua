@@ -89,7 +89,7 @@ local HttpService: HttpService
 local Channel
 local WrappedChannel = false
 
-local SigmaENV = getfenv(1)
+local WyvernENV = getfenv(1)
 
 type Event = RemoteEvent | RemoteFunction | UnreliableRemoteEvent | BindableEvent | BindableFunction
 local InstanceCreatedRemotes: typeof(setmetatable({} :: {[Event]: true}, {__mode = "k"})) = setmetatable({}, {
@@ -180,7 +180,6 @@ function Process:CountMatches(String: string, Match: string): number
 	return Count
 end
 
--- Snapshot limits (H5)
 Process.SnapshotMaxDepth = 8
 Process.SnapshotMaxEntries = 200
 
@@ -242,13 +241,11 @@ function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?, Depth: n
     return New
 end
 
--- C1: synchronous arg snapshot for the hot path
 function Process:SnapshotArgs(...): table
     local packed = { ... }
     return self:DeepCloneTable(packed)
 end
 
--- M1: rough fingerprint for burst detection
 function Process:ArgFingerprint(Method: string, Args: table): string
     local parts = { tostring(Method) }
     local n = math.min(table.maxn(Args), 6)
@@ -281,7 +278,7 @@ function Process:PushConfig(Overwrites)
 end
 
 function Process:FuncExists(Name: string)
-	return SigmaENV[Name]
+	return WyvernENV[Name]
 end
 
 function Process:CheckExecutor(): boolean
@@ -416,7 +413,7 @@ function Process:FindCallingLClosure(Offset: number)
         
         local Function = debug.info(Offset, "f")
         if not Function then return end
-        if Getfenv(Function) == SigmaENV then continue end
+        if Getfenv(Function) == WyvernENV then continue end
 
         return Function
     end
@@ -514,7 +511,7 @@ function Process:FilterConnections(Signal: RBXScriptSignal): table
 end
 
 function Process:IsWyvernSpyENV(Env: table): boolean
-    return Env == SigmaENV
+    return Env == WyvernENV
 end
 
 function Process:GetRemoteData(Id: string)
@@ -588,7 +585,7 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
 
 	if TransferType and not self:RemoteAllowed(Remote, TransferType, Method) then return end
 
-	-- Resolve Id early (required before ProcessCallback / GetRemoteData)
+	
 	local Id = Data.Id
 	if Id == nil and Communication and Communication.GetDebugId then
 		local ok, got = pcall(function()
@@ -600,7 +597,7 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
 		end
 	end
 
-	-- C3: respect pause / filters BEFORE expensive work (still call original below)
+	
 	local SkipLog = false
 	if Flags and Flags.GetFlagValue then
 		local ok, paused = pcall(function() return Flags:GetFlagValue("Paused") end)
@@ -633,7 +630,7 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
 		return ReturnValues
 	end
 
-	-- Capture path: snapshot args NOW (C1) then queue
+	
 	local ClassData = self:GetClassData(Remote)
 	local Timestamp = tick()
 
