@@ -164,14 +164,14 @@ function Process:CheckConfig(Config: table)
     self:Merge(Config, Overwrites)
 end
 
-function Process:CleanCError(Error: string): string
+function Process:CleanCError(Error: string)
     Error = Error:gsub(":%d+: ", "")
     Error = Error:gsub(", got %a+", "")
     Error = Error:gsub("invalid argument", "missing argument")
     return Error
 end
 
-function Process:CountMatches(String: string, Match: string): number
+function Process:CountMatches(String: string, Match: string)
 	local Count = 0
 	for _ in String:gmatch(Match) do
 		Count +=1 
@@ -201,7 +201,7 @@ function Process:CheckValue(Value, Ignore: table?, Cache: table?, Depth: number?
     return Value
 end
 
-function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?, Depth: number?): table
+function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?, Depth: number?)
     if typeof(Table) ~= "table" then return Table end
     Depth = Depth or 0
     local MaxDepth = self.SnapshotMaxDepth or 8
@@ -241,12 +241,12 @@ function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?, Depth: n
     return New
 end
 
-function Process:SnapshotArgs(...): table
+function Process:SnapshotArgs(...)
     local packed = { ... }
     return self:DeepCloneTable(packed)
 end
 
-function Process:ArgFingerprint(Method: string, Args: table): string
+function Process:ArgFingerprint(Method: string, Args: table)
     local parts = { tostring(Method) }
     local n = math.min(table.maxn(Args), 6)
     for i = 1, n do
@@ -281,7 +281,7 @@ function Process:FuncExists(Name: string)
 	return WyvernENV[Name]
 end
 
-function Process:CheckExecutor(): boolean
+function Process:CheckExecutor()
     local Blacklisted = {
         "xeno",
         "solara",
@@ -300,7 +300,7 @@ function Process:CheckExecutor(): boolean
     return true
 end
 
-function Process:CheckFunctions(): boolean
+function Process:CheckFunctions()
     local CoreFunctions = {
         "hookmetamethod",
         "hookfunction",
@@ -321,7 +321,7 @@ function Process:CheckFunctions(): boolean
     return true
 end
 
-function Process:CheckIsSupported(): boolean
+function Process:CheckIsSupported()
     
     local ExecutorSupported = self:CheckExecutor()
     if not ExecutorSupported then
@@ -337,7 +337,7 @@ function Process:CheckIsSupported(): boolean
     return true
 end
 
-function Process:GetClassData(Remote: Instance): table?
+function Process:GetClassData(Remote: Instance)
 	if typeof(Remote) ~= "Instance" then return nil end
     local RemoteClassData = self.RemoteClassData
     local ClassName = Hook:Index(Remote, "ClassName")
@@ -345,14 +345,14 @@ function Process:GetClassData(Remote: Instance): table?
     return RemoteClassData[ClassName]
 end
 
-function Process:IsProtectedRemote(Remote: Instance): boolean
+function Process:IsProtectedRemote(Remote: Instance)
     local IsDebug = Remote == Communication.DebugIdRemote
     local IsChannel = Remote == (WrappedChannel and Channel.Channel or Channel)
 
     return IsDebug or IsChannel
 end
 
-function Process:RemoteAllowed(Remote: Event, TransferType: string, Method: string?): boolean?
+function Process:RemoteAllowed(Remote: Event, TransferType: string, Method: string?)
     if typeof(Remote) ~= 'Instance' or InstanceCreatedRemotes[Remote] then return end
     
     
@@ -379,7 +379,7 @@ function Process:SetExtraData(Data: table)
     self.ExtraData = Data
 end
 
-function Process:GetRemoteSpoof(Remote: Instance, Method: string, ...): table?
+function Process:GetRemoteSpoof(Remote: Instance, Method: string, ...)
     local Spoof = ReturnSpoofs[Remote]
 
     if not Spoof then return end
@@ -419,7 +419,7 @@ function Process:FindCallingLClosure(Offset: number)
     end
 end
 
-function Process:Decompile(Script: LocalScript | ModuleScript): string
+function Process:Decompile(Script: LocalScript | ModuleScript)
     local KonstantAPI = "http://api.plusgiant5.com/konstant/decompile"
     local ForceKonstant = Config.ForceKonstantDecompiler
 
@@ -466,7 +466,7 @@ function Process:GetScriptFromFunc(Func: (...any) -> ...any)
     return rawget(ENV, "script")
 end
 
-function Process:ConnectionIsValid(Connection: table): boolean
+function Process:ConnectionIsValid(Connection: table)
     local ValueReplacements = {
 		["Script"] = function(Connection: table): Script?
 			local Function = Connection.Function
@@ -498,7 +498,7 @@ function Process:ConnectionIsValid(Connection: table): boolean
     return true
 end
 
-function Process:FilterConnections(Signal: RBXScriptSignal): table
+function Process:FilterConnections(Signal: RBXScriptSignal)
     local Processed = {}
 
     
@@ -510,7 +510,7 @@ function Process:FilterConnections(Signal: RBXScriptSignal): table
     return Processed
 end
 
-function Process:IsWyvernSpyENV(Env: table): boolean
+function Process:IsWyvernSpyENV(Env: table)
     return Env == WyvernENV
 end
 
@@ -578,7 +578,7 @@ local ProcessCallback = newcclosure(function(Data: RemoteData, Remote, ...): tab
     }
 end)
 
-function Process:ProcessRemote(Data: RemoteData, Remote, ...): table?
+function Process:ProcessRemote(Data: RemoteData, Remote, ...)
 	local Method = Data.Method
     local TransferType = Data.TransferType
     local IsReceive = Data.IsReceive
