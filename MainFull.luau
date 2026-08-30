@@ -8,8 +8,8 @@ local Configuration = {
 	PreferLocal = false,
 	FolderName = "Wyvern Spy",
 	Directory = "Wyvern Spy",
-	RepoUrl = "https://cdn.jsdelivr.net/gh/Lucsqxxx/spy@main",
-	ParserUrl = "https://cdn.jsdelivr.net/gh/Lucsqxxx/spy@main/dist/Parser.luau",
+	RepoUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/main",
+	ParserUrl = "https://raw.githubusercontent.com/Lucsqxxx/spy/main/dist/Parser.luau",
 }
 
 local Parameters = { ... }
@@ -47,10 +47,9 @@ local function HttpGet(Url)
 end
 
 local Base = Configuration.RepoUrl:gsub("/+$", "")
-local CACHE_VER = "20260830b"
 
 Out("loading Files")
-local FilesSource = HttpGet(Base .. "/src/utils/Files.lua?v=" .. CACHE_VER)
+local FilesSource = HttpGet(Base .. "/src/utils/Files.lua")
 if not FilesSource then
 	Out("FATAL Files")
 	return
@@ -81,7 +80,7 @@ end)
 
 for Name, Path in ModuleMap do
 	Out("loading", Name)
-	local src = HttpGet(Base .. Path .. "?v=" .. CACHE_VER)
+	local src = HttpGet(Base .. Path)
 	if src then
 		Scripts[Name] = src
 	else
