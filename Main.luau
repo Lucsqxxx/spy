@@ -193,36 +193,12 @@ pcall(function()
 	Ui:BeginLogService()
 end)
 
--- Defer metamethod hooks until user enables "Enable capture (hooks)" in Options.
--- Many games detect __namecall hooks on join ("Game hook found") and kick.
-Out("UI ready — capture hooks OFF until you enable them in Options")
+Out("hooks")
 pcall(function()
 	Hook:LoadHooks("", ChannelId)
 end)
-
-local HooksStarted = false
-local function StartCaptureHooks()
-	if HooksStarted then return end
-	HooksStarted = true
-	Out("starting capture hooks…")
-	pcall(function()
-		Event:Fire("BeginHooks", { PatchFunctions = false })
-	end)
-	Out("capture hooks ON")
-end
-
 pcall(function()
-	local Flags = Modules.Flags
-	if Flags and Flags.SetFlagCallback then
-		Flags:SetFlagCallback("HooksEnabled", function(_, enabled)
-			if enabled then
-				StartCaptureHooks()
-			end
-		end)
-		if Flags:GetFlagValue("HooksEnabled") then
-			StartCaptureHooks()
-		end
-	end
+	Event:Fire("BeginHooks", { PatchFunctions = false })
 end)
 
-Out("LOADED — turn on Enable capture (hooks) in Options when ready")
+Out("LOADED with ReGui")
