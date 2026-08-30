@@ -162,7 +162,6 @@ function Module:WaitCheck()
     end
 end
 
--- C2: typed value envelope for transport / inspection
 function Module:SerializeValue(Value, Depth: number?, Seen: table?): any
     Depth = Depth or 0
     Seen = Seen or {}
@@ -302,14 +301,14 @@ function Module:SerializeTable(Table: table): table
     if typeof(Table) ~= "table" then
         return { self:SerializeValue(Table) }
     end
-    -- If already a typed snapshot list (array of args), encode each
+    
     local out = {}
     local maxn = table.maxn(Table)
     if maxn > 0 then
         for i = 1, maxn do
             out[i] = self:SerializeValue(Table[i])
         end
-        -- also copy non-array keys
+        
         for k, v in next, Table do
             if typeof(k) ~= "number" or k < 1 or k > maxn or k % 1 ~= 0 then
                 out[k] = self:SerializeValue(v)
@@ -341,7 +340,6 @@ function Module:ConsolePrint(...)
 end
 
 function Module:QueueLog(Data)
-    -- C1: Args should already be snapshotted in Process; encode for transport
     task.spawn(function()
         local ok, err = pcall(function()
             if Data.Args and not Data.ArgsSerialized then
@@ -352,7 +350,19 @@ function Module:QueueLog(Data)
                 Data.ReturnValues = self:SerializeTable(Data.ReturnValues)
                 Data.ReturnsSerialized = true
             end
-            self:Communicate("QueueLog", Data)
+            local delivered = false
+            pcall(function()
+                if Channel then
+                    self:Communicate("QueueLog", Data)
+                    delivered = true
+                end
+            end)
+            if not delivered then
+                local cb = self:GetCommCallback("QueueLog")
+                if cb then
+                    cb(Data)
+                end
+            end
         end)
         if not ok then
             warn("[Wyvern Spy] QueueLog error:", err)
@@ -408,8 +418,10 @@ end
 
 function Module:CreateChannel(): number
     local ChannelID, Event = self:CreateCommChannel()
+    -- Must set Channel so QueueLog/Communicate can Fire
+    Channel = Event
+    self.Channel = Event
 
-    
     Event.Event:Connect(function(Type: string, ...)
         local Callback = self:GetCommCallback(Type)
         if Callback then
