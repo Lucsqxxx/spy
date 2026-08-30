@@ -459,7 +459,8 @@ end
 
 
 function Ui:TypePip(ClassData, Remote): string
-	local cn = ""
+	-- compact type icons (text, no asset dependency)
+	local cn = "E"
 	pcall(function()
 		if ClassData and ClassData.IsRemoteFunction then
 			cn = "F"
@@ -474,12 +475,10 @@ function Ui:TypePip(ClassData, Remote): string
 			else
 				cn = "E"
 			end
-		else
-			cn = "E"
 		end
 	end)
-	if cn == "" then cn = "?" end
-	return "[" .. cn .. "]"
+	local icons = { E = "◆", F = "●", U = "◇", B = "■" }
+	return (icons[cn] or "·") .. cn
 end
 
 function Ui:UpdateListStatus()
@@ -1774,7 +1773,7 @@ function Ui:GetRemoteHeader(Data: Log)
 						pcall(function()
 							open = self.TreeNode._open and self.TreeNode._open()
 						end)
-						h.Text = (open and "[-] " or "[+] ") .. label
+						h.Text = label
 					end
 				end
 			end)
@@ -1961,11 +1960,11 @@ function Ui:CreateLog(Data: Log)
 	end
 	Data.Selectable = sel
 
-	-- Watch / highlight new logs briefly
+	-- Soft highlight only (does NOT open editor / does NOT focus)
 	pcall(function()
 		if Flags:GetFlagValue("WatchNew") and Data.Selectable and Data.Selectable.SetSelected then
 			Data.Selectable:SetSelected(true)
-			task.delay(1.2, function()
+			task.delay(0.9, function()
 				pcall(function()
 					if ActiveData ~= Data and Data.Selectable and Data.Selectable._alive ~= false then
 						Data.Selectable:SetSelected(false)
@@ -1979,12 +1978,14 @@ function Ui:CreateLog(Data: Log)
 		Header:LogAdded(Data)
 	end
 
-	--// Auto select check
-	local GroupSelected = ActiveData and ActiveData.HeaderData == Header
-	if SelectNewest and GroupSelected then
-		pcall(function()
-			self:SetFocusedRemote(Data)
-		end)
+	-- Auto-open ONLY if user enabled SelectNewest AND already viewing this remote group
+	if SelectNewest then
+		local GroupSelected = ActiveData and ActiveData.HeaderData == Header
+		if GroupSelected then
+			pcall(function()
+				self:SetFocusedRemote(Data)
+			end)
+		end
 	end
 end
 
