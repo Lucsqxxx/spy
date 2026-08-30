@@ -88,6 +88,23 @@ for Name, Path in ModuleMap do
 	end
 end
 
+Out("loading assets")
+pcall(function()
+	local logoBody = HttpGet(Base .. "/assets/wyvern_logo.png")
+	if logoBody and writefile then
+		local folder = Configuration.FolderName or "Wyvern Spy"
+		pcall(makefolder, folder)
+		pcall(makefolder, folder .. "/assets")
+		local logoPath = folder .. "/assets/wyvern_logo.png"
+		writefile(logoPath, logoBody)
+		local assetId = Files:LoadCustomasset(logoPath)
+		if assetId then
+			Configuration._LogoAsset = assetId
+			Out("logo ready")
+		end
+	end
+end)
+
 Out("loading font")
 pcall(function()
 	local fontBody = HttpGet(Base .. "/assets/ProggyClean.ttf")
