@@ -1554,8 +1554,8 @@ function ReGui:Window(config)
 
 	local logo = Instance.new("ImageLabel")
 	logo.Name = "Logo"
-	logo.Size = UDim2.fromOffset(28, 28)
-	logo.Position = UDim2.fromOffset(10, 6)
+	logo.Size = UDim2.fromOffset(30, 30)
+	logo.Position = UDim2.fromOffset(10, 5)
 	logo.BackgroundTransparency = 1
 	logo.BorderSizePixel = 0
 	logo.ScaleType = Enum.ScaleType.Fit
@@ -1563,17 +1563,12 @@ function ReGui:Window(config)
 	local logoAsset = config.LogoAsset or ReGui.LogoAsset
 	if logoAsset and logoAsset ~= "" then
 		logo.Image = logoAsset
-	else
-		-- solid mark until asset loads (no text/emoji)
-		logo.BackgroundTransparency = 0
-		logo.BackgroundColor3 = Color3.fromRGB(90, 55, 180)
-		corner(logo, 8)
 	end
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.Size = UDim2.new(1, -130, 1, 0)
-	title.Position = UDim2.fromOffset(44, 0)
+	title.Position = UDim2.fromOffset(46, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
 	title.TextColor3 = Color3.fromRGB(235, 235, 240)
