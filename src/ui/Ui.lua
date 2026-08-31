@@ -705,8 +705,9 @@ function Ui:CreateWindowContent(Window)
 	
 	local SearchBox = Sidebar:InputText({
 		Label = "",
-		Placeholder = "Search…",
+		Placeholder = "Search remotes…",
 		Value = "",
+		LayoutOrder = 0,
 		Size = UDim2.new(1, 0, 0, searchH),
 		Callback = function(_, text)
 			self.ListSearch = (text or ""):lower()
@@ -719,9 +720,10 @@ function Ui:CreateWindowContent(Window)
 	self.RemotesList = Sidebar:Canvas({
 		Scroll = true,
 		UiPadding = 4,
+		LayoutOrder = 1,
 		AutomaticSize = Enum.AutomaticSize.None,
 		FlexMode = Enum.UIFlexMode.Fill,
-		Size = UDim2.new(1, 0, 1, -(searchH + 8)),
+		Size = UDim2.new(1, 0, 1, -(searchH + 10)),
 	})
 	pcall(function()
 		local inst = self.RemotesList.Instance
