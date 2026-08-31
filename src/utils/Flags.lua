@@ -90,40 +90,47 @@ local Module = {
 }
 }
 
-function Module:GetFlagValue(Name: string)
+function Module:GetFlagValue(Name)
+
     local Flag = self:GetFlag(Name)
     return Flag.Value
 end
 
-function Module:SetFlagValue(Name: string, Value: FlagValue)
+function Module:SetFlagValue(Name, Value)
+
     local Flag = self:GetFlag(Name)
     Flag.Value = Value
 end
 
-function Module:SetFlagCallback(Name: string, Callback: (...any) -> ...any)
+function Module:SetFlagCallback(Name, Callback)
+
     local Flag = self:GetFlag(Name)
     Flag.Callback = Callback
 end
 
-function Module:SetFlagCallbacks(Dict: {})
+function Module:SetFlagCallbacks(Dict)
+
     for Name, Callback: (...any) -> ...any in next, Dict do 
         self:SetFlagCallback(Name, Callback)
     end
 end
 
-function Module:GetFlag(Name: string)
+function Module:GetFlag(Name)
+
     local AllFlags = self:GetFlags()
     local Flag = AllFlags[Name]
     assert(Flag, "Flag does not exist!")
     return Flag
 end
 
-function Module:AddFlag(Name: string, Flag: Flag)
+function Module:AddFlag(Name, Flag)
+
     local AllFlags = self:GetFlags()
     AllFlags[Name] = Flag
 end
 
 function Module:GetFlags()
+
     return self.Flags
 end
 
