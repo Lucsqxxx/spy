@@ -283,6 +283,57 @@ function Element:_create(class, config)
 		frame.BorderSizePixel = 0
 		frame.Size = config.Size or UDim2.new(1, 0, 0, 26)
 		frame.AutomaticSize = Enum.AutomaticSize.None
+
+	-- Opening animation
+	do
+		local TS = game:GetService("TweenService")
+		local finalSize = frame.Size
+		local finalPos = frame.Position
+		frame.BackgroundTransparency = 1
+		frame.Size = UDim2.fromOffset(
+			math.max(40, math.floor(finalSize.X.Offset * 0.85)),
+			math.max(40, math.floor(finalSize.Y.Offset * 0.85))
+		)
+		frame.Position = UDim2.new(
+			finalPos.X.Scale, finalPos.X.Offset + math.floor(finalSize.X.Offset * 0.075),
+			finalPos.Y.Scale, finalPos.Y.Offset + 24
+		)
+		for _, d in frame:GetDescendants() do
+			if d:IsA("GuiObject") then
+				pcall(function()
+					if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
+						d.TextTransparency = 1
+					end
+					if d:IsA("ImageLabel") or d:IsA("ImageButton") then
+						d.ImageTransparency = 1
+					end
+				end)
+			end
+		end
+		task.defer(function()
+			pcall(function()
+				local tw = TweenInfo.new(0.28, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+				TS:Create(frame, tw, {
+					Size = finalSize,
+					Position = finalPos,
+					BackgroundTransparency = 0,
+				}):Play()
+			end)
+			task.delay(0.05, function()
+				for _, d in frame:GetDescendants() do
+					if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
+						pcall(function()
+							game:GetService("TweenService"):Create(d, TweenInfo.new(0.2), { TextTransparency = 0 }):Play()
+						end)
+					elseif d:IsA("ImageLabel") or d:IsA("ImageButton") then
+						pcall(function()
+							game:GetService("TweenService"):Create(d, TweenInfo.new(0.2), { ImageTransparency = 0 }):Play()
+						end)
+					end
+				end
+			end)
+		end)
+	end
 		frame.ClipsDescendants = true
 		if class == "HeaderRow" then
 			frame.BackgroundColor3 = Color3.fromRGB(32, 40, 58)
@@ -1710,39 +1761,59 @@ function ReGui:Window(config)
 
 	local function setMinimized(v)
 		minimized = not not v
+		local TS = game:GetService("TweenService")
+		local tw = TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 		local abs = frame.AbsoluteSize
-		local curW = math.max(abs.X, 200)
-		local curH = math.max(abs.Y, 34)
+		local curW = math.max(abs.X, 180)
+		local curH = math.max(abs.Y, 40)
+		local isMobile = false
+		pcall(function() isMobile = ReGui:IsMobileDevice() end)
+
 		if minimized then
-			if curH > 40 then
+			if curH > 44 then
 				fullSize = UDim2.fromOffset(curW, curH)
 			end
 			minBtn.Text = "□"
 			content.Visible = false
 			content.Size = UDim2.new(1, 0, 0, 0)
 			if grab then grab.Visible = false end
-			local target = UDim2.fromOffset(curW, 40)
-			-- hard set first (some executors drop tweens on Size)
-			frame.Size = target
+			-- hide bottom mask so corners stay fully rounded when collapsed
+			if titleMask then titleMask.Visible = false end
+			titleBar.Size = UDim2.new(1, 0, 1, 0)
+
+			local barH = isMobile and 36 or 40
+			local barW
+			if isMobile then
+				barW = math.clamp(math.floor(curW * 0.55), 160, 280)
+			else
+				barW = math.clamp(curW, 220, 520)
+			end
+			local target = UDim2.fromOffset(barW, barH)
 			pcall(function()
-				local tw = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-				game:GetService("TweenService"):Create(frame, tw, { Size = target }):Play()
+				TS:Create(frame, tw, { Size = target }):Play()
 			end)
+			frame.Size = target
 		else
 			minBtn.Text = "─"
+			if titleMask then titleMask.Visible = true end
+			titleBar.Size = UDim2.new(1, 0, 0, 40)
 			content.Visible = true
 			content.Size = UDim2.new(1, 0, 1, -40)
 			if grab then grab.Visible = true end
 			local target = fullSize
 			if typeof(target) ~= "UDim2" or (target.X.Offset < 100 and target.Y.Offset < 100) then
-				target = UDim2.fromOffset(820, 520)
+				if isMobile then
+					local vs = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
+					target = UDim2.fromOffset(math.floor(vs.X * 0.94), math.floor(vs.Y * 0.72))
+				else
+					target = UDim2.fromOffset(820, 520)
+				end
 				fullSize = target
 			end
-			frame.Size = target
 			pcall(function()
-				local tw = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-				game:GetService("TweenService"):Create(frame, tw, { Size = target }):Play()
+				TS:Create(frame, tw, { Size = target }):Play()
 			end)
+			frame.Size = target
 		end
 	end
 
