@@ -82,17 +82,17 @@ local C = {
 	Text = Color3.fromRGB(232, 233, 238),
 	TextDim = Color3.fromRGB(128, 130, 140),
 	Accent = Color3.fromRGB(110, 150, 230),
-	Btn = Color3.fromRGB(30, 32, 40),
+	Btn = Color3.fromRGB(28, 30, 38),
 	BtnHover = Color3.fromRGB(44, 48, 60),
 	Select = Color3.fromRGB(26, 30, 40),
 	SelectActive = Color3.fromRGB(42, 56, 82),
-	Input = Color3.fromRGB(10, 10, 12),
+	Input = Color3.fromRGB(18, 20, 26),
 	Check = Color3.fromRGB(110, 150, 230),
 	Green = Color3.fromRGB(120, 210, 160),
 	Yellow = Color3.fromRGB(230, 200, 100),
 	TabActive = Color3.fromRGB(36, 42, 54),
 	TabIdle = Color3.fromRGB(20, 20, 24),
-	RowAlt = Color3.fromRGB(14, 14, 16),
+	RowAlt = Color3.fromRGB(22, 24, 30),
 	LineNum = Color3.fromRGB(90, 92, 100),
 	Gutter = Color3.fromRGB(14, 14, 16),
 }
@@ -284,26 +284,6 @@ function Element:_create(class, config)
 		frame.Size = config.Size or UDim2.new(1, 0, 0, 26)
 		frame.AutomaticSize = Enum.AutomaticSize.None
 
-	-- Opening animation
-	do
-		local TS = game:GetService("TweenService")
-		local finalSize = frame.Size
-		local finalPos = frame.Position
-		frame.BackgroundTransparency = 1
-		frame.Size = UDim2.fromOffset(
-			math.max(40, math.floor(finalSize.X.Offset * 0.85)),
-			math.max(40, math.floor(finalSize.Y.Offset * 0.85))
-		)
-		frame.Position = UDim2.new(
-			finalPos.X.Scale, finalPos.X.Offset + math.floor(finalSize.X.Offset * 0.075),
-			finalPos.Y.Scale, finalPos.Y.Offset + 24
-		)
-		for _, d in frame:GetDescendants() do
-			if d:IsA("GuiObject") then
-				pcall(function()
-					if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
-						d.TextTransparency = 1
-					end
 					if d:IsA("ImageLabel") or d:IsA("ImageButton") then
 						d.ImageTransparency = 1
 					end
@@ -463,6 +443,7 @@ function Element:_create(class, config)
 		btn.Size = sz or UDim2.new(0, 96, 0, 22)
 		btn.AutomaticSize = Enum.AutomaticSize.None
 		btn.BackgroundColor3 = C.Btn
+		btn.BackgroundTransparency = 0
 		btn.TextColor3 = C.Text
 		btn.TextSize = 12
 		btn.Font = Enum.Font.BuilderSansMedium
@@ -576,16 +557,17 @@ function Element:_create(class, config)
 
 		local box = Instance.new("TextButton")
 		box.Size = UDim2.fromOffset(16, 16)
-		box.BackgroundColor3 = C.Input
+		box.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
 		box.Text = ""
-		box.TextColor3 = Color3.new(1, 1, 1)
+		box.TextColor3 = Color3.fromRGB(235, 235, 240)
 		box.TextSize = 12
-		box.Font = Enum.Font.BuilderSansBold
+		box.Font = Enum.Font.GothamBold
 		box.BorderSizePixel = 0
 		box.AutoButtonColor = false
 		box.Parent = holder
-		corner(box, 3)
-		stroke(box, C.Border, 1)
+		pcall(function() box.Style = Enum.ButtonStyle.Custom end)
+		corner(box, 4)
+		stroke(box, Color3.fromRGB(55, 58, 68), 1)
 
 		local lab = Instance.new("TextLabel")
 		lab.BackgroundTransparency = 1
@@ -602,9 +584,11 @@ function Element:_create(class, config)
 		local function paint()
 			if state then
 				box.BackgroundColor3 = C.Check
+				box.BackgroundTransparency = 0
 				box.Text = "✓"
 			else
-				box.BackgroundColor3 = C.Input
+				box.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
+				box.BackgroundTransparency = 0
 				box.Text = ""
 			end
 		end
@@ -1759,10 +1743,24 @@ function ReGui:Window(config)
 	function win:_host() return content end
 	win._hostOverride = content
 
+		local function animateSize(targetSize, duration)
+		duration = duration or 0.22
+		local ok = pcall(function()
+			local TS = game:GetService("TweenService")
+			local tw = TweenInfo.new(duration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+			TS:Create(frame, tw, { Size = targetSize }):Play()
+		end)
+		if not ok then
+			frame.Size = targetSize
+		end
+		-- always hard-set at end so size is correct even if tween is ignored
+		task.delay(duration + 0.02, function()
+			pcall(function() frame.Size = targetSize end)
+		end)
+	end
+
 	local function setMinimized(v)
 		minimized = not not v
-		local TS = game:GetService("TweenService")
-		local tw = TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 		local abs = frame.AbsoluteSize
 		local curW = math.max(abs.X, 180)
 		local curH = math.max(abs.Y, 40)
@@ -1777,22 +1775,12 @@ function ReGui:Window(config)
 			content.Visible = false
 			content.Size = UDim2.new(1, 0, 0, 0)
 			if grab then grab.Visible = false end
-			-- hide bottom mask so corners stay fully rounded when collapsed
 			if titleMask then titleMask.Visible = false end
 			titleBar.Size = UDim2.new(1, 0, 1, 0)
 
-			local barH = isMobile and 36 or 40
-			local barW
-			if isMobile then
-				barW = math.clamp(math.floor(curW * 0.55), 160, 280)
-			else
-				barW = math.clamp(curW, 220, 520)
-			end
-			local target = UDim2.fromOffset(barW, barH)
-			pcall(function()
-				TS:Create(frame, tw, { Size = target }):Play()
-			end)
-			frame.Size = target
+			local barH = isMobile and 34 or 40
+			local barW = isMobile and math.clamp(math.floor(curW * 0.5), 150, 260) or math.clamp(curW, 220, 480)
+			animateSize(UDim2.fromOffset(barW, barH), 0.22)
 		else
 			minBtn.Text = "─"
 			if titleMask then titleMask.Visible = true end
@@ -1810,14 +1798,11 @@ function ReGui:Window(config)
 				end
 				fullSize = target
 			end
-			pcall(function()
-				TS:Create(frame, tw, { Size = target }):Play()
-			end)
-			frame.Size = target
+			animateSize(target, 0.22)
 		end
 	end
 
-	local function bindBtn(btn, fn)
+local function bindBtn(btn, fn)
 		btn.ZIndex = 10
 		btn.Active = true
 		btn.AutoButtonColor = true
@@ -1887,6 +1872,41 @@ function ReGui:Window(config)
 	function win:Restore()
 		setMinimized(false)
 	end
+
+
+	-- Boot open animation (runs after full UI built)
+	task.defer(function()
+		local ok, err = pcall(function()
+			local TS = game:GetService("TweenService")
+			local finalSize = frame.Size
+			local finalPos = frame.Position
+			frame.Size = UDim2.fromOffset(
+				math.max(48, math.floor(finalSize.X.Offset * 0.82)),
+				math.max(48, math.floor(finalSize.Y.Offset * 0.82))
+			)
+			frame.Position = UDim2.new(
+				finalPos.X.Scale, finalPos.X.Offset + math.floor(finalSize.X.Offset * 0.09),
+				finalPos.Y.Scale, finalPos.Y.Offset + 28
+			)
+			frame.BackgroundTransparency = 0.4
+			local tw = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+			TS:Create(frame, tw, {
+				Size = finalSize,
+				Position = finalPos,
+				BackgroundTransparency = 0,
+			}):Play()
+			task.delay(0.32, function()
+				pcall(function()
+					frame.Size = finalSize
+					frame.Position = finalPos
+					frame.BackgroundTransparency = 0
+				end)
+			end)
+		end)
+		if not ok then
+			-- fallback: no anim
+		end
+	end)
 
 	table.insert(self.Windows, win)
 	return win
