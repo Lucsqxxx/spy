@@ -91,7 +91,14 @@ function Ui:Init(Data)
 
 	local CompatUrl = `{Configuration.RepoUrl}/src/ui/ReGuiCompat.lua`
 	local CompatSource = game:HttpGet(CompatUrl)
-	ReGui = loadstring(CompatSource, "ReGuiCompat")()
+	local compile, cerr = loadstring(CompatSource, "ReGuiCompat")
+	if not compile then
+		error("[Wyvern Spy] ReGuiCompat compile failed: " .. tostring(cerr))
+	end
+	ReGui = compile()
+	if not ReGui then
+		error("[Wyvern Spy] ReGuiCompat returned nil")
+	end
 	pcall(function()
 		if Configuration and Configuration._LogoAsset then
 			ReGui.LogoAsset = Configuration._LogoAsset
@@ -99,9 +106,9 @@ function Ui:Init(Data)
 	end)
 	warn("[Wyvern Spy] Using ReGuiCompat (no prefab asset)")
 
-	self:LoadFont()
-	self:LoadReGui()
-	self:CheckScale()
+	pcall(function() self:LoadFont() end)
+	pcall(function() self:LoadReGui() end)
+	pcall(function() self:CheckScale() end)
 end
 
 function Ui:SetCommChannel(NewCommChannel)
