@@ -96,7 +96,8 @@ local InstanceCreatedRemotes: typeof(setmetatable({} :: {[Event]: true}, {__mode
     __mode = "k"
 })
 
-function Process:Merge(Base: table, New: table)
+function Process:Merge(Base, New)
+
     if not New then return end
 	for Key, Value in next, New do
 		Base[Key] = Value
@@ -104,6 +105,7 @@ function Process:Merge(Base: table, New: table)
 end
 
 function Process:Init(Data)
+
     local Modules = Data.Modules
     local Services = Data.Services
 
@@ -139,12 +141,14 @@ function Process:Init(Data)
     end
 end
 
-function Process:SetChannel(NewChannel: BindableEvent, IsWrapped: boolean)
+function Process:SetChannel(NewChannel, IsWrapped)
+
     Channel = NewChannel
     WrappedChannel = IsWrapped
 end
 
-function Process:GetConfigOverwrites(Name: string)
+function Process:GetConfigOverwrites(Name)
+
     local ConfigOverwrites = self.ConfigOverwrites
 
     for List, Overwrites in next, ConfigOverwrites do
@@ -154,7 +158,8 @@ function Process:GetConfigOverwrites(Name: string)
     return
 end
 
-function Process:CheckConfig(Config: table)
+function Process:CheckConfig(Config)
+
     local Name = identifyexecutor():lower()
 
     
@@ -164,14 +169,16 @@ function Process:CheckConfig(Config: table)
     self:Merge(Config, Overwrites)
 end
 
-function Process:CleanCError(Error: string)
+function Process:CleanCError(Error)
+
     Error = Error:gsub(":%d+: ", "")
     Error = Error:gsub(", got %a+", "")
     Error = Error:gsub("invalid argument", "missing argument")
     return Error
 end
 
-function Process:CountMatches(String: string, Match: string)
+function Process:CountMatches(String, Match)
+
 	local Count = 0
 	for _ in String:gmatch(Match) do
 		Count +=1 
@@ -183,7 +190,8 @@ end
 Process.SnapshotMaxDepth = 8
 Process.SnapshotMaxEntries = 200
 
-function Process:CheckValue(Value, Ignore: table?, Cache: table?, Depth: number?)
+function Process:CheckValue(Value, Ignore, Cache, Depth)
+
     local Type = typeof(Value)
     Depth = Depth or 0
     if Communication and Communication.WaitCheck then
@@ -201,7 +209,8 @@ function Process:CheckValue(Value, Ignore: table?, Cache: table?, Depth: number?
     return Value
 end
 
-function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?, Depth: number?)
+function Process:DeepCloneTable(Table, Ignore, Visited, Depth)
+
     if typeof(Table) ~= "table" then return Table end
     Depth = Depth or 0
     local MaxDepth = self.SnapshotMaxDepth or 8
@@ -242,11 +251,13 @@ function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?, Depth: n
 end
 
 function Process:SnapshotArgs(...)
+
     local packed = { ... }
     return self:DeepCloneTable(packed)
 end
 
-function Process:ArgFingerprint(Method: string, Args: table)
+function Process:ArgFingerprint(Method, Args)
+
     local parts = { tostring(Method) }
     local n = math.min(table.maxn(Args), 6)
     for i = 1, n do
@@ -267,21 +278,25 @@ function Process:ArgFingerprint(Method: string, Args: table)
     return table.concat(parts, "|")
 end
 
-function Process:Unpack(Table: table)
+function Process:Unpack(Table)
+
     if not Table then return Table end
 	local Length = table.maxn(Table)
 	return unpack(Table, 1, Length)
 end
 
 function Process:PushConfig(Overwrites)
+
     self:Merge(self, Overwrites)
 end
 
-function Process:FuncExists(Name: string)
+function Process:FuncExists(Name)
+
 	return WyvernENV[Name]
 end
 
 function Process:CheckExecutor()
+
     local Blacklisted = {
         "xeno",
         "solara",
@@ -301,6 +316,7 @@ function Process:CheckExecutor()
 end
 
 function Process:CheckFunctions()
+
     local CoreFunctions = {
         "hookmetamethod",
         "hookfunction",
@@ -322,6 +338,7 @@ function Process:CheckFunctions()
 end
 
 function Process:CheckIsSupported()
+
     
     local ExecutorSupported = self:CheckExecutor()
     if not ExecutorSupported then
@@ -337,7 +354,8 @@ function Process:CheckIsSupported()
     return true
 end
 
-function Process:GetClassData(Remote: Instance)
+function Process:GetClassData(Remote)
+
 	if typeof(Remote) ~= "Instance" then return nil end
     local RemoteClassData = self.RemoteClassData
     local ClassName = Hook:Index(Remote, "ClassName")
@@ -345,14 +363,16 @@ function Process:GetClassData(Remote: Instance)
     return RemoteClassData[ClassName]
 end
 
-function Process:IsProtectedRemote(Remote: Instance)
+function Process:IsProtectedRemote(Remote)
+
     local IsDebug = Remote == Communication.DebugIdRemote
     local IsChannel = Remote == (WrappedChannel and Channel.Channel or Channel)
 
     return IsDebug or IsChannel
 end
 
-function Process:RemoteAllowed(Remote: Event, TransferType: string, Method: string?)
+function Process:RemoteAllowed(Remote, TransferType, Method)
+
     if typeof(Remote) ~= 'Instance' or InstanceCreatedRemotes[Remote] then return end
     
     
@@ -374,12 +394,14 @@ function Process:RemoteAllowed(Remote: Event, TransferType: string, Method: stri
 	return true
 end
 
-function Process:SetExtraData(Data: table)
+function Process:SetExtraData(Data)
+
     if not Data then return end
     self.ExtraData = Data
 end
 
-function Process:GetRemoteSpoof(Remote: Instance, Method: string, ...)
+function Process:GetRemoteSpoof(Remote, Method, ...)
+
     local Spoof = ReturnSpoofs[Remote]
 
     if not Spoof then return end
@@ -395,11 +417,13 @@ function Process:GetRemoteSpoof(Remote: Instance, Method: string, ...)
 	return ReturnValues
 end
 
-function Process:SetNewReturnSpoofs(NewReturnSpoofs: table)
+function Process:SetNewReturnSpoofs(NewReturnSpoofs)
+
     ReturnSpoofs = NewReturnSpoofs
 end
 
-function Process:FindCallingLClosure(Offset: number)
+function Process:FindCallingLClosure(Offset)
+
     local Getfenv = Hook:GetOriginalFunc(getfenv)
     Offset += 1
 
@@ -419,7 +443,8 @@ function Process:FindCallingLClosure(Offset: number)
     end
 end
 
-function Process:Decompile(Script: LocalScript | ModuleScript)
+function Process:Decompile(Script)
+
     local KonstantAPI = "http://api.plusgiant5.com/konstant/decompile"
     local ForceKonstant = Config.ForceKonstantDecompiler
 
@@ -454,7 +479,8 @@ function Process:Decompile(Script: LocalScript | ModuleScript)
     return Responce.Body
 end
 
-function Process:GetScriptFromFunc(Func: (...any) -> ...any)
+function Process:GetScriptFromFunc(Func)
+
     if not Func then return end
 
     local Success, ENV = pcall(getfenv, Func)
@@ -466,9 +492,10 @@ function Process:GetScriptFromFunc(Func: (...any) -> ...any)
     return rawget(ENV, "script")
 end
 
-function Process:ConnectionIsValid(Connection: table)
+function Process:ConnectionIsValid(Connection)
+
     local ValueReplacements = {
-		["Script"] = function(Connection: table): Script?
+		["Script"] = function(Connection: table)
 			local Function = Connection.Function
 			if not Function then return end
 
@@ -498,7 +525,8 @@ function Process:ConnectionIsValid(Connection: table)
     return true
 end
 
-function Process:FilterConnections(Signal: RBXScriptSignal)
+function Process:FilterConnections(Signal)
+
     local Processed = {}
 
     
@@ -510,11 +538,13 @@ function Process:FilterConnections(Signal: RBXScriptSignal)
     return Processed
 end
 
-function Process:IsWyvernSpyENV(Env: table)
+function Process:IsWyvernSpyENV(Env)
+
     return Env == WyvernENV
 end
 
-function Process:GetRemoteData(Id: string)
+function Process:GetRemoteData(Id)
+
     local RemoteOptions = self.RemoteOptions
 	if Id == nil then
 		return { Excluded = false, Blocked = false }
@@ -532,7 +562,8 @@ function Process:GetRemoteData(Id: string)
 	return Data
 end
 
-function Process:CallDiscordRPC(Body: table)
+function Process:CallDiscordRPC(Body)
+
     request({
         Url = "http://127.0.0.1:6463/rpc?v=1",
         Method = "POST",
@@ -544,7 +575,8 @@ function Process:CallDiscordRPC(Body: table)
     })
 end
 
-function Process:PromptDiscordInvite(InviteCode: string)
+function Process:PromptDiscordInvite(InviteCode)
+
     self:CallDiscordRPC({
         cmd = "INVITE_BROWSER",
         nonce = HttpService:GenerateGUID(false),
@@ -554,7 +586,7 @@ function Process:PromptDiscordInvite(InviteCode: string)
     })
 end
 
-local ProcessCallback = newcclosure(function(Data: RemoteData, Remote, ...): table?
+local ProcessCallback = newcclosure(function(Data: RemoteData, Remote, ...)
     local OriginalFunc = Data.OriginalFunc
     local Id = Data.Id
     local Method = Data.Method
@@ -578,7 +610,8 @@ local ProcessCallback = newcclosure(function(Data: RemoteData, Remote, ...): tab
     }
 end)
 
-function Process:ProcessRemote(Data: RemoteData, Remote, ...)
+function Process:ProcessRemote(Data, Remote, ...)
+
 	local Method = Data.Method
     local TransferType = Data.TransferType
     local IsReceive = Data.IsReceive
@@ -665,23 +698,27 @@ function Process:ProcessRemote(Data: RemoteData, Remote, ...)
 	return ReturnValues
 end
 
-function Process:SetAllRemoteData(Key: string, Value)
+function Process:SetAllRemoteData(Key, Value)
+
     local RemoteOptions = self.RemoteOptions
 	for RemoteID, Data in next, RemoteOptions do
 		Data[Key] = Value
 	end
 end
 
-function Process:SetRemoteData(Id: string, RemoteData: table)
+function Process:SetRemoteData(Id, RemoteData)
+
     local RemoteOptions = self.RemoteOptions
     RemoteOptions[Id] = RemoteData
 end
 
-function Process:UpdateRemoteData(Id: string, RemoteData: table)
+function Process:UpdateRemoteData(Id, RemoteData)
+
     Communication:Communicate("RemoteData", Id, RemoteData)
 end
 
-function Process:UpdateAllRemoteData(Key: string, Value)
+function Process:UpdateAllRemoteData(Key, Value)
+
     Communication:Communicate("AllRemoteData", Key, Value)
 end
 
