@@ -25,6 +25,7 @@ local Communication
 local ExeENV = getfenv(1)
 
 function Hook:Init(Data)
+
     Modules = Data.Modules
 
 	Process = Modules.Process
@@ -55,13 +56,15 @@ local HookMiddle = newcclosure(function(OriginalFunc, Callback, AlwaysTable: boo
 	return OriginalFunc(...)
 end)
 
-local function Merge(Base: table, New: table)
+local function Merge(Base, New)
+
 	for Key, Value in next, New do
 		Base[Key] = Value
 	end
 end
 
-function Hook:Index(Object: Instance, Key: string)
+function Hook:Index(Object, Key)
+
     local identity = getthreadidentity()
     setthreadidentity(8)
     local returned = Object[Key]
@@ -70,10 +73,12 @@ function Hook:Index(Object: Instance, Key: string)
 end
 
 function Hook:PushConfig(Overwrites)
+
     Merge(self, Overwrites)
 end
 
-function Hook:ReplaceMetaMethod(Object: Instance, Call: string, Callback: MetaFunc)
+function Hook:ReplaceMetaMethod(Object, Call, Callback)
+
 	local Metatable = getrawmetatable(Object)
 	local OriginalFunc = clonefunction(Metatable[Call])
 	
@@ -87,7 +92,8 @@ function Hook:ReplaceMetaMethod(Object: Instance, Call: string, Callback: MetaFu
 	return OriginalFunc
 end
 
-function Hook:HookFunction(Func: UnkFunc, Callback: UnkFunc)
+function Hook:HookFunction(Func, Callback)
+
 	local OriginalFunc
 	local WrappedCallback = newcclosure(Callback)
 	OriginalFunc = clonefunction(hookfunction(Func, function(...)
@@ -96,7 +102,8 @@ function Hook:HookFunction(Func: UnkFunc, Callback: UnkFunc)
 	return OriginalFunc
 end
 
-function Hook:HookMetaCall(Object: Instance, Call: string, Callback: MetaFunc)
+function Hook:HookMetaCall(Object, Call, Callback)
+
 	local Metatable = getrawmetatable(Object)
 	local Unhooked
 	
@@ -106,7 +113,8 @@ function Hook:HookMetaCall(Object: Instance, Call: string, Callback: MetaFunc)
 	return Unhooked
 end
 
-function Hook:HookMetaMethod(Object: Instance, Call: string, Callback: MetaFunc)
+function Hook:HookMetaMethod(Object, Call, Callback)
+
 	local Func = newcclosure(Callback)
 	
 	
@@ -119,6 +127,7 @@ function Hook:HookMetaMethod(Object: Instance, Call: string, Callback: MetaFunc)
 end
 
 function Hook:PatchFunctions()
+
 	
 	if Config.NoFunctionPatching then return end
 
@@ -184,10 +193,12 @@ function Hook:PatchFunctions()
 end
 
 function Hook:GetOriginalFunc(Func)
+
 	return self.PreviousFunctions[Func] or Func
 end
 
-function Hook:RunOnActors(Code: string, ChannelId: number)
+function Hook:RunOnActors(Code, ChannelId)
+
 	if not getactors or not run_on_actor then return end
 	
 	local Actors = getactors()
@@ -198,7 +209,8 @@ function Hook:RunOnActors(Code: string, ChannelId: number)
 	end
 end
 
-local function ProcessRemote(OriginalFunc, MetaMethod: string, self, Method: string, ...)
+local function ProcessRemote(OriginalFunc, MetaMethod, self, Method, ...)
+
 	return Process:ProcessRemote({
 		Method = Method,
 		OriginalFunc = OriginalFunc,
@@ -208,7 +220,8 @@ local function ProcessRemote(OriginalFunc, MetaMethod: string, self, Method: str
 	}, self, ...)
 end
 
-function Hook:HookRemoteTypeIndex(ClassName: string, FuncName: string)
+function Hook:HookRemoteTypeIndex(ClassName, FuncName)
+
 	local Remote = Instance.new(ClassName)
 	local Func = Remote[FuncName]
 	local OriginalFunc
@@ -227,6 +240,7 @@ function Hook:HookRemoteTypeIndex(ClassName: string, FuncName: string)
 end
 
 function Hook:HookRemoteIndexes()
+
 	
 	local RemoteClassData = Process.RemoteClassData
 	local Seen = {}
@@ -244,6 +258,7 @@ function Hook:HookRemoteIndexes()
 end
 
 function Hook:BeginHooks()
+
 	
 	self:HookRemoteIndexes()
 
@@ -261,6 +276,7 @@ function Hook:BeginHooks()
 end
 
 function Hook:HookClientInvoke(Remote, Method, Callback)
+
 	local Success, Function = pcall(function()
 		return getcallbackvalue(Remote, Method)
 	end)
@@ -282,12 +298,14 @@ function Hook:HookClientInvoke(Remote, Method, Callback)
 end
 
 function Hook:MultiConnect(Remotes)
+
 	for _, Remote in next, Remotes do
 		self:ConnectClientRecive(Remote)
 	end
 end
 
 function Hook:ConnectClientRecive(Remote)
+
 	local Allowed = Process:RemoteAllowed(Remote, "Receive")
 	if not Allowed then return end
 
@@ -304,6 +322,7 @@ function Hook:ConnectClientRecive(Remote)
 
 	
 	local function Callback(...)
+
         return Process:ProcessRemote({
             Method = Method,
             IsReceive = true,
@@ -321,6 +340,7 @@ function Hook:ConnectClientRecive(Remote)
 end
 
 function Hook:BeginService(Libraries, ExtraData, ChannelId, ...)
+
 	
 	local ReturnSpoofs = Libraries.ReturnSpoofs
 	local ProcessLib = Libraries.Process
@@ -345,7 +365,7 @@ function Hook:BeginService(Libraries, ExtraData, ChannelId, ...)
 			Configuration = Libraries.Configuration or (Modules and Modules.Configuration),
 		},
 		Services = setmetatable({}, {
-			__index = function(self, Name: string): Instance
+			__index = function(self, Name: string)
 				local Service = game:GetService(Name)
 				return cloneref(Service)
 			end,
@@ -391,7 +411,8 @@ function Hook:BeginService(Libraries, ExtraData, ChannelId, ...)
 	end
 end
 
-function Hook:LoadMetaHooks(ActorCode: string, ChannelId: number)
+function Hook:LoadMetaHooks(ActorCode, ChannelId)
+
 	
 	if not Configuration.NoActors then
 		self:RunOnActors(ActorCode, ChannelId)
@@ -402,6 +423,7 @@ function Hook:LoadMetaHooks(ActorCode: string, ChannelId: number)
 end
 
 function Hook:LoadReceiveHooks()
+
 	local NoReceiveHooking = Config.NoReceiveHooking
 	local BlackListedServices = Config.BlackListedServices or {}
 
@@ -439,7 +461,8 @@ function Hook:LoadReceiveHooks()
 	end
 end
 
-function Hook:LoadHooks(ActorCode: string, ChannelId: number)
+function Hook:LoadHooks(ActorCode, ChannelId)
+
 	local Ok, Err = pcall(function()
 		self:LoadMetaHooks(ActorCode, ChannelId)
 	end)
