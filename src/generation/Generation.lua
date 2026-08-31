@@ -79,14 +79,16 @@ local ParserModule
 local Flags
 local ThisScript = script
 
-local function Merge(Base: table, New: table?)
+local function Merge(Base, New)
+
 	if not New then return end
 	for Key, Value in next, New do
 		Base[Key] = Value
 	end
 end
 
-function Generation:Init(Data: table)
+function Generation:Init(Data)
+
     local Modules = Data.Modules
 	local Configuration = Modules.Configuration
 
@@ -100,18 +102,21 @@ function Generation:Init(Data: table)
 	self:LoadParser(ParserUrl)
 end
 
-function Generation:MakePrintable(String: string)
+function Generation:MakePrintable(String)
+
 	local Formatter = ParserModule.Modules.Formatter
 	return Formatter:MakePrintable(String)
 end
 
-function Generation:TimeStampFile(FilePath: string)
+function Generation:TimeStampFile(FilePath)
+
 	local TimeStamp = os.date("%Y-%m-%d_%H-%M-%S")
 	local Formatted = FilePath:format(TimeStamp)
 	return Formatted
 end
 
-function Generation:WriteDump(Content: string)
+function Generation:WriteDump(Content)
+
 	local DumpBaseName = self.DumpBaseName
 	local FilePath = self:TimeStampFile(DumpBaseName)
 
@@ -121,8 +126,10 @@ function Generation:WriteDump(Content: string)
 	return FilePath
 end
 
-function Generation:LoadParser(ModuleUrl: string)
-	local function Fallback(Reason: string?)
+function Generation:LoadParser(ModuleUrl)
+
+	local function Fallback(Reason)
+
 		if Reason then
 			warn("[Wyvern Spy] Parser load error:", Reason)
 		end
@@ -210,15 +217,18 @@ function Generation:LoadParser(ModuleUrl: string)
 end
 
 function Generation:MakeValueSwapsTable()
+
 	local Formatter = ParserModule.Modules.Formatter
 	return Formatter:MakeReplacements()
 end
 
-function Generation:SetSwapsCallback(Callback: (Interface: table) -> ())
+function Generation:SetSwapsCallback(Callback)
+
 	self.SwapsCallback = Callback
 end
 
 function Generation:GetBase(Module)
+
 	local NoComments = Flags:GetFlagValue("NoComments")
 	local Header = self.Header
 
@@ -236,11 +246,13 @@ function Generation:GetBase(Module)
 end
 
 function Generation:GetSwaps()
+
 	local Func = self.SwapsCallback
 	local Swaps = {}
 
 	local Interface = {}
-	function Interface:AddSwap(Object: Instance, Data: table)
+	function Interface:AddSwap(Object, Data)
+
 		if not Object then return end
 		Swaps[Object] = Data
 	end
@@ -252,11 +264,13 @@ function Generation:GetSwaps()
 end
 
 function Generation:PickVariableName()
+
 	local Names = Config.VariableNames
 	return Names[math.random(1, #Names)]
 end
 
-function Generation:NewParser(Extra: table?)
+function Generation:NewParser(Extra)
+
 	local VariableName = self:PickVariableName()
 	local Swaps = self:GetSwaps()
 
@@ -275,7 +289,8 @@ function Generation:NewParser(Extra: table?)
 	return ParserModule:New(Configuration)
 end
 
-function Generation:Indent(IndentString: string, Line: string)
+function Generation:Indent(IndentString, Line)
+
 	return `{IndentString}{Line}`
 end
 
@@ -285,7 +300,8 @@ type CallInfo = {
 	RemoteVariable: string,
 	Module: table
 }
-function Generation:CallRemoteScript(Data, Info: CallInfo)
+function Generation:CallRemoteScript(Data, Info)
+
 	local IsReceive = Data.IsReceive
 	local Method = Data.Method
 	local Args = Data.Args
@@ -336,7 +352,8 @@ function Generation:CallRemoteScript(Data, Info: CallInfo)
 	return tostring(RemoteVariable) .. ":" .. tostring(Method) .. "(" .. tostring(ParsedArgs) .. ")"
 end
 
-function Generation:ApplyVariables(String: string, Variables: table, ...)
+function Generation:ApplyVariables(String, Variables, ...)
+
 	for Variable, Value in Variables do
 		if typeof(Value) == "function" then
 			Value = Value(...)
@@ -351,7 +368,8 @@ function Generation:ApplyVariables(String: string, Variables: table, ...)
 	return String
 end
 
-function Generation:MakeIndent(Indent: number)
+function Generation:MakeIndent(Indent)
+
 	return string.rep("	", Indent)
 end
 
@@ -359,7 +377,8 @@ type ScriptData = {
 	Variables: table,
 	MetaMethod: string
 }
-function Generation:MakeCallCode(ScriptType: string, Data: ScriptData)
+function Generation:MakeCallCode(ScriptType, Data)
+
 	local ScriptTemplates = self.ScriptTemplates
 	local Template = ScriptTemplates[ScriptType]
 
@@ -369,7 +388,8 @@ function Generation:MakeCallCode(ScriptType: string, Data: ScriptData)
 	local MetaMethod = Data.MetaMethod
 	local MetaMethods = {"__index", "__namecall", "Connect"}
 
-	local function Compile(Template: table)
+	local function Compile(Template)
+
 		local Out = ""
 
 		for Key, Value in next, Template do
@@ -401,7 +421,8 @@ function Generation:MakeCallCode(ScriptType: string, Data: ScriptData)
 	return Compile(Template)
 end
 
-function Generation:RemoteScript(Module, Data: RemoteData, ScriptType: string)
+function Generation:RemoteScript(Module, Data, ScriptType)
+
 	
 	local Remote = Data.Remote
 	local Args = Data.Args
@@ -451,7 +472,8 @@ function Generation:RemoteScript(Module, Data: RemoteData, ScriptType: string)
 	return `{Code}\n{CallCode}`
 end
 
-function Generation:ConnectionsTable(Signal: RBXScriptSignal)
+function Generation:ConnectionsTable(Signal)
+
 	local Connections = getconnections(Signal)
 	local DataArray = {}
 
@@ -475,7 +497,8 @@ function Generation:ConnectionsTable(Signal: RBXScriptSignal)
 	return DataArray
 end
 
-function Generation:TableScript(Module, Table: table)
+function Generation:TableScript(Module, Table)
+
 	
 	Module.Variables:PrerenderVariables(Table, {"Instance"})
 
@@ -492,7 +515,8 @@ function Generation:TableScript(Module, Table: table)
 	return Code
 end
 
-function Generation:MakeTypesTable(Table: table)
+function Generation:MakeTypesTable(Table)
+
 	local Types = {}
 
 	for Key, Value in next, Table do
@@ -507,7 +531,8 @@ function Generation:MakeTypesTable(Table: table)
 	return Types
 end
 
-function Generation:ConnectionInfo(Remote: Instance, ClassData: table)
+function Generation:ConnectionInfo(Remote, ClassData)
+
 	local ReceiveMethods = ClassData.Receive
 	if not ReceiveMethods then return end
 
@@ -522,7 +547,8 @@ function Generation:ConnectionInfo(Remote: Instance, ClassData: table)
 	return Connections
 end
 
-function Generation:AdvancedInfo(Module, Data: table)
+function Generation:AdvancedInfo(Module, Data)
+
 	
 	local Function = Data.CallingFunction
 	local ClassData = Data.ClassData
@@ -560,7 +586,8 @@ function Generation:AdvancedInfo(Module, Data: table)
 	return self:TableScript(Module, FunctionInfo)
 end
 
-function Generation:DumpLogs(Logs: table)
+function Generation:DumpLogs(Logs)
+
 	local BaseData
 	local Parsed = {
 		Remote = nil,
