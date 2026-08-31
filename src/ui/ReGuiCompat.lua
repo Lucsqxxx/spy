@@ -1195,26 +1195,28 @@ function Element:_create(class, config)
 		holder.BackgroundTransparency = 1
 		holder.Size = config.Size or UDim2.new(1, 0, 0, 28)
 		holder.BorderSizePixel = 0
-		holder.Parent = parent
+		holder.Parent = host
+		order(holder)
 		local box = Instance.new("TextBox")
 		box.Size = UDim2.new(1, 0, 1, 0)
-		box.BackgroundColor3 = C.Input
+		box.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
 		box.BorderSizePixel = 0
 		box.Text = tostring(config.Value or config.Text or "")
-		box.PlaceholderText = config.Placeholder or ""
-		box.PlaceholderColor3 = C.TextDim
+		box.PlaceholderText = config.Placeholder or "Search…"
+		box.PlaceholderColor3 = Color3.fromRGB(120, 122, 132)
 		box.TextColor3 = C.Text
 		box.TextSize = 13
 		box.Font = Enum.Font.BuilderSans
 		box.ClearTextOnFocus = false
 		box.TextXAlignment = Enum.TextXAlignment.Left
 		box.Parent = holder
+		pcall(function() applyFont(box, "regular") end)
 		corner(box, 6)
-		stroke(box, C.Border, 1)
-		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft = UDim.new(0, 8)
-		pad.PaddingRight = UDim.new(0, 8)
-		pad.Parent = box
+		stroke(box, Color3.fromRGB(55, 58, 68), 1)
+		local ip = Instance.new("UIPadding")
+		ip.PaddingLeft = UDim.new(0, 8)
+		ip.PaddingRight = UDim.new(0, 8)
+		ip.Parent = box
 		if config.Callback then
 			box:GetPropertyChangedSignal("Text"):Connect(function()
 				pcall(config.Callback, box, box.Text)
@@ -1741,6 +1743,12 @@ function ReGui:Window(config)
 				fullSize = UDim2.fromOffset(curW, curH)
 			end
 			minBtn.Text = "□"
+			minBtn.Size = UDim2.fromOffset(26, 22)
+			minBtn.Position = UDim2.new(1, -60, 0.5, -11)
+			close.Size = UDim2.fromOffset(26, 22)
+			close.Position = UDim2.new(1, -30, 0.5, -11)
+			close.TextSize = 14
+			minBtn.TextSize = 12
 			content.Visible = false
 			content.Size = UDim2.new(1, 0, 0, 0)
 			if grab then grab.Visible = false end
@@ -1752,6 +1760,12 @@ function ReGui:Window(config)
 			animateSize(UDim2.fromOffset(barW, barH), 0.22)
 		else
 			minBtn.Text = "─"
+			minBtn.Size = UDim2.fromOffset(36, 28)
+			minBtn.Position = UDim2.new(1, -84, 0, 6)
+			close.Size = UDim2.fromOffset(36, 28)
+			close.Position = UDim2.new(1, -42, 0, 6)
+			close.TextSize = 18
+			minBtn.TextSize = 16
 			if titleMask then titleMask.Visible = true end
 			titleBar.Size = UDim2.new(1, 0, 0, 40)
 			content.Visible = true
@@ -1843,39 +1857,40 @@ local function bindBtn(btn, fn)
 	end
 
 
-	-- Boot open animation (runs after full UI built)
-	task.defer(function()
-		local ok, err = pcall(function()
-			local TS = game:GetService("TweenService")
-			local finalSize = frame.Size
-			local finalPos = frame.Position
-			frame.Size = UDim2.fromOffset(
-				math.max(48, math.floor(finalSize.X.Offset * 0.82)),
-				math.max(48, math.floor(finalSize.Y.Offset * 0.82))
-			)
-			frame.Position = UDim2.new(
-				finalPos.X.Scale, finalPos.X.Offset + math.floor(finalSize.X.Offset * 0.09),
-				finalPos.Y.Scale, finalPos.Y.Offset + 28
-			)
-			frame.BackgroundTransparency = 0.4
-			local tw = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-			TS:Create(frame, tw, {
-				Size = finalSize,
-				Position = finalPos,
-				BackgroundTransparency = 0,
-			}):Play()
-			task.delay(0.32, function()
-				pcall(function()
-					frame.Size = finalSize
-					frame.Position = finalPos
-					frame.BackgroundTransparency = 0
-				end)
+	-- Boot open animation
+	do
+		local finalSize = frame.Size
+		local finalPos = frame.Position
+		local startSize = UDim2.fromOffset(
+			math.max(80, math.floor((finalSize.X.Offset > 0 and finalSize.X.Offset or 820) * 0.7)),
+			math.max(60, math.floor((finalSize.Y.Offset > 0 and finalSize.Y.Offset or 520) * 0.7))
+		)
+		frame.Size = startSize
+		frame.Position = UDim2.new(
+			finalPos.X.Scale,
+			finalPos.X.Offset + math.floor(((finalSize.X.Offset > 0 and finalSize.X.Offset or 820) - startSize.X.Offset) / 2),
+			finalPos.Y.Scale,
+			finalPos.Y.Offset + 40
+		)
+		frame.BackgroundTransparency = 0.55
+		task.spawn(function()
+			pcall(function()
+				local TS = game:GetService("TweenService")
+				local tw = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+				TS:Create(frame, tw, {
+					Size = finalSize,
+					Position = finalPos,
+					BackgroundTransparency = 0,
+				}):Play()
+			end)
+			task.wait(0.4)
+			pcall(function()
+				frame.Size = finalSize
+				frame.Position = finalPos
+				frame.BackgroundTransparency = 0
 			end)
 		end)
-		if not ok then
-			-- fallback: no anim
-		end
-	end)
+	end
 
 	table.insert(self.Windows, win)
 	return win
