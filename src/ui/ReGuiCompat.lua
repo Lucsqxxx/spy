@@ -283,38 +283,7 @@ function Element:_create(class, config)
 		frame.BorderSizePixel = 0
 		frame.Size = config.Size or UDim2.new(1, 0, 0, 26)
 		frame.AutomaticSize = Enum.AutomaticSize.None
-
-					if d:IsA("ImageLabel") or d:IsA("ImageButton") then
-						d.ImageTransparency = 1
-					end
-				end)
-			end
-		end
-		task.defer(function()
-			pcall(function()
-				local tw = TweenInfo.new(0.28, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-				TS:Create(frame, tw, {
-					Size = finalSize,
-					Position = finalPos,
-					BackgroundTransparency = 0,
-				}):Play()
-			end)
-			task.delay(0.05, function()
-				for _, d in frame:GetDescendants() do
-					if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
-						pcall(function()
-							game:GetService("TweenService"):Create(d, TweenInfo.new(0.2), { TextTransparency = 0 }):Play()
-						end)
-					elseif d:IsA("ImageLabel") or d:IsA("ImageButton") then
-						pcall(function()
-							game:GetService("TweenService"):Create(d, TweenInfo.new(0.2), { ImageTransparency = 0 }):Play()
-						end)
-					end
-				end
-			end)
-		end)
-	end
-		frame.ClipsDescendants = true
+			frame.ClipsDescendants = true
 		if class == "HeaderRow" then
 			frame.BackgroundColor3 = Color3.fromRGB(32, 40, 58)
 			frame.BackgroundTransparency = 0
