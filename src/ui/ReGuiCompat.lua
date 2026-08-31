@@ -1240,7 +1240,7 @@ function Element:_create(class, config)
 		lab.Font = Enum.Font.BuilderSans
 		lab.TextSize = 12
 		lab.Parent = holder
-		applyFont(lab)
+		pcall(function() applyFont(lab) end)
 		local box = Instance.new("TextBox")
 		box.Size = UDim2.new(0.4, 0, 0, 20)
 		box.Position = UDim2.new(0.58, 0, 0, 2)
@@ -1250,23 +1250,26 @@ function Element:_create(class, config)
 		box.Font = Enum.Font.BuilderSans
 		box.TextSize = 12
 		box.ClearTextOnFocus = false
+		box.BorderSizePixel = 0
 		box.Parent = holder
 		corner(box, 3)
-		applyFont(box)
+		pcall(function() applyFont(box) end)
 		box.FocusLost:Connect(function()
 			local n = tonumber(box.Text)
-			if n then
-				n = math.clamp(math.floor(n), 1, 500)
-				box.Text = tostring(n)
-				config.Value = n
-				if config.Callback then pcall(config.Callback, n) end
-			else
-				box.Text = tostring(config.Value or 50)
+			if n == nil then
+				box.Text = tostring(config.Value or 0)
+				return
+			end
+			n = math.floor(n)
+			box.Text = tostring(n)
+			if config.Callback then
+				pcall(config.Callback, n)
 			end
 		end)
 		return wrap(holder, "InputInt")
 	end
 
+	
 	if class == "Keybind" then
 		return self:_create("Button", {
 			Text = config.Label or config.Text or "Key",
