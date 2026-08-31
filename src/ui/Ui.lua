@@ -1787,29 +1787,43 @@ function Ui:GetRemoteHeader(Data)
 	local Logs = self.Logs
 	local RemotesList = self.RemotesList
 
-	
 	local Id = Data.Id
 	local Remote = Data.Remote
 	local RemoteName = self:FilterName(`{Remote}`, 30)
 
-	
+	-- One category per remote instance (stable key)
+	local HeaderKey = Id
+	if HeaderKey == nil or HeaderKey == "" then
+		pcall(function()
+			HeaderKey = Remote:GetFullName() .. "@" .. Remote.ClassName
+		end)
+	end
+	if HeaderKey == nil or HeaderKey == "" then
+		HeaderKey = tostring(Remote)
+	end
+	Data._HeaderKey = HeaderKey
+
 	local NoTreeNodes = Flags:GetFlagValue("NoTreeNodes")
 
-	
-	local Existing = Logs[Id]
+	local Existing = Logs[HeaderKey]
 	if Existing then return Existing end
+	if Id and Logs[Id] and Logs[Id] ~= Existing then
+		-- Prefer existing Id mapping if same remote already registered
+		return Logs[Id]
+	end
 
-	
-	local HeaderData = {	
+	local HeaderData = {
 		LogCount = 0,
+		HitCount = 0,
 		Data = Data,
-		Entries = {}
+		Entries = {},
+		ByFingerprint = {},
+		HeaderKey = HeaderKey,
+		Id = Id,
 	}
 
-	
 	RemotesCount += 1
 
-	
 	if not NoTreeNodes then
 		local className, iconImage = self:RemoteKind(Data.ClassData, Remote)
 		HeaderData.TreeNode = RemotesList:TreeNode({
@@ -1824,27 +1838,29 @@ function Ui:GetRemoteHeader(Data)
 	end
 
 	function HeaderData:CheckLimit()
-
 		local Entries = self.Entries
-		
 		while #Entries >= LogLimit do
 			local Log = table.remove(Entries, 1)
-			if Log and Log.Selectable then
-				pcall(function()
-					Log.Selectable:Remove()
-				end)
+			if Log then
+				if Log.Fingerprint and self.ByFingerprint then
+					self.ByFingerprint[Log.Fingerprint] = nil
+				end
+				if Log.Selectable then
+					pcall(function()
+						Log.Selectable:Remove()
+					end)
+				end
 			end
 		end
 	end
 
 	function HeaderData:LogAdded(Data)
-
-		self.LogCount += 1
-		table.insert(self.Entries, Data)
-		self:CheckLimit()
+		-- unique rows only (not every hit)
+		self.LogCount = #self.Entries
+		self.HitCount = (self.HitCount or 0) + 1
 		if self.TreeNode then
 			local name = self.RemoteName or "Remote"
-			local count = self.LogCount or 0
+			local count = self.HitCount
 			pcall(function()
 				if self.TreeNode.SetTitle then
 					self.TreeNode:SetTitle(name)
@@ -1858,19 +1874,23 @@ function Ui:GetRemoteHeader(Data)
 	end
 
 	function HeaderData:Remove()
-
-		
 		local TreeNode = self.TreeNode
 		if TreeNode then
 			TreeNode:Remove()
 		end
-
-		
-		Logs[Id] = nil
+		if self.HeaderKey then
+			Logs[self.HeaderKey] = nil
+		end
+		if self.Id then
+			Logs[self.Id] = nil
+		end
 		table.clear(HeaderData)
 	end
 
-	Logs[Id] = HeaderData
+	Logs[HeaderKey] = HeaderData
+	if Id then
+		Logs[Id] = HeaderData
+	end
 	return HeaderData
 end
 
@@ -2006,26 +2026,56 @@ function Ui:CreateLog(Data)
 	local Header = self:GetRemoteHeader(Data)
 	local RemotesList = self.RemotesList
 
-	
-	Header.Fingerprints = Header.Fingerprints or {}
-	local fp = Data.Fingerprint or (Method .. ":?")
-	Header.Fingerprints[fp] = (Header.Fingerprints[fp] or 0) + 1
-	local burst = Header.Fingerprints[fp]
-	Data.BurstCount = burst
-	if burst > 1 then
-		Text = `{Text}  ×{burst}`
+	-- Fingerprint = method + args content (same args => same row)
+	local fp = Data.Fingerprint
+	if not fp and Process.ArgFingerprint then
+		fp = Process:ArgFingerprint(MethodName, ClonedArgs)
+		Data.Fingerprint = fp
+	end
+	fp = fp or (MethodName .. ":?")
+
+	Header.ByFingerprint = Header.ByFingerprint or {}
+	local existing = Header.ByFingerprint[fp]
+
+	-- MERGE: identical args under same remote => bump ×N, no new row
+	if existing and existing.Selectable and existing.Selectable._alive ~= false then
+		existing.BurstCount = (existing.BurstCount or 1) + 1
+		existing.Timestamp = Timestamp or existing.Timestamp
+		existing.Args = ClonedArgs
+		existing.ReturnValues = Data.ReturnValues or existing.ReturnValues
+		local base = existing.BaseText or Text
+		local label = base
+		if existing.BurstCount > 1 then
+			label = `{base}  ×{existing.BurstCount}`
+		end
+		pcall(function()
+			if existing.Selectable.Instance and existing.Selectable.Instance:IsA("TextButton") then
+				existing.Selectable.Instance.Text = label
+			elseif existing.Selectable._btn then
+				existing.Selectable._btn.Text = label
+			end
+		end)
+		Header.HitCount = (Header.HitCount or 0) + 1
+		if Header.TreeNode and Header.TreeNode.SetCount then
+			pcall(function()
+				Header.TreeNode:SetCount(Header.HitCount)
+			end)
+		end
+		return existing
 	end
 
-	local LogCount = Header.LogCount
-	local TreeNode = Header.TreeNode 
+	Data.BurstCount = 1
+	Data.BaseText = Text
+	Data.Fingerprint = fp
+	Data.HeaderData = Header
+
+	local TreeNode = Header.TreeNode
 	local Parent = TreeNode or RemotesList
 
 	if NoTreeNodes then
 		RemotesCount += 1
-		LogCount = RemotesCount
 	end
 
-	Data.HeaderData = Header
 	local orderN = -1 * ((Header.LogCount or 0) + 1)
 	local okSel, sel = pcall(function()
 		return Parent:Selectable({
@@ -2042,8 +2092,10 @@ function Ui:CreateLog(Data)
 		return
 	end
 	Data.Selectable = sel
+	Header.ByFingerprint[fp] = Data
+	table.insert(Header.Entries, Data)
+	Header.LogCount = #Header.Entries
 
-	
 	pcall(function()
 		if Flags:GetFlagValue("WatchNew") and Data.Selectable and Data.Selectable.SetSelected then
 			Data.Selectable:SetSelected(true)
@@ -2061,7 +2113,6 @@ function Ui:CreateLog(Data)
 		Header:LogAdded(Data)
 	end
 
-	
 	if SelectNewest then
 		local GroupSelected = ActiveData and ActiveData.HeaderData == Header
 		if GroupSelected then
@@ -2071,5 +2122,6 @@ function Ui:CreateLog(Data)
 		end
 	end
 end
+
 
 return Ui
