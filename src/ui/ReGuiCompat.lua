@@ -1803,7 +1803,13 @@ local function bindBtn(btn, fn)
 		setMinimized(not minimized)
 	end)
 	bindBtn(close, function()
-		frame.Visible = false
+		pcall(function()
+			frame.Visible = false
+			-- destroy non-main windows so they don't linger invisible
+			if config.DestroyOnClose or config.Title and tostring(config.Title):find("Editing:") then
+				frame:Destroy()
+			end
+		end)
 	end)
 
 	
@@ -1846,6 +1852,12 @@ local function bindBtn(btn, fn)
 
 	function win:SetVisible(v)
 		frame.Visible = not not v
+	end
+	function win:Close()
+		pcall(function()
+			frame.Visible = false
+			frame:Destroy()
+		end)
 	end
 	function win:Minimize()
 		setMinimized(true)
