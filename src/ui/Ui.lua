@@ -945,9 +945,12 @@ function Ui:MakeOptionsTab(InfoSelector)
 			{
 				Text = "Edit Spoofs",
 				Callback = function()
-					self:EditFile("Return spoofs.lua", true, function(Window, Content: string)
-						Window:Close()
-						CommChannel:Fire("UpdateSpoofs", Content)
+					self:EditFile("Return spoofs.lua", true, function(Window, Content)
+						pcall(function()
+							if CommChannel then
+								CommChannel:Fire("UpdateSpoofs", Content)
+							end
+						end)
 					end)
 				end,
 			}
@@ -1119,12 +1122,18 @@ end
 
 function Ui:MakeEditorPopoutWindow(Content, WindowConfig)
 
+	WindowConfig = WindowConfig or {}
+	if not WindowConfig.Size then
+		WindowConfig.Size = UDim2.fromOffset(560, 380)
+	end
+	WindowConfig.DestroyOnClose = WindowConfig.DestroyOnClose ~= false
+
 	local Window = self:CreateWindow(WindowConfig)
 	local Buttons = WindowConfig.Buttons or {}
 	local Colors = Config.SyntaxColors
 
 	local CodeEditor = Window:CodeEditor({
-		Text = Content,
+		Text = Content or "",
 		Editable = true,
 		Fill = true,
 		FontSize = 13,
@@ -1132,7 +1141,6 @@ function Ui:MakeEditorPopoutWindow(Content, WindowConfig)
 		FontFace = TextFont
 	})
 
-	
 	table.insert(Buttons, {
 		Text = "Copy",
 		Callback = function()
@@ -1141,14 +1149,31 @@ function Ui:MakeEditorPopoutWindow(Content, WindowConfig)
 		end
 	})
 
-	
+	-- Always offer Close on popouts
+	local hasClose = false
+	for _, b in ipairs(Buttons) do
+		if b.Text == "Close" then hasClose = true break end
+	end
+	if not hasClose then
+		table.insert(Buttons, {
+			Text = "Close",
+			Callback = function()
+				pcall(function()
+					if Window.Close then Window:Close()
+					elseif Window.Instance then Window.Instance:Destroy()
+					end
+				end)
+			end
+		})
+	end
+
 	local ButtonsRow = Window:Row()
 	self:CreateButtons(ButtonsRow, {
 		NoTable = true,
 		Buttons = Buttons
 	})
 
-	Window:Center()
+	pcall(function() Window:Center() end)
 	return CodeEditor, Window
 end
 
@@ -1157,45 +1182,72 @@ function Ui:EditFile(FilePath, InFolder, OnSaveFunc)
 	local Folder = Files.FolderName
 	local CodeEditor, Window
 
-	
 	if InFolder then
 		FilePath = `{Folder}/{FilePath}`
 	end
 
-	
-	local Content = readfile(FilePath)
-	Content = Content:gsub("\r\n", "\n")
-	
+	local Content = "return {\n\t\n}"
+	pcall(function()
+		if isfile and isfile(FilePath) then
+			Content = readfile(FilePath)
+		elseif readfile then
+			Content = readfile(FilePath)
+		end
+	end)
+	Content = tostring(Content or "return {}"):gsub("\r\n", "\n")
+	if Content == "" then
+		Content = "return {}"
+	end
+
+	local function closeWin()
+		pcall(function()
+			if Window and Window.Close then
+				Window:Close()
+			elseif Window and Window.Instance then
+				Window.Instance:Destroy()
+			elseif Window and Window.SetVisible then
+				Window:SetVisible(false)
+			end
+		end)
+	end
+
 	local Buttons = {
 		{
 			Text = "Save",
 			Callback = function()
 				local Script = CodeEditor:GetText()
 				local Success, Error = loadstring(Script, "WyvernSpy-Editor")
-
-				
 				if not Success then
-					self:ShowModal({"Error saving file!\n", Error})
+					self:ShowModal({"Error saving file!", tostring(Error)})
 					return
 				end
-				
-				
-				writefile(FilePath, Script)
-
-				
+				pcall(function()
+					if writefile then
+						writefile(FilePath, Script)
+					end
+				end)
 				if OnSaveFunc then
-					OnSaveFunc(Window, Script)
+					pcall(OnSaveFunc, Window, Script)
 				end
+				closeWin()
 			end
-		}
+		},
+		{
+			Text = "Close",
+			Callback = function()
+				closeWin()
+			end
+		},
 	}
 
-	
 	CodeEditor, Window = self:MakeEditorPopoutWindow(Content, {
 		Title = `Editing: {FilePath}`,
-		Buttons = Buttons
+		Buttons = Buttons,
+		Size = UDim2.fromOffset(520, 360),
+		DestroyOnClose = true,
 	})
 end
+
 
 type MenuOptions = {
 	[string]: (GuiButton, ...any) -> nil
