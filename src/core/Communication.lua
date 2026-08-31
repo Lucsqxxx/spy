@@ -20,6 +20,7 @@ local Config
 local Process
 
 function Module:Init(Data)
+
     local Modules = Data.Modules
     local Services = Data.Services
 
@@ -30,16 +31,19 @@ function Module:Init(Data)
 end
 
 function CommWrapper:Fire(...)
+
     local Queue = self.Queue
     table.insert(Queue, {...})
 end
 
-function CommWrapper:ProcessArguments(Arguments) 
+function CommWrapper:ProcessArguments(Arguments)
+
     local Channel = self.Channel
     Channel:Fire(Process:Unpack(Arguments))
 end
 
 function CommWrapper:ProcessQueue()
+
     local Queue = self.Queue
 
     for Index = 1, #Queue do
@@ -51,6 +55,7 @@ function CommWrapper:ProcessQueue()
 end
 
 function CommWrapper:BeginQueueService()
+
     coroutine.wrap(function()
         while wait() do
             self:ProcessQueue()
@@ -58,7 +63,8 @@ function CommWrapper:BeginQueueService()
     end)()
 end
 
-function Module:NewCommWrap(Channel: BindableEvent)
+function Module:NewCommWrap(Channel)
+
     local Base = {
         Queue = setmetatable({}, {__mode = "v"}),
         Channel = Channel,
@@ -73,9 +79,11 @@ function Module:NewCommWrap(Channel: BindableEvent)
 end
 
 function Module:MakeDebugIdHandler()
+
     
     local Remote = Instance.new("BindableFunction")
-    function Remote.OnInvoke(Object: Instance)
+    function Remote.OnInvoke(Object)
+
         return Object:GetDebugId()
     end
 
@@ -85,7 +93,8 @@ function Module:MakeDebugIdHandler()
     return Remote
 end
 
-function Module:GetDebugId(Object: Instance)
+function Module:GetDebugId(Object)
+
     local Invoke = self.DebugIdInvoke
     local Remote = self.DebugIdRemote
 	if not Invoke or not Remote then
@@ -111,12 +120,14 @@ function Module:GetDebugId(Object: Instance)
 end
 
 function Module:GetHiddenParent()
+
     
     if gethui then return gethui() end
     return CoreGui
 end
 
 function Module:CreateCommChannel()
+
     
     local Force = Config.ForceUseCustomComm
     if create_comm_channel and not Force then
@@ -133,7 +144,8 @@ function Module:CreateCommChannel()
     return ChannelId, Channel
 end
 
-function Module:GetCommChannel(ChannelId: number)
+function Module:GetCommChannel(ChannelId)
+
     
     local Force = Config.ForceUseCustomComm
     if get_comm_channel and not Force then
@@ -155,6 +167,7 @@ end
 
 local Tick = 0
 function Module:WaitCheck()
+
     Tick += 1
     if Tick > 60 then
         Tick = 0
@@ -162,7 +175,8 @@ function Module:WaitCheck()
     end
 end
 
-function Module:SerializeValue(Value, Depth: number?, Seen: table?)
+function Module:SerializeValue(Value, Depth, Seen)
+
     Depth = Depth or 0
     Seen = Seen or {}
     local ty = typeof(Value)
@@ -237,6 +251,7 @@ function Module:SerializeValue(Value, Depth: number?, Seen: table?)
 end
 
 function Module:DeserializeValue(Value)
+
     if typeof(Value) ~= "table" or Value.__t == nil then
         return Value
     end
@@ -271,7 +286,8 @@ function Module:DeserializeValue(Value)
     return Value.str or Value
 end
 
-function Module:CheckValue(Value, Inbound: boolean?)
+function Module:CheckValue(Value, Inbound)
+
     if Inbound then
         return self:DeserializeValue(Value)
     end
@@ -282,6 +298,7 @@ function Module:CheckValue(Value, Inbound: boolean?)
 end
 
 function Module:MakePacket(Index, Value)
+
     self:WaitCheck()
     return {
         Index = self:SerializeValue(Index),
@@ -289,7 +306,8 @@ function Module:MakePacket(Index, Value)
     }
 end
 
-function Module:ReadPacket(Packet: table)
+function Module:ReadPacket(Packet)
+
     if typeof(Packet) ~= "table" then return Packet end
     local Key = self:DeserializeValue(Packet.Index)
     local Value = self:DeserializeValue(Packet.Value)
@@ -297,7 +315,8 @@ function Module:ReadPacket(Packet: table)
     return Key, Value
 end
 
-function Module:SerializeTable(Table: table)
+function Module:SerializeTable(Table)
+
     if typeof(Table) ~= "table" then
         return { self:SerializeValue(Table) }
     end
@@ -319,7 +338,8 @@ function Module:SerializeTable(Table: table)
     return self:SerializeValue(Table)
 end
 
-function Module:DeserializeTable(Serialized: table)
+function Module:DeserializeTable(Serialized)
+
     if typeof(Serialized) ~= "table" then return Serialized end
     if Serialized.__t == "table" then
         return self:DeserializeValue(Serialized)
@@ -331,15 +351,18 @@ function Module:DeserializeTable(Serialized: table)
     return out
 end
 
-function Module:SetChannel(NewChannel: number)
+function Module:SetChannel(NewChannel)
+
     Channel = NewChannel
 end
 
 function Module:ConsolePrint(...)
+
     self:Communicate("Print", ...)
 end
 
 function Module:QueueLog(Data)
+
     task.spawn(function()
         local ok, err = pcall(function()
             if Data.Args and not Data.ArgsSerialized then
@@ -370,17 +393,20 @@ function Module:QueueLog(Data)
     end)
 end
 
-function Module:AddCommCallback(Type: string, Callback: (...any) -> ...any)
+function Module:AddCommCallback(Type, Callback)
+
     local CommCallbacks = self.CommCallbacks
     CommCallbacks[Type] = Callback
 end
 
-function Module:GetCommCallback(Type: string) -> ...any
+function Module:GetCommCallback(Type)
+
     local CommCallbacks = self.CommCallbacks
     return CommCallbacks[Type]
 end
 
-function Module:ChannelIndex(Channel, Property: string)
+function Module:ChannelIndex(Channel, Property)
+
     if typeof(Channel) == "Instance" then
         return Hook:Index(Channel, Property)
     end
@@ -390,6 +416,7 @@ function Module:ChannelIndex(Channel, Property: string)
 end
 
 function Module:Communicate(...)
+
     local Fire = self:ChannelIndex(Channel, "Fire")
     local identity = getthreadidentity()
     setthreadidentity(8)
@@ -398,11 +425,13 @@ function Module:Communicate(...)
 end
 
 function Module:AddConnection(Callback)
+
     local Event = self:ChannelIndex(Channel, "Event")
     return Event:Connect(Callback)
 end
 
-function Module:AddTypeCallback(Type: string, Callback)
+function Module:AddTypeCallback(Type, Callback)
+
     local Event = self:ChannelIndex(Channel, "Event")
     return Event:Connect(function(RecivedType: string, ...)
         if RecivedType ~= Type then return end
@@ -410,13 +439,15 @@ function Module:AddTypeCallback(Type: string, Callback)
     end)
 end
 
-function Module:AddTypeCallbacks(Types: table)
+function Module:AddTypeCallbacks(Types)
+
     for Type: string, Callback in next, Types do
         self:AddTypeCallback(Type, Callback)
     end
 end
 
 function Module:CreateChannel()
+
     local ChannelID, Event = self:CreateCommChannel()
     -- Must set Channel so QueueLog/Communicate can Fire
     Channel = Event
