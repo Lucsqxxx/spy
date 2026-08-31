@@ -77,6 +77,7 @@ local FontSuccess = true
 local CommChannel
 
 function Ui:Init(Data)
+
 	Modules = Data.Modules
 	Configuration = Data.Configuration or (Modules and Modules.Configuration)
 
@@ -103,11 +104,13 @@ function Ui:Init(Data)
 	self:CheckScale()
 end
 
-function Ui:SetCommChannel(NewCommChannel: BindableEvent)
+function Ui:SetCommChannel(NewCommChannel)
+
 	CommChannel = NewCommChannel
 end
 
 function Ui:CheckScale()
+
 	local BaseConfig = self.BaseConfig
 	local Scales = self.Scales
 
@@ -117,14 +120,16 @@ function Ui:CheckScale()
 	BaseConfig.Size = Scales[Device]
 end
 
-function Ui:SetClipboard(Content: string)
+function Ui:SetClipboard(Content)
+
 	pcall(function()
 		SetClipboard(Content)
 	end)
 	self:ShowToast("Copied")
 end
 
-function Ui:ShowToast(Message: string, Duration: number?)
+function Ui:ShowToast(Message, Duration)
+
 	Duration = Duration or 1.4
 	local Window = self.Window
 	if not Window or not Window.Instance then
@@ -161,6 +166,7 @@ function Ui:ShowToast(Message: string, Duration: number?)
 end
 
 function Ui:LoadFont()
+
 	
 	local okF, face = pcall(Font.fromEnum, Enum.Font.BuilderSans)
 	TextFont = (okF and face) or Font.fromEnum(Enum.Font.Gotham)
@@ -181,11 +187,13 @@ function Ui:LoadFont()
 	end
 end
 
-function Ui:SetFontFile(FontFile: string)
+function Ui:SetFontFile(FontFile)
+
 	self.FontJsonFile = FontFile
 end
 
 function Ui:FontWasSuccessful()
+
 	if FontSuccess then return end
 
 	
@@ -197,6 +205,7 @@ function Ui:FontWasSuccessful()
 end
 
 function Ui:LoadReGui()
+
 	local ThemeConfig = Config.ThemeConfig
 	ThemeConfig.TextFont = TextFont
 
@@ -212,7 +221,8 @@ type CreateButtons = {
 	Buttons: table,
 	NoTable: boolean?
 }
-function Ui:CreateButtons(Parent, Data: CreateButtons)
+function Ui:CreateButtons(Parent, Data)
+
 	local Base = Data.Base or {}
 	local Buttons = Data.Buttons
 	local NoTable = Data.NoTable
@@ -251,6 +261,7 @@ function Ui:CreateButtons(Parent, Data: CreateButtons)
 end
 
 function Ui:CreateWindow(WindowConfig)
+
     local BaseConfig = self.BaseConfig
 	local Config = Process:DeepCloneTable(BaseConfig)
 	Process:Merge(Config, WindowConfig or {})
@@ -277,7 +288,8 @@ type AskConfig = {
 	Content: table,
 	Options: table
 }
-function Ui:AskUser(Config: AskConfig)
+function Ui:AskUser(Config)
+
 	local Window = self.Window
 	local Answered = false
 
@@ -310,6 +322,7 @@ function Ui:AskUser(Config: AskConfig)
 end
 
 function Ui:CreateMainWindow()
+
 	local Window = self:CreateWindow()
 	self.Window = Window
 
@@ -325,7 +338,8 @@ function Ui:CreateMainWindow()
 	return Window
 end
 
-function Ui:ShowModal(Lines: table)
+function Ui:ShowModal(Lines)
+
 	local Window = self.Window
 	local Message = table.concat(Lines, "\n")
 
@@ -346,7 +360,8 @@ function Ui:ShowModal(Lines: table)
 	})
 end
 
-function Ui:ShowUnsupportedExecutor(Name: string)
+function Ui:ShowUnsupportedExecutor(Name)
+
 	Ui:ShowModal({
 		"Unfortunately Wyvern Spy is not supported on your executor",
 		"Your executor may not support all features",
@@ -354,14 +369,16 @@ function Ui:ShowUnsupportedExecutor(Name: string)
 	})
 end
 
-function Ui:ShowUnsupported(FuncName: string)
+function Ui:ShowUnsupported(FuncName)
+
 	Ui:ShowModal({
 		"Unfortunately Wyvern Spy is not supported on your executor",
 		`\nMissing function: {FuncName}`
 	})
 end
 
-function Ui:CreateOptionsForDict(Parent, Dict: table, Callback)
+function Ui:CreateOptionsForDict(Parent, Dict, Callback)
+
 	local Options = {}
 
 	
@@ -383,7 +400,8 @@ function Ui:CreateOptionsForDict(Parent, Dict: table, Callback)
 	self:CreateElements(Parent, Options)
 end
 
-function Ui:CheckKeybindLayout(Container, KeyCode: Enum.KeyCode, Callback)
+function Ui:CheckKeybindLayout(Container, KeyCode, Callback)
+
 	if not KeyCode then return Container end
 
 	
@@ -411,6 +429,7 @@ function Ui:CheckKeybindLayout(Container, KeyCode: Enum.KeyCode, Callback)
 end
 
 function Ui:CreateElements(Parent, Options)
+
 	local OptionTypes = self.OptionTypes
 	local MaxColumns = 2 
 	local col = 0
@@ -447,6 +466,7 @@ function Ui:CreateElements(Parent, Options)
 end
 
 function Ui:RemoteKind(ClassData, Remote)
+
 	-- Cobalt-style Roblox class icons (official dark explorer icons)
 	local className = "RemoteEvent"
 	pcall(function()
@@ -488,11 +508,13 @@ function Ui:RemoteKind(ClassData, Remote)
 end
 
 function Ui:TypePip(ClassData, Remote)
+
 	local kind = self:RemoteKind(ClassData, Remote)
 	return kind
 end
 
 function Ui:UpdateListStatus()
+
 	local label = self.RemotesListEmpty
 	if not label or not label.Instance then return end
 	local paused = false
@@ -521,6 +543,7 @@ function Ui:UpdateListStatus()
 end
 
 function Ui:TypeBadge(Value)
+
 	local ty = typeof(Value)
 	if ty == "table" and type(Value) == "table" and Value.__t then
 		return tostring(Value.__t)
@@ -533,6 +556,7 @@ function Ui:TypeBadge(Value)
 end
 
 function Ui:TypeBadgeColor(Value)
+
 	
 	local badge = self:TypeBadge(Value)
 	if badge == "string" then
@@ -569,7 +593,8 @@ function Ui:TypeBadgeColor(Value)
 	return Color3.fromRGB(180, 185, 195)
 end
 
-function Ui:FormatArgPreview(Value, Limit: number?)
+function Ui:FormatArgPreview(Value, Limit)
+
 	Limit = Limit or 80
 	local ty = typeof(Value)
 	if ty == "table" and Value.__t then
@@ -587,6 +612,7 @@ function Ui:FormatArgPreview(Value, Limit: number?)
 end
 
 function Ui:UpdateSpamIndicator()
+
 	local active = false
 	pcall(function()
 		active = getgenv and getgenv()._WVS_SPAM == true
@@ -612,6 +638,7 @@ function Ui:UpdateSpamIndicator()
 end
 
 function Ui:StopSpam()
+
 	pcall(function()
 		if getgenv then getgenv()._WVS_SPAM = false end
 	end)
@@ -621,6 +648,7 @@ function Ui:StopSpam()
 end
 
 function Ui:BeginSpamWatch()
+
 	if self._spamWatch then return end
 	self._spamWatch = true
 	task.spawn(function()
@@ -642,6 +670,7 @@ function Ui:BeginSpamWatch()
 end
 
 function Ui:CreateWindowContent(Window)
+
 	
 	local Layout = Window:List({
 		UiPadding = 0,
@@ -722,6 +751,7 @@ function Ui:CreateWindowContent(Window)
 end
 
 function Ui:EntrySearchBlob(entry)
+
 	local parts = {}
 	if entry then
 		parts[#parts + 1] = tostring(entry.Remote or "")
@@ -748,6 +778,7 @@ function Ui:EntrySearchBlob(entry)
 end
 
 function Ui:ApplyListFilter()
+
 	local q = self.ListSearch or ""
 	local Logs = self.Logs
 	if not Logs then return end
@@ -798,6 +829,7 @@ function Ui:ApplyListFilter()
 end
 
 function Ui:ConsoleTab(InfoSelector)
+
 	local Tab = InfoSelector:CreateTab({
 		Name = "Console"
 	})
@@ -846,6 +878,7 @@ function Ui:ConsoleTab(InfoSelector)
 end
 
 function Ui:ConsoleLog(...: string?)
+
 	local Console = self.Console
 	if not Console then return end
 
@@ -853,6 +886,7 @@ function Ui:ConsoleLog(...: string?)
 end
 
 function Ui:MakeOptionsTab(InfoSelector)
+
 	local Tab = InfoSelector:CreateTab({
 		Name = "Options"
 	})
@@ -919,6 +953,7 @@ function Ui:MakeOptionsTab(InfoSelector)
 end
 
 function Ui:AddDetailsSection(OptionsTab)
+
 	OptionsTab:Separator({Text="Information"})
 	OptionsTab:BulletText({
 		Rows = {
@@ -929,7 +964,8 @@ function Ui:AddDetailsSection(OptionsTab)
 	})
 end
 
-local function MakeActiveDataCallback(Name: string)
+local function MakeActiveDataCallback(Name)
+
 	return function(...)
 		if not ActiveData then return end
 		return ActiveData[Name](ActiveData, ...)
@@ -937,6 +973,7 @@ local function MakeActiveDataCallback(Name: string)
 end
 
 function Ui:MakeEditorTab(InfoSelector)
+
 	local Default = self.DefaultEditorContent
 	local SyntaxColors = Config.SyntaxColors
 
@@ -1059,6 +1096,7 @@ function Ui:MakeEditorTab(InfoSelector)
 end
 
 function Ui:ShouldFocus(Tab)
+
 	local InfoSelector = self.InfoSelector
 	local ActiveTab = InfoSelector.ActiveTab
 
@@ -1070,7 +1108,8 @@ function Ui:ShouldFocus(Tab)
 	return InfoSelector:CompareTabs(ActiveTab, Tab)
 end
 
-function Ui:MakeEditorPopoutWindow(Content: string, WindowConfig: table)
+function Ui:MakeEditorPopoutWindow(Content, WindowConfig)
+
 	local Window = self:CreateWindow(WindowConfig)
 	local Buttons = WindowConfig.Buttons or {}
 	local Colors = Config.SyntaxColors
@@ -1104,7 +1143,8 @@ function Ui:MakeEditorPopoutWindow(Content: string, WindowConfig: table)
 	return CodeEditor, Window
 end
 
-function Ui:EditFile(FilePath: string, InFolder: boolean, OnSaveFunc: ((table, string) -> nil)?)
+function Ui:EditFile(FilePath, InFolder, OnSaveFunc)
+
 	local Folder = Files.FolderName
 	local CodeEditor, Window
 
@@ -1151,7 +1191,8 @@ end
 type MenuOptions = {
 	[string]: (GuiButton, ...any) -> nil
 }
-function Ui:MakeButtonMenu(Button: Instance, Unpack: table, Options: MenuOptions)
+function Ui:MakeButtonMenu(Button, Unpack, Options)
+
 	local Window = self.Window
 	local Popup = Window:PopupCanvas({
 		RelativeTo = Button,
@@ -1169,7 +1210,8 @@ function Ui:MakeButtonMenu(Button: Instance, Unpack: table, Options: MenuOptions
 	end
 end
 
-function Ui:RemovePreviousTab(Title: string)
+function Ui:RemovePreviousTab(Title)
+
 	
 	if not ActiveData then 
 		return false 
@@ -1191,7 +1233,8 @@ function Ui:RemovePreviousTab(Title: string)
 	return TabFocused
 end
 
-function Ui:MakeTableHeaders(Table, Rows: table)
+function Ui:MakeTableHeaders(Table, Rows)
+
 	local HeaderRow = Table:HeaderRow()
 	for _, Catagory in Rows do
 		local Column = HeaderRow:NextColumn()
@@ -1202,7 +1245,8 @@ function Ui:MakeTableHeaders(Table, Rows: table)
 	end
 end
 
-function Ui:Decompile(Editor: table, Script: Script)
+function Ui:Decompile(Editor, Script)
+
 	local Header = "--Decompiled with Wyvern Spy"
 	Editor:SetText("--Decompiling... ")
 
@@ -1223,7 +1267,8 @@ type DisplayTableConfig = {
 	ToDisplay: table,
 	Table: table
 }
-function Ui:DisplayTable(Parent, Config: DisplayTableConfig)
+function Ui:DisplayTable(Parent, Config)
+
 	
 	local Rows = Config.Rows
 	local Flags = Config.Flags
@@ -1260,6 +1305,7 @@ function Ui:DisplayTable(Parent, Config: DisplayTableConfig)
 end
 
 function Ui:SetFocusedRemote(Data)
+
 	
 	local Remote = Data.Remote
 	local Method = Data.Method
@@ -1305,7 +1351,8 @@ function Ui:SetFocusedRemote(Data)
 	Data.Tab = Tab
 	Data.Selectable:SetSelected(true)
 
-	local function SetIDEText(Content: string, Task: string?)
+	local function SetIDEText(Content, Task)
+
 		Data.Task = Task or "Wyvern Spy"
 		if not CodeEditor then
 			warn("[Wyvern Spy] CodeEditor missing")
@@ -1342,12 +1389,14 @@ function Ui:SetFocusedRemote(Data)
 		end)
 	end
 	local function DataConnection(Name, ...)
+
 		local Args = {...}
 		return function()
 			return Data[Name](Data, Process:Unpack(Args))
 		end
 	end
-	local function ScriptCheck(Script, NoMissingCheck: boolean)
+	local function ScriptCheck(Script, NoMissingCheck)
+
 		
 		if IsReceive then 
 			Ui:ShowModal({
@@ -1366,7 +1415,8 @@ function Ui:SetFocusedRemote(Data)
 	end
 
 	
-	function Data:ScriptOptions(Button: GuiButton)
+	function Data:ScriptOptions(Button)
+
 		Ui:MakeButtonMenu(Button, {self}, {
 			["Caller Info"] = DataConnection("GenerateInfo"),
 			["Decompile"] = DataConnection("Decompile", "SourceScript"),
@@ -1375,7 +1425,8 @@ function Ui:SetFocusedRemote(Data)
 			["Save Bytecode"] = DataConnection("SaveBytecode"),
 		})
 	end
-	function Data:BuildScript(Button: GuiButton)
+	function Data:BuildScript(Button)
+
 		Ui:MakeButtonMenu(Button, {self}, {
 			["Save"] = DataConnection("SaveScript"),
 			["Call Remote"] = DataConnection("MakeScript", "Remote"),
@@ -1388,12 +1439,14 @@ function Ui:SetFocusedRemote(Data)
 		})
 	end
 	function Data:SaveScript()
+
 		local FilePath = Generation:TimeStampFile(self.Task)
 		writefile(FilePath, CodeEditor:GetText())
 
 		Ui:ShowModal({"Saved script to", FilePath})
 	end
 	function Data:SaveBytecode()
+
 		
 		if not ScriptCheck(Script, true) then return end
 
@@ -1411,7 +1464,8 @@ function Ui:SetFocusedRemote(Data)
 
 		Ui:ShowModal({"Saved bytecode to", FilePath})
 	end
-	function Data:MakeScript(ScriptType: string)
+	function Data:MakeScript(ScriptType)
+
 		local Script = Generation:RemoteScript(Module, self, ScriptType)
 		SetIDEText(Script, `Editing: {RemoteName}.lua`)
 		if ScriptType == "Spam" then
@@ -1422,6 +1476,7 @@ function Ui:SetFocusedRemote(Data)
 		end
 	end
 	function Data:RepeatCall()
+
 		local Signal = Hook:Index(Remote, Method)
 
 		if IsReceive then
@@ -1431,6 +1486,7 @@ function Ui:SetFocusedRemote(Data)
 		end
 	end
 	function Data:GetReturn()
+
 		local ReturnValues = self.ReturnValues
 
 		
@@ -1448,6 +1504,7 @@ function Ui:SetFocusedRemote(Data)
 		SetIDEText(Script, `Return Values for: {RemoteName}`)
 	end
 	function Data:GenerateInfo()
+
 		
 		if not ScriptCheck(nil, true) then return end
 
@@ -1455,7 +1512,8 @@ function Ui:SetFocusedRemote(Data)
 		local Script = Generation:AdvancedInfo(Module, self)
 		SetIDEText(Script, `Advanced Info for: {RemoteName}`)
 	end
-	function Data:Decompile(WhichScript: string)
+	function Data:Decompile(WhichScript)
+
 		local DecompilePopout = Flags:GetFlagValue("DecompilePopout")
 		local ToDecompile = Data[WhichScript]
 		local Editor = CodeEditor
@@ -1627,7 +1685,8 @@ function Ui:SetFocusedRemote(Data)
 	Data:MakeScript("Remote")
 end
 
-function Ui:ViewConnections(RemoteName: string, Signal: RBXScriptConnection)
+function Ui:ViewConnections(RemoteName, Signal)
+
 	local Window = self:CreateWindow({
 		Title = `Connections for: {RemoteName}`,
 		Size = UDim2.fromOffset(450, 250)
@@ -1707,7 +1766,8 @@ function Ui:ViewConnections(RemoteName: string, Signal: RBXScriptConnection)
 	Window:Center()
 end
 
-function Ui:GetRemoteHeader(Data: Log)
+function Ui:GetRemoteHeader(Data)
+
 	local LogLimit = self.LogLimit
 	pcall(function()
 		local v = Flags:GetFlagValue("LogsPerRemote")
@@ -1755,6 +1815,7 @@ function Ui:GetRemoteHeader(Data: Log)
 	end
 
 	function HeaderData:CheckLimit()
+
 		local Entries = self.Entries
 		
 		while #Entries >= LogLimit do
@@ -1768,6 +1829,7 @@ function Ui:GetRemoteHeader(Data: Log)
 	end
 
 	function HeaderData:LogAdded(Data)
+
 		self.LogCount += 1
 		table.insert(self.Entries, Data)
 		self:CheckLimit()
@@ -1787,6 +1849,7 @@ function Ui:GetRemoteHeader(Data: Log)
 	end
 
 	function HeaderData:Remove()
+
 		
 		local TreeNode = self.TreeNode
 		if TreeNode then
@@ -1803,6 +1866,7 @@ function Ui:GetRemoteHeader(Data: Log)
 end
 
 function Ui:ClearLogs()
+
 	local Logs = self.Logs
 	local RemotesList = self.RemotesList
 
@@ -1819,6 +1883,7 @@ function Ui:ClearLogs()
 end
 
 function Ui:QueueLog(Data)
+
 	local LogQueue = self.LogQueue
 	Process:Merge(Data, {
 		Args = Process:DeepCloneTable(Data.Args),
@@ -1832,6 +1897,7 @@ function Ui:QueueLog(Data)
 end
 
 function Ui:ProcessLogQueue()
+
 	local Queue = self.LogQueue
     if #Queue <= 0 then return end
 
@@ -1843,6 +1909,7 @@ function Ui:ProcessLogQueue()
 end
 
 function Ui:BeginLogService()
+
 	coroutine.wrap(function()
 		while true do
 			self:ProcessLogQueue()
@@ -1851,7 +1918,8 @@ function Ui:BeginLogService()
 	end)()
 end
 
-function Ui:FilterName(Name: string, CharacterLimit: number?)
+function Ui:FilterName(Name, CharacterLimit)
+
 	local Trimmed = Name:sub(1, CharacterLimit or 20)
 	local Filtred = Trimmed:gsub("[\n\r]", "")
 	Filtred = Generation:MakePrintable(Filtred)
@@ -1859,7 +1927,8 @@ function Ui:FilterName(Name: string, CharacterLimit: number?)
 	return Filtred
 end
 
-function Ui:CreateLog(Data: Log)
+function Ui:CreateLog(Data)
+
 	
     local Remote = Data.Remote
 	local Method = Data.Method
