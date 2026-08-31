@@ -17,6 +17,7 @@ local Files = {
 local HttpService: HttpService
 
 function Files:Init(Data)
+
 	local FolderStructure = self.FolderStructure
     local Services = Data.Services
 
@@ -25,7 +26,8 @@ function Files:Init(Data)
 	self:CheckFolders(FolderStructure)
 end
 
-function Files:PushConfig(Config: table)
+function Files:PushConfig(Config)
+
 	for Key, Value in next, Config do
 		self[Key] = Value
 	end
@@ -36,7 +38,8 @@ function Files:PushConfig(Config: table)
 	end
 end
 
-function Files:UrlFetch(Url: string)
+function Files:UrlFetch(Url)
+
     local Final = {
         Url = Url:gsub(" ", "%%20"), 
         Method = 'GET'
@@ -63,12 +66,14 @@ function Files:UrlFetch(Url: string)
     return Body, Responce
 end
 
-function Files:MakePath(Path: string)
+function Files:MakePath(Path)
+
 	local Folder = self.Folder
 	return `{Folder}/{Path}`
 end
 
-function Files:LoadCustomasset(Path: string)
+function Files:LoadCustomasset(Path)
+
 	if not getcustomasset then return end
 	if not Path then return end
 
@@ -83,7 +88,8 @@ function Files:LoadCustomasset(Path: string)
 	return AssetId
 end
 
-function Files:GetFile(Path: string, CustomAsset: boolean?)
+function Files:GetFile(Path, CustomAsset)
+
 	local RepoUrl = self.RepoUrl
 	local UseWorkspace = self.UseWorkspace
 
@@ -111,27 +117,32 @@ function Files:GetFile(Path: string, CustomAsset: boolean?)
 	return Content
 end
 
-function Files:GetTemplate(Name: string)
+function Files:GetTemplate(Name)
+
     return self:GetFile(`templates/{Name}.lua`)
 end
 
-function Files:FileCheck(Path: string, Callback)
+function Files:FileCheck(Path, Callback)
+
 	if isfile(Path) then return end
 
 	local Template = Callback()
 	writefile(Path, Template)
 end
 
-function Files:FolderCheck(Path: string)
+function Files:FolderCheck(Path)
+
 	if isfolder(Path) then return end
 	makefolder(Path)
 end
 
-function Files:CheckPath(Parent: string, Child: string)
+function Files:CheckPath(Parent, Child)
+
 	return Parent and `{Parent}/{Child}` or Child
 end
 
-function Files:CheckFolders(Structure: table, Path: string?)
+function Files:CheckFolders(Structure, Path)
+
 	for ParentName, Name in next, Structure do
 		if typeof(Name) == "table" then
 			local NewPath = self:CheckPath(Path, ParentName)
@@ -145,17 +156,20 @@ function Files:CheckFolders(Structure: table, Path: string?)
 	end
 end
 
-function Files:TemplateCheck(Path: string, TemplateName: string)
+function Files:TemplateCheck(Path, TemplateName)
+
 	self:FileCheck(Path, function()
 		return self:GetTemplate(TemplateName)
 	end)
 end
 
-function Files:GetAsset(Name: string, CustomAsset: boolean?)
+function Files:GetAsset(Name, CustomAsset)
+
     return self:GetFile(`assets/{Name}`, CustomAsset)
 end
 
-function Files:GetModule(Name: string, TemplateName: string)
+function Files:GetModule(Name, TemplateName)
+
 	local Path = `{Name}.lua`
 
 	if TemplateName then
@@ -171,7 +185,8 @@ function Files:GetModule(Name: string, TemplateName: string)
 	return self:GetFile(Path)
 end
 
-function Files:LoadLibraries(Scripts: table, ...)
+function Files:LoadLibraries(Scripts, ...)
+
 	local Modules = {}
 	for Name, Content in next, Scripts do
 		local IsBase64 = typeof(Content) == "table" and Content[1] == "base64"
@@ -203,7 +218,8 @@ function Files:LoadLibraries(Scripts: table, ...)
 	return Modules
 end
 
-function Files:LoadModules(Modules: {}, Data: {})
+function Files:LoadModules(Modules, Data)
+
     for Name, Module in next, Modules do
         local Init = Module.Init
         if not Init then continue end
@@ -212,7 +228,8 @@ function Files:LoadModules(Modules: {}, Data: {})
     end
 end
 
-function Files:CreateFont(Name: string, AssetId: string)
+function Files:CreateFont(Name, AssetId)
+
 	if not AssetId then return end
 
 	local FileName = `assets/{Name}.json`
@@ -236,6 +253,7 @@ function Files:CreateFont(Name: string, AssetId: string)
 end
 
 function Files:CompileModule(Scripts)
+
     local Out = "local Libraries = {"
     for Name, Content in Scripts do
 		if typeof(Content) ~= "string" then continue end
@@ -245,7 +263,8 @@ function Files:CompileModule(Scripts)
     return Out
 end
 
-function Files:MakeActorScript(Scripts, ChannelId: number)
+function Files:MakeActorScript(Scripts, ChannelId)
+
 	local ActorCode = Files:CompileModule(Scripts)
 	ActorCode ..= [[
 	local ExtraData = {
