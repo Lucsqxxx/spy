@@ -258,22 +258,61 @@ end
 
 function Process:ArgFingerprint(Method, Args)
 
-    local parts = { tostring(Method) }
-    local n = math.min(table.maxn(Args), 6)
-    for i = 1, n do
-        local v = Args[i]
+    local parts = { tostring(Method or "?") }
+    if typeof(Args) ~= "table" then
+        return parts[1]
+    end
+
+    local function desc(v, depth)
+        depth = depth or 0
         local ty = typeof(v)
         if ty == "string" then
-            parts[#parts + 1] = "s:" .. string.sub(v, 1, 32)
-        elseif ty == "number" or ty == "boolean" then
-            parts[#parts + 1] = ty:sub(1, 1) .. ":" .. tostring(v)
+            -- full short strings; hash-ish for long
+            if #v <= 64 then
+                return "s:" .. v
+            end
+            return "s:" .. string.sub(v, 1, 48) .. "#" .. tostring(#v)
+        elseif ty == "number" then
+            return "n:" .. tostring(v)
+        elseif ty == "boolean" then
+            return "b:" .. tostring(v)
+        elseif ty == "nil" then
+            return "nil"
         elseif ty == "Instance" then
-            parts[#parts + 1] = "i:" .. tostring(v)
+            local ok, name = pcall(function() return v:GetFullName() end)
+            return "i:" .. (ok and name or tostring(v))
+        elseif ty == "Vector3" then
+            return string.format("v3:%.3f,%.3f,%.3f", v.X, v.Y, v.Z)
+        elseif ty == "CFrame" then
+            local p = v.Position
+            return string.format("cf:%.2f,%.2f,%.2f", p.X, p.Y, p.Z)
         elseif ty == "table" then
-            parts[#parts + 1] = "t:" .. tostring(table.maxn(v))
+            if depth >= 2 then
+                return "t:..."
+            end
+            local bits = {}
+            local n = math.min(table.maxn(v), 8)
+            for i = 1, n do
+                bits[#bits + 1] = desc(v[i], depth + 1)
+            end
+            -- a few string keys
+            local kc = 0
+            for k, val in next, v do
+                if typeof(k) == "string" and kc < 4 then
+                    kc += 1
+                    bits[#bits + 1] = k .. "=" .. desc(val, depth + 1)
+                end
+            end
+            return "t{" .. table.concat(bits, ",") .. "}"
         else
-            parts[#parts + 1] = ty
+            return ty
         end
+    end
+
+    local n = math.min(table.maxn(Args), 12)
+    parts[#parts + 1] = "argc:" .. tostring(n)
+    for i = 1, n do
+        parts[#parts + 1] = desc(Args[i], 0)
     end
     return table.concat(parts, "|")
 end
