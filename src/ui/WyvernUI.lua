@@ -1,3 +1,8 @@
+--[[
+  WyvernUI — pure Instance UI toolkit for Wyvern Spy
+  Theme tokens: see WyvernTheme.lua / Config.UiColors (ApplyTheme)
+  Sections: theme → primitives → Element:_create widgets → Window
+]]
 
 
 local WyvernUI = {
@@ -82,29 +87,27 @@ local function mergeTheme(target, src)
 end
 
 local C = {
-	
-	Bg = Color3.fromRGB(16, 16, 18),
-	BgDark = Color3.fromRGB(12, 12, 14),
-	Title = Color3.fromRGB(20, 20, 22),
-	TitleBot = Color3.fromRGB(18, 18, 20),
-	Border = Color3.fromRGB(38, 40, 48),
-	Text = Color3.fromRGB(232, 233, 238),
-	TextDim = Color3.fromRGB(128, 130, 140),
-	Accent = Color3.fromRGB(110, 150, 230),
-	Btn = Color3.fromRGB(28, 30, 38),
-	BtnHover = Color3.fromRGB(44, 48, 60),
-	Select = Color3.fromRGB(26, 30, 40),
-	SelectActive = Color3.fromRGB(42, 56, 82),
-	Input = Color3.fromRGB(18, 20, 26),
-	Check = Color3.fromRGB(110, 150, 230),
+	Bg = Color3.fromRGB(18, 18, 22),
+	BgDark = Color3.fromRGB(12, 12, 16),
+	Title = Color3.fromRGB(28, 30, 40),
+	Panel = Color3.fromRGB(22, 24, 30),
+	Input = Color3.fromRGB(22, 24, 30),
+	Border = Color3.fromRGB(55, 58, 68),
+	Text = Color3.fromRGB(230, 230, 235),
+	TextDim = Color3.fromRGB(120, 122, 132),
+	Accent = Color3.fromRGB(120, 90, 220),
+	AccentDim = Color3.fromRGB(80, 60, 160),
+	RowAlt = Color3.fromRGB(24, 26, 32),
+	Danger = Color3.fromRGB(220, 90, 90),
+	Warn = Color3.fromRGB(255, 180, 80),
 	Green = Color3.fromRGB(120, 210, 160),
 	Yellow = Color3.fromRGB(230, 200, 100),
 	TabActive = Color3.fromRGB(36, 42, 54),
 	TabIdle = Color3.fromRGB(20, 20, 24),
-	RowAlt = Color3.fromRGB(22, 24, 30),
 	LineNum = Color3.fromRGB(90, 92, 100),
 	Gutter = Color3.fromRGB(14, 14, 16),
 }
+
 
 function WyvernUI:CheckConfig(Target, Defaults)
 	if typeof(Target) ~= "table" then return Target end
@@ -1523,6 +1526,18 @@ end
 
 function WyvernUI:ApplyTheme(colors)
 	mergeTheme(C, colors)
+	-- keep aliases used by older widget code
+	if C.Panel and not colors.Panel then
+		-- ok
+	end
+	if colors and colors.Bg then
+		C.Bg = colors.Bg
+	end
+	return C
+end
+
+function WyvernUI:GetColors()
+	return C
 end
 
 function WyvernUI:Window(config)
