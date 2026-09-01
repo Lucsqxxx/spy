@@ -1127,6 +1127,7 @@ function Ui:MakeEditorPopoutWindow(Content, WindowConfig)
 		WindowConfig.Size = UDim2.fromOffset(560, 380)
 	end
 	WindowConfig.DestroyOnClose = WindowConfig.DestroyOnClose ~= false
+	WindowConfig.Centered = true
 
 	local Window = self:CreateWindow(WindowConfig)
 	local Buttons = WindowConfig.Buttons or {}
@@ -1174,7 +1175,23 @@ function Ui:MakeEditorPopoutWindow(Content, WindowConfig)
 		Buttons = Buttons
 	})
 
-	pcall(function() Window:Center() end)
+	pcall(function()
+		if Window.Center then
+			Window:Center()
+		elseif Window.Instance then
+			local inst = Window.Instance
+			local cam = workspace.CurrentCamera
+			local vs = cam and cam.ViewportSize or Vector2.new(1280, 720)
+			inst.AnchorPoint = Vector2.new(0.5, 0.5)
+			inst.Position = UDim2.fromOffset(math.floor(vs.X / 2), math.floor(vs.Y / 2))
+		end
+	end)
+	-- re-center next frame after layout settles
+	task.defer(function()
+		pcall(function()
+			if Window and Window.Center then Window:Center() end
+		end)
+	end)
 	return CodeEditor, Window
 end
 
@@ -1269,6 +1286,7 @@ return {
 		Buttons = Buttons,
 		Size = UDim2.fromOffset(560, 400),
 		DestroyOnClose = true,
+		Centered = true,
 	})
 end
 
