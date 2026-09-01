@@ -1133,6 +1133,7 @@ function Element:_create(class, config)
 			local btn = Instance.new("TextButton")
 			btn.Size = UDim2.fromOffset(math.clamp(#name * 7 + 18, 56, 200), 22)
 			btn.BackgroundColor3 = C.TabIdle
+				pcall(function() btn.TextColor3 = C.TabTextIdle or C.TextDim end)
 			btn.Text = name
 			btn.TextColor3 = C.Text
 			btn.TextSize = 12
@@ -1182,6 +1183,9 @@ function Element:_create(class, config)
 				end
 				page.Visible = true
 				btn.BackgroundColor3 = C.TabActive
+				pcall(function()
+					btn.TextColor3 = C.TabTextActive or Color3.fromRGB(28, 30, 40)
+				end)
 				el.ActiveTab = tabEl
 			end
 			btn.MouseButton1Click:Connect(activate)
