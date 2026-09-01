@@ -38,6 +38,11 @@ local Module = {
             Label = "Apply Spoofs",
             Category = "Advanced",
         },
+        ClearOnTeleport = {
+            Value = false,
+            Label = "Clear logs on teleport",
+            Category = "Capture",
+        },
         HooksDisabled = {
             Value = false,
             Label = "Disable hooks",
