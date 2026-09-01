@@ -160,9 +160,38 @@ end
 
 function Process:CheckConfig(Config)
 
-    local Name = identifyexecutor():lower()
+    if typeof(Config) ~= "table" then return end
 
-    
+    -- #015 workspace config migration
+    local ver = Config.ConfigVersion
+    if ver == nil or ver < 2 then
+        Config.ConfigVersion = 2
+        -- drop known stale keys from older forks if present
+        Config.DiscordInvite = nil
+        Config.RPC = nil
+        Config.Sigma = nil
+        if Config.ThemeConfig and Config.ThemeConfig.BaseTheme == "ImGui" then
+            -- keep
+        end
+        if not Config.UiColors then
+            Config.UiColors = {
+                Bg = Color3.fromRGB(18, 18, 22),
+                BgDark = Color3.fromRGB(12, 12, 16),
+                Title = Color3.fromRGB(28, 30, 40),
+                Input = Color3.fromRGB(22, 24, 30),
+                Border = Color3.fromRGB(55, 58, 68),
+                Text = Color3.fromRGB(230, 230, 235),
+                TextDim = Color3.fromRGB(120, 122, 132),
+                Accent = Color3.fromRGB(120, 90, 220),
+                RowAlt = Color3.fromRGB(24, 26, 32),
+                Danger = Color3.fromRGB(220, 90, 90),
+                Warn = Color3.fromRGB(255, 180, 80),
+            }
+        end
+        warn("[Wyvern Spy] Config migrated to version 2")
+    end
+
+    local Name = identifyexecutor():lower()
     local Overwrites = self:GetConfigOverwrites(Name)
     if not Overwrites then return end
 
