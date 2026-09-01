@@ -730,18 +730,17 @@ function Ui:CreateWindowContent(Window)
 		Mobile = WyvernUI:IsMobileDevice() == true
 	end)
 	self.IsMobileUi = Mobile
-	local sideW = Mobile and 200 or 240
-	local searchH = Mobile and 34 or 28
-	self._MobileDetail = false
+	-- Always dual-pane: left remotes, right Editor/Options (no mobile-only full-screen list)
+	local sideW = Mobile and 180 or 240
+	local searchH = Mobile and 32 or 28
 
 	local Sidebar = Layout:List({
 		UiPadding = Mobile and 6 or 8,
 		FillDirection = Enum.FillDirection.Vertical,
-		Size = Mobile and UDim2.new(1, 0, 1, 0) or UDim2.new(0, sideW, 1, 0),
+		Size = UDim2.new(0, sideW, 1, 0),
 		HorizontalFlex = Enum.UIFlexAlignment.Fill,
 	})
 
-	
 	local SearchBox = Sidebar:InputText({
 		Label = "",
 		Placeholder = "Search remotes…",
@@ -790,60 +789,12 @@ function Ui:CreateWindowContent(Window)
 
 	local InfoSelector = Layout:TabSelector({
 		NoAnimation = true,
-		Size = Mobile and UDim2.new(1, 0, 1, 0) or UDim2.new(1, -(sideW + 8), 1, 0),
+		Size = UDim2.new(1, -(sideW + 8), 1, 0),
 	})
 
 	self.InfoSelector = InfoSelector
 	self.CanvasLayout = Layout
 	self.SidebarPane = Sidebar
-
-	if Mobile then
-		pcall(function()
-			if InfoSelector.Instance then
-				InfoSelector.Instance.Visible = false
-			end
-		end)
-		self._MobileShowList = function()
-			pcall(function()
-				if Sidebar.Instance then Sidebar.Instance.Visible = true end
-				if InfoSelector.Instance then InfoSelector.Instance.Visible = false end
-				self._MobileDetail = false
-			end)
-		end
-		self._MobileShowDetail = function()
-			pcall(function()
-				if Sidebar.Instance then Sidebar.Instance.Visible = false end
-				if InfoSelector.Instance then InfoSelector.Instance.Visible = true end
-				self._MobileDetail = true
-			end)
-		end
-		local navRow = Sidebar:Row({ Size = UDim2.new(1, 0, 0, 28) })
-		self:CreateButtons(navRow, {
-			NoTable = true,
-			Buttons = {
-				{
-					Text = "Open inspector",
-					Callback = function()
-						self._MobileShowDetail()
-					end,
-				},
-			},
-		})
-		pcall(function()
-			local br = InfoSelector:Row({ Size = UDim2.new(1, 0, 0, 28) })
-			self:CreateButtons(br, {
-				NoTable = true,
-				Buttons = {
-					{
-						Text = "← Remotes",
-						Callback = function()
-							self._MobileShowList()
-						end,
-					},
-				},
-			})
-		end)
-	end
 
 	self:MakeEditorTab(InfoSelector)
 	self:MakeOptionsTab(InfoSelector)
@@ -1595,11 +1546,6 @@ function Ui:DisplayTable(Parent, Config)
 end
 
 function Ui:SetFocusedRemote(Data)
-	pcall(function()
-		if self.IsMobileUi and self._MobileShowDetail then
-			self._MobileShowDetail()
-		end
-	end)
 
 
 	
