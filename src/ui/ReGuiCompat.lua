@@ -695,7 +695,7 @@ function Element:_create(class, config)
 
 		local scroll = Instance.new("ScrollingFrame")
 		if config.Fill then
-			scroll.Size = UDim2.new(1, 0, 1, -34)
+			scroll.Size = UDim2.new(1, 0, 1, -40)
 			scroll.AutomaticSize = Enum.AutomaticSize.None
 		else
 			scroll.Size = config.Size or UDim2.new(1, 0, 0, 160)
@@ -1699,7 +1699,7 @@ function ReGui:Window(config)
 	content.Active = false
 	content.Parent = frame
 	local layout = Instance.new("UIListLayout")
-	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.FillDirection = Enum.FillDirection.Vertical
 	layout.Padding = UDim.new(0, 6)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = content
@@ -1707,6 +1707,12 @@ function ReGui:Window(config)
 		layout.HorizontalFlex = Enum.UIFlexAlignment.Fill
 		layout.VerticalFlex = Enum.UIFlexAlignment.Fill
 	end)
+	local contentPad = Instance.new("UIPadding")
+	contentPad.PaddingLeft = UDim.new(0, 8)
+	contentPad.PaddingRight = UDim.new(0, 8)
+	contentPad.PaddingTop = UDim.new(0, 6)
+	contentPad.PaddingBottom = UDim.new(0, 6)
+	contentPad.Parent = content
 
 	local win = wrap(frame, "Window")
 	function win:_host() return content end
