@@ -441,6 +441,13 @@ end
 
 function Process:GetRemoteSpoof(Remote, Method, ...)
 
+    if Flags and Flags.GetFlagValue then
+        local ok, on = pcall(function() return Flags:GetFlagValue("ApplySpoofs") end)
+        if ok and on == false then
+            return
+        end
+    end
+
     local Spoof = ReturnSpoofs[Remote]
 
     if not Spoof then return end
@@ -601,29 +608,7 @@ function Process:GetRemoteData(Id)
 	return Data
 end
 
-function Process:CallDiscordRPC(Body)
 
-    request({
-        Url = "http://127.0.0.1:6463/rpc?v=1",
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json",
-            ["Origin"] = "https://discord.com/"
-        },
-        Body = HttpService:JSONEncode(Body)
-    })
-end
-
-function Process:PromptDiscordInvite(InviteCode)
-
-    self:CallDiscordRPC({
-        cmd = "INVITE_BROWSER",
-        nonce = HttpService:GenerateGUID(false),
-        args = {
-            code = InviteCode
-        }
-    })
-end
 
 local ProcessCallback = newcclosure(function(Data: RemoteData, Remote, ...)
     local OriginalFunc = Data.OriginalFunc
