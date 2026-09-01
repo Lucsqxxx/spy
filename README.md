@@ -1,112 +1,79 @@
 # Wyvern Spy
 
-A lightweight **Roblox remote spy** for inspecting `RemoteEvent` / `RemoteFunction` traffic, viewing arguments, and generating call scripts.
+remote spy for roblox by lucsqx
 
-**Author:** lucsqx
+basically watches remotes (RemoteEvent / RemoteFunction), shows the args, and can spit out scripts so you can call them again.
 
----
-
-## Load
+## how to run
 
 ```lua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Lucsqxxx/spy/main/Main.luau"))()
 ```
 
----
+thats it. paste it in your executor and go.
 
-## Features
+## what it does
 
-- Capture outgoing and incoming remote traffic
-- Group logs per remote with type icons
-- Deduplicate identical argument sets (`×N` hit counts)
-- Separate rows when arguments change
-- Script editor with build templates (Call, Minimal, Spam, Block, …)
-- Search remotes in the sidebar
-- Return spoofs editor
-- Options for pause, log limits, keybinds, UI visibility
-- Built-in UI toolkit (**WyvernUI**) — pure Instances, no external GUI library assets
+- logs remotes when they fire / get invoked
+- groups them so the same remote doesnt spam the list forever
+- if the same args come through again it just bumps the count (like `×3`)
+- if the args change you get a new row
+- sidebar search so you can find stuff
+- editor tab to build / copy scripts
+- options for pause, log limits, keybinds, etc
+- edit return spoofs if you want
 
----
+ui is built with **WyvernUI** (our own thing, no random gui library downloads)
 
-## Supported executors
+## what your executor needs
 
-Works on executors that provide:
+required:
+- `hookmetamethod`
+- `getnamecallmethod`
+- `HttpGet`
+- `loadstring`
 
-| API | Purpose |
-|-----|---------|
-| `hookmetamethod` | Intercept remote calls |
-| `getnamecallmethod` | Identify the called method |
-| `HttpGet` | Fetch modules from this repo |
-| `loadstring` | Compile loaded modules |
+nice to have:
+- `getcustomasset` (logo / font)
+- `writefile` / `readfile` / `makefolder` (saving spoofs + cache)
+- `cloneref`, `newcclosure`, `checkcaller` (hooks behave better)
 
-**Optional** (better experience):
+if something important is missing it should just tell you instead of dying randomly.
 
-| API | Purpose |
-|-----|---------|
-| `getcustomasset` | Logo / font assets |
-| `writefile` / `makefolder` / `readfile` | Cache assets and spoofs |
-| `cloneref` | Safer instance references |
-| `newcclosure` / `checkcaller` | Hook stability |
-
-If a required API is missing, Wyvern Spy will fail early with a clear message instead of crashing silently.
-
----
-
-## Project layout
+## folders
 
 ```
-Main.luau              Entry point (load this)
-assets/
-  wyvern_logo.png      Title-bar logo
-  ProggyClean.ttf      Optional code font
-dist/
-  Parser.luau          Value parser for script generation
-src/
-  core/                Hook, Process, Communication
-  ui/                  Ui + WyvernUI toolkit
-  generation/          Script generation
-  config/              Defaults + return spoofs
-  utils/               Files, Flags
-templates/             Optional user config overrides
+Main.luau          ← load this
+src/               ← actual code
+  core/            hooks + processing
+  ui/              ui + WyvernUI
+  generation/      script building
+assets/            logo + font
+dist/Parser.luau   arg formatting
+templates/         optional config overrides
 ```
 
----
+## in-app options (quick)
 
-## Options (in-app)
+| thing | what it does |
+|-------|--------------|
+| Paused | stop logging |
+| Logs per remote | how many unique arg rows to keep |
+| Highlight new logs | flash new stuff |
+| Log receives | also log incoming |
+| UI Visible | hide / show the window |
+| Keybinds Enabled | keybinds on/off |
 
-| Option | Description |
-|--------|-------------|
-| **Paused** | Stop capturing new logs |
-| **Logs per remote** | Max unique argument rows kept per remote |
-| **Highlight new logs** | Brief highlight on new rows |
-| **Log receives** | Log client-side receive events |
-| **Ignore nil parents** | Skip remotes with nil parent |
-| **UI Visible** | Toggle main window |
-| **Keybinds Enabled** | Enable bound keys |
+## script templates
 
----
+Call, Minimal, Edit & Repeat, Spam, Undo Spam, Block, Repeat — pick one from the editor when you have a remote selected.
 
-## Script templates
+## heads up
 
-| Template | Purpose |
-|----------|---------|
-| Call | Fire / invoke once with captured args |
-| Minimal | Shortest call form |
-| Edit & Repeat | Edit args in the editor, then run |
-| Spam | Loop until stopped |
-| Undo Spam | Stop spam loops |
-| Block | Block the remote |
-| Repeat | Fire N times |
+some games hate hooks and will kick you. thats on them, not really a "spy bug".
 
----
+also always use the loadstring above so you get whatever is on `main` right now.
 
-## Notes
+## license
 
-- Some games detect metamethod hooks and may kick after traffic is logged. That is game-side behavior.
-- Prefer the loadstring above so you always pull the latest `main` branch.
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE). Copyright (c) 2026 lucsqx.
+MIT — see LICENSE. made by lucsqx (2026)
