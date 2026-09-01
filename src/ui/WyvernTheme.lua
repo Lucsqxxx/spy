@@ -1,0 +1,22 @@
+-- WyvernUI theme tokens (shared defaults)
+return {
+	Bg = Color3.fromRGB(18, 18, 22),
+	BgDark = Color3.fromRGB(12, 12, 16),
+	Title = Color3.fromRGB(28, 30, 40),
+	Panel = Color3.fromRGB(22, 24, 30),
+	Input = Color3.fromRGB(22, 24, 30),
+	Border = Color3.fromRGB(55, 58, 68),
+	Text = Color3.fromRGB(230, 230, 235),
+	TextDim = Color3.fromRGB(120, 122, 132),
+	Accent = Color3.fromRGB(120, 90, 220),
+	AccentDim = Color3.fromRGB(80, 60, 160),
+	RowAlt = Color3.fromRGB(24, 26, 32),
+	Danger = Color3.fromRGB(220, 90, 90),
+	Warn = Color3.fromRGB(255, 180, 80),
+	Green = Color3.fromRGB(120, 210, 160),
+	Yellow = Color3.fromRGB(230, 200, 100),
+	TabActive = Color3.fromRGB(36, 42, 54),
+	TabIdle = Color3.fromRGB(20, 20, 24),
+	LineNum = Color3.fromRGB(90, 92, 100),
+	Gutter = Color3.fromRGB(14, 14, 16),
+}
