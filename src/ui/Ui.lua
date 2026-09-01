@@ -718,7 +718,7 @@ function Ui:CreateWindowContent(Window)
 
 	
 	local Layout = Window:List({
-		UiPadding = 0,
+		UiPadding = 10,
 		HorizontalFlex = Enum.UIFlexAlignment.Fill,
 		VerticalFlex = Enum.UIFlexAlignment.Fill,
 		FillDirection = Enum.FillDirection.Horizontal,
@@ -730,16 +730,31 @@ function Ui:CreateWindowContent(Window)
 		Mobile = WyvernUI:IsMobileDevice() == true
 	end)
 	self.IsMobileUi = Mobile
-	-- Always dual-pane: left remotes, right Editor/Options (no mobile-only full-screen list)
-	local sideW = Mobile and 180 or 240
-	local searchH = Mobile and 32 or 28
+	local sideW = Mobile and 168 or 220
+	local searchH = Mobile and 32 or 30
 
+	-- Distinct sidebar column (grouped surface)
 	local Sidebar = Layout:List({
-		UiPadding = Mobile and 6 or 8,
+		UiPadding = 8,
 		FillDirection = Enum.FillDirection.Vertical,
 		Size = UDim2.new(0, sideW, 1, 0),
 		HorizontalFlex = Enum.UIFlexAlignment.Fill,
+		Border = true,
+		BackgroundTransparency = 0.05,
 	})
+	pcall(function()
+		local inst = Sidebar.Instance
+		if inst then
+			inst.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
+			inst.BackgroundTransparency = 0.05
+			local c = inst:FindFirstChildOfClass("UICorner")
+			if not c then
+				c = Instance.new("UICorner")
+				c.Parent = inst
+			end
+			c.CornerRadius = UDim.new(0, 12)
+		end
+	end)
 
 	local SearchBox = Sidebar:InputText({
 		Label = "",
@@ -769,11 +784,12 @@ function Ui:CreateWindowContent(Window)
 
 	self.RemotesList = Sidebar:Canvas({
 		Scroll = true,
-		UiPadding = 4,
+		UiPadding = 6,
 		LayoutOrder = 1,
 		AutomaticSize = Enum.AutomaticSize.None,
 		FlexMode = Enum.UIFlexMode.Fill,
-		Size = UDim2.new(1, 0, 1, -(searchH + 10)),
+		Size = UDim2.new(1, 0, 1, -(searchH + 12)),
+		Border = true,
 	})
 	pcall(function()
 		local inst = self.RemotesList.Instance
@@ -789,7 +805,7 @@ function Ui:CreateWindowContent(Window)
 
 	local InfoSelector = Layout:TabSelector({
 		NoAnimation = true,
-		Size = UDim2.new(1, -(sideW + 8), 1, 0),
+		Size = UDim2.new(1, -(sideW + 16), 1, 0),
 	})
 
 	self.InfoSelector = InfoSelector
