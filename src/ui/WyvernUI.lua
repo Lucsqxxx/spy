@@ -443,7 +443,7 @@ function Element:_create(class, config)
 		btn.Size = sz or UDim2.new(0, 96, 0, 22)
 		btn.AutomaticSize = Enum.AutomaticSize.None
 		btn.BackgroundColor3 = C.Btn
-		btn.BackgroundTransparency = 0
+		btn.BackgroundTransparency = 0.05
 		btn.TextColor3 = C.Text
 		btn.TextSize = 12
 		btn.Font = Enum.Font.BuilderSansMedium
@@ -1099,131 +1099,142 @@ function Element:_create(class, config)
 		root.Parent = host
 		order(root)
 
+		-- Top segmented pill navigation (reference layout philosophy)
 		local tabBar = Instance.new("Frame")
-		tabBar.Size = UDim2.new(1, 0, 0, 26)
+		tabBar.Name = "PillNav"
+		tabBar.Size = UDim2.new(1, 0, 0, 36)
 		tabBar.BackgroundColor3 = C.BgDark
+		tabBar.BackgroundTransparency = 0.15
 		tabBar.BorderSizePixel = 0
 		tabBar.Parent = root
-		corner(tabBar, 4)
+		corner(tabBar, C.CornerPanel or 10)
+		stroke(tabBar, C.Border, 1)
 		local tl = Instance.new("UIListLayout")
 		tl.FillDirection = Enum.FillDirection.Horizontal
-		tl.Padding = UDim.new(0, 2)
+		tl.Padding = UDim.new(0, 6)
 		tl.VerticalAlignment = Enum.VerticalAlignment.Center
+		tl.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		tl.Parent = tabBar
-		pad(tabBar, 4, 4, 2, 2)
+		pad(tabBar, 8, 8, 5, 5)
 
 		local body = Instance.new("Frame")
 		body.Name = "Body"
-		body.Position = UDim2.fromOffset(0, 28)
-		body.Size = UDim2.new(1, 0, 1, -28)
-		body.BackgroundColor3 = C.BgDark
+		body.Position = UDim2.fromOffset(0, 42)
+		body.Size = UDim2.new(1, 0, 1, -42)
+		body.BackgroundColor3 = C.Panel or C.BgDark
+		body.BackgroundTransparency = 0.08
 		body.BorderSizePixel = 0
 		body.ClipsDescendants = true
 		body.Parent = root
-		corner(body, 4)
+		corner(body, C.CornerPanel or 10)
 		stroke(body, C.Border, 1)
 
 		local el = wrap(root, "TabSelector")
 		el._tabs = {}
 		el.ActiveTab = nil
+		el._tabBar = tabBar
 
 		function el:CreateTab(cfg)
 			cfg = cfg or {}
 			local name = cfg.Name or "Tab"
 			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.fromOffset(math.clamp(#name * 7 + 18, 56, 200), 22)
+			btn.Size = UDim2.fromOffset(math.clamp(#name * 8 + 28, 72, 160), 26)
 			btn.BackgroundColor3 = C.TabIdle
-				pcall(function() btn.TextColor3 = C.TabTextIdle or C.TextDim end)
 			btn.Text = name
-			btn.TextColor3 = C.Text
-			btn.TextSize = 12
+			btn.TextColor3 = C.TabTextIdle or C.TextDim
+			btn.TextSize = 13
 			btn.Font = Enum.Font.BuilderSansMedium
 			btn.BorderSizePixel = 0
 			btn.AutoButtonColor = false
 			btn.Parent = tabBar
-			corner(btn, 3)
+			corner(btn, C.CornerPill or 9)
 
-			
 			local page = Instance.new("ScrollingFrame")
 			page.Name = "TabPage"
-			page.Size = UDim2.new(1, -8, 1, -8)
-			page.Position = UDim2.fromOffset(4, 4)
+			page.Size = UDim2.new(1, -12, 1, -12)
+			page.Position = UDim2.fromOffset(6, 6)
 			page.BackgroundTransparency = 1
 			page.BorderSizePixel = 0
 			page.Visible = false
 			page.ClipsDescendants = true
-			page.ScrollBarThickness = 5
+			page.ScrollBarThickness = 4
 			page.ScrollBarImageColor3 = C.Border
 			page.ScrollingDirection = Enum.ScrollingDirection.Y
 			page.CanvasSize = UDim2.new(0, 0, 0, 0)
 			page.AutomaticCanvasSize = Enum.AutomaticSize.Y
 			page.Parent = body
 			local pl = Instance.new("UIListLayout")
-			pl.Padding = UDim.new(0, 6)
+			pl.Padding = UDim.new(0, 8)
 			pl.SortOrder = Enum.SortOrder.LayoutOrder
 			pl.FillDirection = Enum.FillDirection.Vertical
-			pl.VerticalAlignment = Enum.VerticalAlignment.Top
 			pl.Parent = page
 			local pp = Instance.new("UIPadding")
-			pp.PaddingTop = UDim.new(0, 4)
-			pp.PaddingBottom = UDim.new(0, 12)
-			pp.PaddingLeft = UDim.new(0, 4)
+			pp.PaddingTop = UDim.new(0, 6)
+			pp.PaddingBottom = UDim.new(0, 14)
+			pp.PaddingLeft = UDim.new(0, 6)
 			pp.PaddingRight = UDim.new(0, 8)
 			pp.Parent = page
 
 			local tabEl = wrap(page, "Tab")
-			tabEl._name = name
 			tabEl._button = btn
-			table.insert(el._tabs, tabEl)
+			tabEl._name = name
 
 			local function activate()
 				for _, t in el._tabs do
-					t.Instance.Visible = false
-					if t._button then t._button.BackgroundColor3 = C.TabIdle end
+					if t._button then
+						t._button.BackgroundColor3 = C.TabIdle
+						t._button.TextColor3 = C.TabTextIdle or C.TextDim
+					end
+					if t.Instance then t.Instance.Visible = false end
 				end
 				page.Visible = true
 				btn.BackgroundColor3 = C.TabActive
-				pcall(function()
-					btn.TextColor3 = C.TabTextActive or Color3.fromRGB(28, 30, 40)
-				end)
+				btn.TextColor3 = C.TabTextActive or Color3.fromRGB(28, 30, 40)
 				el.ActiveTab = tabEl
 			end
 			btn.MouseButton1Click:Connect(activate)
-			if cfg.Focused or #el._tabs == 1 then activate() end
+			btn.MouseEnter:Connect(function()
+				if el.ActiveTab ~= tabEl then
+					btn.BackgroundColor3 = C.Select or C.BtnHover
+				end
+			end)
+			btn.MouseLeave:Connect(function()
+				if el.ActiveTab ~= tabEl then
+					btn.BackgroundColor3 = C.TabIdle
+				end
+			end)
+			if cfg.Focused or #el._tabs == 0 then
+				task.defer(activate)
+			end
 
 			function tabEl:Remove()
-				btn:Destroy()
-				page:Destroy()
-			end
-			return tabEl
-		end
-
-		function el:RemoveTab(tab)
-			if not tab then return end
-			for i, t in el._tabs do
-				if t == tab or (tab.Instance and t.Instance == tab.Instance) then
-					table.remove(el._tabs, i)
-					break
+				pcall(function() btn:Destroy() end)
+				pcall(function() page:Destroy() end)
+				for i, t in el._tabs do
+					if t == tabEl then
+						table.remove(el._tabs, i)
+						break
+					end
 				end
-			end
-			pcall(function() tab:Remove() end)
-			if el.ActiveTab == tab then
-				el.ActiveTab = el._tabs[1]
-				if el.ActiveTab then
-					el.ActiveTab.Instance.Visible = true
-					if el.ActiveTab._button then
-						el.ActiveTab._button.BackgroundColor3 = C.TabActive
+				if el.ActiveTab == tabEl then
+					el.ActiveTab = el._tabs[1]
+					if el.ActiveTab then
+						el.ActiveTab.Instance.Visible = true
+						if el.ActiveTab._button then
+							el.ActiveTab._button.BackgroundColor3 = C.TabActive
+							el.ActiveTab._button.TextColor3 = C.TabTextActive or Color3.fromRGB(28, 30, 40)
+						end
 					end
 				end
 			end
-		end
 
-		function el:CompareTabs(a, b)
-			return a == b or (a and b and a.Instance == b.Instance)
+			table.insert(el._tabs, tabEl)
+			return tabEl
 		end
 
 		return el
 	end
+
 
 	if class == "InputText" then
 		local holder = Instance.new("Frame")
@@ -1432,6 +1443,7 @@ function Element:PopupModal(config)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
+	content.BackgroundTransparency = 1
 	content.Position = UDim2.fromOffset(12, 40)
 	content.Size = UDim2.new(1, -24, 1, -52)
 	content.BackgroundTransparency = 1
@@ -1598,13 +1610,30 @@ function WyvernUI:Window(config)
 		frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.12, 0)
 	end
 	frame.BackgroundColor3 = C.Bg
-	frame.BackgroundTransparency = C.ShellTransparency or 0.06
+	frame.BackgroundTransparency = 0.04
 	frame.BorderSizePixel = 0
 	frame.Active = true
 	frame.Draggable = false 
 	frame.Parent = screen
-	corner(frame, C.CornerWindow or 14)
-	do local s = stroke(frame, C.Border, 1); if s then s.Transparency = 0.45 end end
+	corner(frame, 16)
+	do
+		local s = stroke(frame, C.Border, 1.5)
+		if s then s.Transparency = 0.4 end
+	end
+	-- depth layer under shell
+	pcall(function()
+		local depth = Instance.new("Frame")
+		depth.Name = "Depth"
+		depth.Size = UDim2.new(1, 8, 1, 8)
+		depth.Position = UDim2.fromOffset(-4, -2)
+		depth.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		depth.BackgroundTransparency = 0.65
+		depth.BorderSizePixel = 0
+		depth.ZIndex = 0
+		depth.Parent = frame
+		corner(depth, 18)
+		frame.ZIndex = 1
+	end)
 	frame.ClipsDescendants = true
 	frame.AutomaticSize = Enum.AutomaticSize.None
 
@@ -1765,6 +1794,7 @@ function WyvernUI:Window(config)
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"
+	content.BackgroundTransparency = 1
 	content.Position = UDim2.fromOffset(0, 40)
 	content.Size = UDim2.new(1, 0, 1, -40)
 	content.BackgroundTransparency = 1
