@@ -33,6 +33,16 @@ local Module = {
             Value = false,
             Label = "Pop-out decompiles",
         },
+        ApplySpoofs = {
+            Value = false,
+            Label = "Apply Spoofs",
+            Category = "Advanced",
+        },
+        HooksDisabled = {
+            Value = false,
+            Label = "Disable hooks",
+            Category = "Capture",
+        },
         IgnoreNil = {
             Value = true,
             Label = "Ignore nil parents",
