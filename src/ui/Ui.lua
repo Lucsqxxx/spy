@@ -59,7 +59,7 @@ type Log = {
 
 local SetClipboard = setclipboard or toclipboard or set_clipboard
 
-local ReGui = nil
+local WyvernUI = nil
 
 local Flags
 local Generation
@@ -89,25 +89,25 @@ function Ui:Init(Data)
 	Communication = Modules.Communication
 	Files = Modules.Files
 
-	local CompatUrl = `{Configuration.RepoUrl}/src/ui/ReGuiCompat.lua`
+	local CompatUrl = `{Configuration.RepoUrl}/src/ui/WyvernUI.lua`
 	local CompatSource = game:HttpGet(CompatUrl)
-	local compile, cerr = loadstring(CompatSource, "ReGuiCompat")
+	local compile, cerr = loadstring(CompatSource, "WyvernUI")
 	if not compile then
-		error("[Wyvern Spy] ReGuiCompat compile failed: " .. tostring(cerr))
+		error("[Wyvern Spy] WyvernUI compile failed: " .. tostring(cerr))
 	end
-	ReGui = compile()
-	if not ReGui then
-		error("[Wyvern Spy] ReGuiCompat returned nil")
+	WyvernUI = compile()
+	if not WyvernUI then
+		error("[Wyvern Spy] WyvernUI returned nil")
 	end
 	pcall(function()
 		if Configuration and Configuration._LogoAsset then
-			ReGui.LogoAsset = Configuration._LogoAsset
+			WyvernUI.LogoAsset = Configuration._LogoAsset
 		end
 	end)
-	warn("[Wyvern Spy] Using ReGuiCompat (no prefab asset)")
+	warn("[Wyvern Spy] UI toolkit: WyvernUI")
 
 	pcall(function() self:LoadFont() end)
-	pcall(function() self:LoadReGui() end)
+	pcall(function() self:LoadWyvernUI() end)
 	pcall(function() self:CheckScale() end)
 end
 
@@ -121,7 +121,7 @@ function Ui:CheckScale()
 	local BaseConfig = self.BaseConfig
 	local Scales = self.Scales
 
-	local IsMobile = ReGui:IsMobileDevice()
+	local IsMobile = WyvernUI:IsMobileDevice()
 	local Device = IsMobile and "Mobile" or "Desktop"
 
 	BaseConfig.Size = Scales[Device]
@@ -179,8 +179,8 @@ function Ui:LoadFont()
 	TextFont = (okF and face) or Font.fromEnum(Enum.Font.Gotham)
 	FontSuccess = true
 	pcall(function()
-		if ReGui and ReGui.SetFont then
-			ReGui:SetFont(TextFont, 14)
+		if WyvernUI and WyvernUI.SetFont then
+			WyvernUI:SetFont(TextFont, 14)
 		end
 	end)
 	local FontFile = self.FontJsonFile
@@ -211,16 +211,16 @@ function Ui:FontWasSuccessful()
 	})
 end
 
-function Ui:LoadReGui()
+function Ui:LoadWyvernUI()
 
 	local ThemeConfig = Config.ThemeConfig
 	ThemeConfig.TextFont = TextFont
 
-	if ReGui.SetFont then
-		ReGui:SetFont(TextFont, ThemeConfig.TextSize or 13)
+	if WyvernUI.SetFont then
+		WyvernUI:SetFont(TextFont, ThemeConfig.TextSize or 13)
 	end
 
-	ReGui:DefineTheme("WyvernSpy", ThemeConfig)
+	WyvernUI:DefineTheme("WyvernSpy", ThemeConfig)
 end
 
 type CreateButtons = {
@@ -247,7 +247,7 @@ function Ui:CreateButtons(Parent, Data)
 
 	if NoTable then
 		for _, Button in next, Buttons do
-			ReGui:CheckConfig(Button, Base)
+			WyvernUI:CheckConfig(Button, Base)
 			Parent:Button(Button)
 		end
 		return
@@ -261,7 +261,7 @@ function Ui:CreateButtons(Parent, Data)
 			row = Parent:Row()
 			col = 0
 		end
-		ReGui:CheckConfig(Button, Base)
+		WyvernUI:CheckConfig(Button, Base)
 		row:Button(Button)
 		col += 1
 	end
@@ -275,11 +275,11 @@ function Ui:CreateWindow(WindowConfig)
 	pcall(function()
 		if Configuration and Configuration._LogoAsset then
 			Config.LogoAsset = Configuration._LogoAsset
-			ReGui.LogoAsset = Configuration._LogoAsset
+			WyvernUI.LogoAsset = Configuration._LogoAsset
 		end
 	end)
 
-	local Window = ReGui:Window(Config)
+	local Window = WyvernUI:Window(Config)
 
 	
 	if not FontSuccess then 
@@ -446,7 +446,7 @@ function Ui:CreateElements(Parent, Options)
 		local Value = Data.Value
 		local Type = typeof(Value)
 
-		ReGui:CheckConfig(Data, {
+		WyvernUI:CheckConfig(Data, {
 			Class = OptionTypes[Type],
 			Label = Name,
 		})
@@ -689,7 +689,7 @@ function Ui:CreateWindowContent(Window)
 
 	local Mobile = false
 	pcall(function()
-		Mobile = ReGui:IsMobileDevice() == true
+		Mobile = WyvernUI:IsMobileDevice() == true
 	end)
 	self.IsMobileUi = Mobile
 	local sideW = Mobile and 180 or 240
