@@ -1312,10 +1312,25 @@ function Element:ClearChildElements()
 end
 function Element:Center()
 	local inst = self.Instance
-	if inst:IsA("GuiObject") then
-		inst.AnchorPoint = Vector2.new(0.5, 0.5)
-		inst.Position = UDim2.fromScale(0.5, 0.5)
+	if not inst or not inst:IsA("GuiObject") then
+		return self
 	end
+	pcall(function()
+		local cam = workspace.CurrentCamera
+		local vs = cam and cam.ViewportSize or Vector2.new(1280, 720)
+		local sz = inst.AbsoluteSize
+		if sz.X < 2 or sz.Y < 2 then
+			sz = Vector2.new(
+				inst.Size.X.Offset > 0 and inst.Size.X.Offset or 560,
+				inst.Size.Y.Offset > 0 and inst.Size.Y.Offset or 400
+			)
+		end
+		inst.AnchorPoint = Vector2.new(0.5, 0.5)
+		inst.Position = UDim2.fromOffset(
+			math.floor(vs.X / 2),
+			math.floor(vs.Y / 2)
+		)
+	end)
 	return self
 end
 function Element:SetVisible(v) self.Instance.Visible = not not v end
@@ -1525,7 +1540,12 @@ function ReGui:Window(config)
 	local frame = Instance.new("Frame")
 	frame.Name = "Window"
 	frame.Size = size
-	frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.1, 0)
+	if config.Centered then
+		frame.AnchorPoint = Vector2.new(0.5, 0.5)
+		frame.Position = UDim2.fromScale(0.5, 0.5)
+	else
+		frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.12, 0)
+	end
 	frame.BackgroundColor3 = C.Bg
 	frame.BorderSizePixel = 0
 	frame.Active = true
@@ -1859,6 +1879,15 @@ local function bindBtn(btn, fn)
 	function win:SetVisible(v)
 		frame.Visible = not not v
 	end
+	function win:Center()
+		pcall(function()
+			local cam = workspace.CurrentCamera
+			local vs = cam and cam.ViewportSize or Vector2.new(1280, 720)
+			frame.AnchorPoint = Vector2.new(0.5, 0.5)
+			frame.Position = UDim2.fromOffset(math.floor(vs.X / 2), math.floor(vs.Y / 2))
+		end)
+		return self
+	end
 	function win:Close()
 		pcall(function()
 			frame.Visible = false
@@ -1877,6 +1906,15 @@ local function bindBtn(btn, fn)
 	do
 		local finalSize = frame.Size
 		local finalPos = frame.Position
+		if config.Centered then
+			frame.AnchorPoint = Vector2.new(0.5, 0.5)
+			pcall(function()
+				local cam = workspace.CurrentCamera
+				local vs = cam and cam.ViewportSize or Vector2.new(1280, 720)
+				finalPos = UDim2.fromOffset(math.floor(vs.X / 2), math.floor(vs.Y / 2))
+				frame.Position = finalPos
+			end)
+		end
 		local startSize = UDim2.fromOffset(
 			math.max(80, math.floor((finalSize.X.Offset > 0 and finalSize.X.Offset or 820) * 0.7)),
 			math.max(60, math.floor((finalSize.Y.Offset > 0 and finalSize.Y.Offset or 520) * 0.7))
