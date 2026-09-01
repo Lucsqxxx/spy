@@ -1136,6 +1136,7 @@ function Ui:MakeEditorPopoutWindow(Content, WindowConfig)
 		Text = Content or "",
 		Editable = true,
 		Fill = true,
+		Size = UDim2.new(1, 0, 1, -44),
 		FontSize = 13,
 		Colors = Colors,
 		FontFace = TextFont
@@ -1186,17 +1187,40 @@ function Ui:EditFile(FilePath, InFolder, OnSaveFunc)
 		FilePath = `{Folder}/{FilePath}`
 	end
 
-	local Content = "return {\n\t\n}"
+	local defaultSpoofs = [=[
+--[[
+  Wyvern Spy — Return Spoofs
+  Override RemoteFunction return values.
+
+  Format:
+    [RemoteInstance] = {
+      Method = "InvokeServer",
+      Return = { ... }
+      -- or:
+      Return = function(...)
+        return { ... }
+      end
+    }
+]]
+return {
+}
+]=]
+	local Content = defaultSpoofs
 	pcall(function()
 		if isfile and isfile(FilePath) then
 			Content = readfile(FilePath)
 		elseif readfile then
-			Content = readfile(FilePath)
+			local ok, body = pcall(readfile, FilePath)
+			if ok and body and #body > 0 then
+				Content = body
+			end
 		end
 	end)
-	Content = tostring(Content or "return {}"):gsub("\r\n", "\n")
-	if Content == "" then
-		Content = "return {}"
+	Content = tostring(Content or defaultSpoofs):gsub("\r\n", "\n")
+	-- migrate old Sigma Spy headers
+	Content = Content:gsub("[Ss]igma%s*[Ss]py", "Wyvern Spy")
+	if Content == "" or Content:match("^%s*$") then
+		Content = defaultSpoofs
 	end
 
 	local function closeWin()
@@ -1243,7 +1267,7 @@ function Ui:EditFile(FilePath, InFolder, OnSaveFunc)
 	CodeEditor, Window = self:MakeEditorPopoutWindow(Content, {
 		Title = `Editing: {FilePath}`,
 		Buttons = Buttons,
-		Size = UDim2.fromOffset(520, 360),
+		Size = UDim2.fromOffset(560, 400),
 		DestroyOnClose = true,
 	})
 end
