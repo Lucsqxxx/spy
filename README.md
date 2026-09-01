@@ -2,8 +2,7 @@
 
 A lightweight **Roblox remote spy** for inspecting `RemoteEvent` / `RemoteFunction` traffic, viewing arguments, and generating call scripts.
 
-**Author:** lucsqx  
-**Executor focus:** Real (and similar) — pure Instance UI (`ReGuiCompat`), no ReGui prefab assets.
+**Author:** lucsqx
 
 ---
 
@@ -17,46 +16,58 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Lucsqxxx/spy/main/Mai
 
 ## Features
 
-- Capture **outgoing** and **incoming** remote traffic
-- Group logs **per remote** with type icons
-- **Deduplicate** identical argument sets (`×N` hit counts)
-- Separate rows when arguments **change**
-- Editor with script templates (Call, Minimal, Spam, Block, …)
-- Options: pause, logs-per-remote limit, highlight new, keybinds, UI visible
+- Capture outgoing and incoming remote traffic
+- Group logs per remote with type icons
+- Deduplicate identical argument sets (`×N` hit counts)
+- Separate rows when arguments change
+- Script editor with build templates (Call, Minimal, Spam, Block, …)
 - Search remotes in the sidebar
-- Self-hosted from this repo (no third-party raw mirrors required)
+- Return spoofs editor
+- Options for pause, log limits, keybinds, UI visibility
+- Built-in UI toolkit (**WyvernUI**) — pure Instances, no external GUI library assets
 
 ---
 
-## Requirements
+## Supported executors
 
-Your executor should support:
+Works on executors that provide:
 
-| API | Used for |
-|-----|----------|
-| `hookmetamethod` | Remote interception |
-| `HttpGet` / `loadstring` | Loading modules |
-| `getcustomasset` (optional) | Logo / font assets |
-| `writefile` / `makefolder` (optional) | Caching assets |
+| API | Purpose |
+|-----|---------|
+| `hookmetamethod` | Intercept remote calls |
+| `getnamecallmethod` | Identify the called method |
+| `HttpGet` | Fetch modules from this repo |
+| `loadstring` | Compile loaded modules |
+
+**Optional** (better experience):
+
+| API | Purpose |
+|-----|---------|
+| `getcustomasset` | Logo / font assets |
+| `writefile` / `makefolder` / `readfile` | Cache assets and spoofs |
+| `cloneref` | Safer instance references |
+| `newcclosure` / `checkcaller` | Hook stability |
+
+If a required API is missing, Wyvern Spy will fail early with a clear message instead of crashing silently.
 
 ---
 
 ## Project layout
 
 ```
-Main.luau                 Entry point (load this)
+Main.luau              Entry point (load this)
 assets/
-  wyvern_logo.png         Title-bar logo
-  ProggyClean.ttf         Optional code font
+  wyvern_logo.png      Title-bar logo
+  ProggyClean.ttf      Optional code font
 dist/
-  Parser.luau             Bundled Roblox value parser
+  Parser.luau          Value parser for script generation
 src/
-  core/                   Hook, Process, Communication
-  ui/                     Ui + ReGuiCompat
-  generation/             Script generation
-  config/                 Defaults + return spoofs
-  utils/                  Files, Flags
-templates/                Optional user config overrides
+  core/                Hook, Process, Communication
+  ui/                  Ui + WyvernUI toolkit
+  generation/          Script generation
+  config/              Defaults + return spoofs
+  utils/               Files, Flags
+templates/             Optional user config overrides
 ```
 
 ---
@@ -83,7 +94,7 @@ templates/                Optional user config overrides
 | Minimal | Shortest call form |
 | Edit & Repeat | Edit args in the editor, then run |
 | Spam | Loop until stopped |
-| Undo Spam | Sets stop flag for spam loops |
+| Undo Spam | Stop spam loops |
 | Block | Block the remote |
 | Repeat | Fire N times |
 
@@ -91,8 +102,8 @@ templates/                Optional user config overrides
 
 ## Notes
 
-- Some games detect metamethod hooks and may kick after traffic is logged. That is server-side behavior, not a UI bug.
-- Prefer the loadstring above so you always get the latest `main` branch.
+- Some games detect metamethod hooks and may kick after traffic is logged. That is game-side behavior.
+- Prefer the loadstring above so you always pull the latest `main` branch.
 
 ---
 
