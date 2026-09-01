@@ -72,6 +72,15 @@ local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
+local function mergeTheme(target, src)
+	if typeof(src) ~= "table" or typeof(target) ~= "table" then return end
+	for k, v in src do
+		if typeof(v) == "Color3" then
+			target[k] = v
+		end
+	end
+end
+
 local C = {
 	
 	Bg = Color3.fromRGB(16, 16, 18),
@@ -1510,6 +1519,10 @@ function Element:PopupCanvas(config)
 	end
 
 	return el
+end
+
+function WyvernUI:ApplyTheme(colors)
+	mergeTheme(C, colors)
 end
 
 function WyvernUI:Window(config)
