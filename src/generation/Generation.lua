@@ -135,6 +135,11 @@ function Generation:LoadParser(ModuleUrl)
 		end
 		warn("[Wyvern Spy] Failed to load parser from:", ModuleUrl)
 		warn("[Wyvern Spy] Script generation formatting may be limited.")
+		self.ParserLimited = true
+		pcall(function()
+			if Ui then Ui.ParserLimited = true end
+			if Modules and Modules.Ui then Modules.Ui.ParserLimited = true end
+		end)
 		ParserModule = {
 			Modules = {
 				Formatter = {
@@ -213,6 +218,11 @@ function Generation:LoadParser(ModuleUrl)
 	end
 
 	ParserModule = Result
+	self.ParserLimited = false
+	pcall(function()
+		if Ui then Ui.ParserLimited = false end
+		if Modules and Modules.Ui then Modules.Ui.ParserLimited = false end
+	end)
 	print("[Wyvern Spy] Parser loaded OK")
 end
 
