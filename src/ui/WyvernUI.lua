@@ -87,26 +87,44 @@ local function mergeTheme(target, src)
 end
 
 local C = {
-	Bg = Color3.fromRGB(18, 18, 22),
-	BgDark = Color3.fromRGB(12, 12, 16),
-	Title = Color3.fromRGB(28, 30, 40),
-	Panel = Color3.fromRGB(22, 24, 30),
-	Input = Color3.fromRGB(22, 24, 30),
-	Border = Color3.fromRGB(55, 58, 68),
-	Text = Color3.fromRGB(230, 230, 235),
-	TextDim = Color3.fromRGB(120, 122, 132),
-	Accent = Color3.fromRGB(120, 90, 220),
-	AccentDim = Color3.fromRGB(80, 60, 160),
-	RowAlt = Color3.fromRGB(24, 26, 32),
-	Danger = Color3.fromRGB(220, 90, 90),
-	Warn = Color3.fromRGB(255, 180, 80),
+	-- Frosted dark shell (reference design language)
+	Bg = Color3.fromRGB(28, 30, 36),
+	BgDark = Color3.fromRGB(22, 24, 30),
+	Title = Color3.fromRGB(32, 34, 42),
+	TitleBot = Color3.fromRGB(26, 28, 34),
+	Panel = Color3.fromRGB(34, 36, 44),
+	Input = Color3.fromRGB(40, 42, 52),
+	Border = Color3.fromRGB(58, 60, 72),
+	Text = Color3.fromRGB(228, 230, 238),
+	TextDim = Color3.fromRGB(150, 152, 165),
+	Accent = Color3.fromRGB(186, 190, 230),
+	AccentDim = Color3.fromRGB(120, 124, 170),
+	AccentSoft = Color3.fromRGB(70, 72, 95),
+	RowAlt = Color3.fromRGB(32, 34, 42),
+	Danger = Color3.fromRGB(220, 100, 110),
+	Warn = Color3.fromRGB(230, 190, 100),
 	Green = Color3.fromRGB(120, 210, 160),
 	Yellow = Color3.fromRGB(230, 200, 100),
-	TabActive = Color3.fromRGB(36, 42, 54),
-	TabIdle = Color3.fromRGB(20, 20, 24),
-	LineNum = Color3.fromRGB(90, 92, 100),
-	Gutter = Color3.fromRGB(14, 14, 16),
+	TabActive = Color3.fromRGB(186, 190, 230),
+	TabIdle = Color3.fromRGB(40, 42, 52),
+	TabTextActive = Color3.fromRGB(28, 30, 40),
+	TabTextIdle = Color3.fromRGB(170, 172, 185),
+	Btn = Color3.fromRGB(48, 50, 62),
+	BtnHover = Color3.fromRGB(58, 60, 74),
+	Select = Color3.fromRGB(50, 52, 68),
+	SelectActive = Color3.fromRGB(70, 72, 95),
+	Check = Color3.fromRGB(186, 190, 230),
+	LineNum = Color3.fromRGB(110, 112, 125),
+	Gutter = Color3.fromRGB(24, 26, 32),
+	ShellTransparency = 0.08,
+	PanelTransparency = 0.12,
+	CornerWindow = 14,
+	CornerPanel = 10,
+	CornerControl = 8,
+	CornerPill = 9,
 }
+
+
 
 
 function WyvernUI:CheckConfig(Target, Defaults)
@@ -146,7 +164,7 @@ end
 
 local function corner(parent, r)
 	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, r or 4)
+	c.CornerRadius = UDim.new(0, r or (C.CornerControl or 8))
 	c.Parent = parent
 	return c
 end
@@ -165,6 +183,7 @@ local function stroke(parent, color, thickness)
 	local s = Instance.new("UIStroke")
 	s.Color = color or C.Border
 	s.Thickness = thickness or 1
+	s.Transparency = 0.35
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	s.Parent = parent
 	return s
@@ -250,7 +269,7 @@ function Element:_create(class, config)
 		if config.BackgroundTransparency ~= nil then
 			frame.BackgroundTransparency = config.BackgroundTransparency
 		end
-		corner(frame, 8)
+		corner(frame, C.CornerPanel or 10)
 		local layout = Instance.new("UIListLayout")
 		layout.FillDirection = config.FillDirection or Enum.FillDirection.Vertical
 		layout.Padding = UDim.new(0, config.UiPadding or 2)
@@ -275,7 +294,7 @@ function Element:_create(class, config)
 		frame.ClipsDescendants = true
 		frame.Parent = host
 		order(frame)
-		corner(frame, 8)
+		corner(frame, C.CornerPanel or 10)
 		if config.Border then stroke(frame, C.Border, 1) end
 		local layout = Instance.new("UIListLayout")
 		layout.Padding = UDim.new(0, 0)
@@ -434,7 +453,7 @@ function Element:_create(class, config)
 		btn.AutoButtonColor = false
 		btn.Parent = host
 		order(btn)
-		corner(btn, 6)
+		corner(btn, C.CornerControl or 8)
 		pcall(function() btn.Style = Enum.ButtonStyle.Custom end)
 		applyFont(btn, "medium")
 		
@@ -547,7 +566,7 @@ function Element:_create(class, config)
 		box.AutoButtonColor = false
 		box.Parent = holder
 		pcall(function() box.Style = Enum.ButtonStyle.Custom end)
-		corner(box, 4)
+		corner(box, C.CornerControl or 8)
 		stroke(box, Color3.fromRGB(55, 58, 68), 1)
 
 		local lab = Instance.new("TextLabel")
@@ -721,7 +740,7 @@ function Element:_create(class, config)
 		scroll.CanvasSize = UDim2.new()
 		scroll.Parent = host
 		order(scroll)
-		corner(scroll, 4)
+		corner(scroll, C.CornerPanel or 10)
 		stroke(scroll, C.Border, 1)
 		pad(scroll, 8, 8, 6, 6)
 		if config.Fill then
@@ -1575,12 +1594,13 @@ function WyvernUI:Window(config)
 		frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.12, 0)
 	end
 	frame.BackgroundColor3 = C.Bg
+	frame.BackgroundTransparency = C.ShellTransparency or 0.06
 	frame.BorderSizePixel = 0
 	frame.Active = true
 	frame.Draggable = false 
 	frame.Parent = screen
-	corner(frame, 12)
-	stroke(frame, Color3.fromRGB(55, 58, 68), 1)
+	corner(frame, C.CornerWindow or 14)
+	do local s = stroke(frame, C.Border, 1); if s then s.Transparency = 0.45 end end
 	frame.ClipsDescendants = true
 	frame.AutomaticSize = Enum.AutomaticSize.None
 
@@ -1588,10 +1608,11 @@ function WyvernUI:Window(config)
 	titleBar.Name = "TitleBar"
 	titleBar.Size = UDim2.new(1, 0, 0, 40)
 	titleBar.BackgroundColor3 = C.Title
+	titleBar.BackgroundTransparency = 0.12
 	titleBar.BorderSizePixel = 0
 	titleBar.Active = true
 	titleBar.Parent = frame
-	corner(titleBar, 12)
+	corner(titleBar, C.CornerWindow or 14)
 	
 	local titleMask = Instance.new("Frame")
 	titleMask.Size = UDim2.new(1, 0, 0, 12)
@@ -1619,7 +1640,7 @@ function WyvernUI:Window(config)
 	title.Position = UDim2.fromOffset(46, 0)
 	title.BackgroundTransparency = 1
 	title.Text = config.Title or self.DefaultTitle
-	title.TextColor3 = Color3.fromRGB(235, 235, 240)
+	title.TextColor3 = C.Text
 	title.Font = Enum.Font.BuilderSansMedium
 	title.TextSize = 15
 	title.TextXAlignment = Enum.TextXAlignment.Left
