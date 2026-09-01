@@ -1,22 +1,16 @@
 --[[
-	Sigma Spy – Return Spoofs
-	Override return values for specific remotes.
+  Wyvern Spy — Return Spoofs
+  Override RemoteFunction return values.
 
-	Format:
-		[RemoteInstance] = {
-			Method = "FireServer" | "InvokeServer" | ...,
-			Return = { ... }                    -- static values (unpacked)
-			-- or
-			Return = function(OriginalFunc, ...) -- dynamic
-				return { ... }
-			end
-		}
+  Format:
+    [RemoteInstance] = {
+      Method = "InvokeServer",
+      Return = { ... }
+      -- or:
+      Return = function(...)
+        return { ... }
+      end
+    }
 ]]
-
 return {
-	-- Example:
-	-- [game.ReplicatedStorage.Remotes.Example] = {
-	-- 	Method = "InvokeServer",
-	-- 	Return = { "spoofed", 123 },
-	-- },
 }
