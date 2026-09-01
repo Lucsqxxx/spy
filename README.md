@@ -23,7 +23,7 @@ thats it. paste it in your executor and go.
 - options for pause, log limits, keybinds, etc
 - edit return spoofs if you want
 
-ui is built with **WyvernUI** (our own thing, no random gui library downloads)
+ui is built with **WyvernUI** (our own thing, no skidded shit)
 
 ## what your executor needs
 
