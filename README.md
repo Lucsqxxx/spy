@@ -12,7 +12,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Lucsqxxx/spy/main/Mai
 
 thats it. paste it in your executor and go.
 
-## what it does
+## what it does 
 
 - logs remotes when they fire / get invoked
 - groups them so the same remote doesnt spam the list forever
@@ -76,4 +76,5 @@ also always use the loadstring above so you get whatever is on `main` right now.
 
 ## license
 
-MIT — see LICENSE. made by lucsqx (2026)
+MIT — see LICENSE. made by lucsqx 
+(2026) *yun lang*
