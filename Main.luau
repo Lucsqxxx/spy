@@ -149,7 +149,7 @@ if Configuration._FontJson then
 		Out("font file set")
 	end)
 end
-Out("Ui:Init (ReGui + prefab patch)")
+Out("Ui:Init (WyvernUI)")
 local initOk, initErr = pcall(function()
 	Files:LoadModules(Modules, {
 		Modules = Modules,
@@ -163,9 +163,9 @@ end
 
 pcall(function()
 	if Configuration._LogoAsset and Modules.Ui then
-		-- Prefer direct ReGui field if exposed
-		local ok, ReGui = pcall(function()
-			return Modules.Ui.ReGui or Modules.Ui._ReGui
+		-- Prefer direct WyvernUI field if exposed
+		local ok, WyvernUI = pcall(function()
+			return Modules.Ui.WyvernUI or Modules.Ui._WyvernUI
 		end)
 	end
 end)
@@ -177,11 +177,11 @@ local winOk, winErr = pcall(function()
 end)
 
 if not winOk or not Window then
-	Out("ReGui window FAILED:", winErr)
-	Out("Your executor still cannot load ReGui prefabs. Use MainReal.luau (simple UI).")
+	Out("WyvernUI window FAILED:", winErr)
+	Out("WyvernUI window failed to open.")
 	return
 end
-Out("ReGui window OK!")
+Out("WyvernUI window OK!")
 
 local Supported = true
 pcall(function()
@@ -227,4 +227,4 @@ pcall(function()
 	Event:Fire("BeginHooks", { PatchFunctions = false })
 end)
 
-Out("LOADED with ReGui")
+Out("LOADED")
