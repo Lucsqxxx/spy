@@ -30,7 +30,10 @@ local Ui = {
     Window = nil,
     RandomSeed = Random.new(tick()),
 	Logs = setmetatable({}, {__mode = "k"}),
-	LogQueue = setmetatable({}, {__mode = "v"}),
+	LogQueue = {},
+	LogsPerFrame = 12,
+	DroppedLogs = 0,
+	ParserLimited = false,
 } 
 
 type table = {
@@ -219,6 +222,12 @@ function Ui:LoadWyvernUI()
 	if WyvernUI.SetFont then
 		WyvernUI:SetFont(TextFont, ThemeConfig.TextSize or 13)
 	end
+
+	pcall(function()
+		if Config.UiColors and WyvernUI.ApplyTheme then
+			WyvernUI:ApplyTheme(Config.UiColors)
+		end
+	end)
 
 	WyvernUI:DefineTheme("WyvernSpy", ThemeConfig)
 end
@@ -535,11 +544,35 @@ function Ui:UpdateListStatus()
 			break
 		end
 	end
-	if paused and not hasLogs then
-		label.Instance.Text = "Paused — enable capture in Options"
+	local q = (self.ListSearch or ""):lower()
+	local filteredOut = false
+	if hasLogs and q ~= "" then
+		local anyVisible = false
+		for _, Header in pairs(self.Logs) do
+			if Header and Header.TreeNode and Header.TreeNode.Instance then
+				if Header.TreeNode.Instance.Visible then
+					anyVisible = true
+					break
+				end
+			end
+		end
+		filteredOut = not anyVisible
+	end
+	local hooksOff = false
+	pcall(function()
+		hooksOff = Flags:GetFlagValue("HooksDisabled") == true
+	end)
+	if hooksOff and not hasLogs then
+		label.Instance.Text = "Hooks off — enable in Options to capture"
+		label.Instance.Visible = true
+	elseif paused and not hasLogs then
+		label.Instance.Text = "Paused — turn off Paused in Options"
 		label.Instance.Visible = true
 	elseif paused and hasLogs then
-		label.Instance.Text = "Paused — list frozen"
+		label.Instance.Text = "Paused — list frozen (no new logs)"
+		label.Instance.Visible = true
+	elseif filteredOut then
+		label.Instance.Text = "No matches for search"
 		label.Instance.Visible = true
 	elseif not hasLogs then
 		label.Instance.Text = "No traffic yet"
@@ -547,6 +580,11 @@ function Ui:UpdateListStatus()
 	else
 		label.Instance.Visible = false
 	end
+	pcall(function()
+		if self.ParserBadge and self.ParserBadge.Instance then
+			self.ParserBadge.Instance.Visible = self.ParserLimited == true
+		end
+	end)
 end
 
 function Ui:TypeBadge(Value)
@@ -692,13 +730,14 @@ function Ui:CreateWindowContent(Window)
 		Mobile = WyvernUI:IsMobileDevice() == true
 	end)
 	self.IsMobileUi = Mobile
-	local sideW = Mobile and 180 or 240
+	local sideW = Mobile and 200 or 240
 	local searchH = Mobile and 34 or 28
+	self._MobileDetail = false
 
 	local Sidebar = Layout:List({
 		UiPadding = Mobile and 6 or 8,
 		FillDirection = Enum.FillDirection.Vertical,
-		Size = UDim2.new(0, sideW, 1, 0),
+		Size = Mobile and UDim2.new(1, 0, 1, 0) or UDim2.new(0, sideW, 1, 0),
 		HorizontalFlex = Enum.UIFlexAlignment.Fill,
 	})
 
@@ -716,6 +755,18 @@ function Ui:CreateWindowContent(Window)
 	})
 	self.SearchBox = SearchBox
 	self.ListSearch = ""
+
+	self.ParserBadge = Sidebar:Label({
+		Text = "Parser limited — formatting reduced",
+		TextColor3 = Color3.fromRGB(255, 180, 80),
+		LayoutOrder = 0,
+	})
+	pcall(function()
+		if self.ParserBadge.Instance then
+			self.ParserBadge.Instance.Visible = false
+			self.ParserBadge.Instance.TextSize = 11
+		end
+	end)
 
 	self.RemotesList = Sidebar:Canvas({
 		Scroll = true,
@@ -739,11 +790,37 @@ function Ui:CreateWindowContent(Window)
 
 	local InfoSelector = Layout:TabSelector({
 		NoAnimation = true,
-		Size = UDim2.new(1, -(sideW + 8), 1, 0),
+		Size = Mobile and UDim2.new(1, 0, 1, 0) or UDim2.new(1, -(sideW + 8), 1, 0),
 	})
 
 	self.InfoSelector = InfoSelector
 	self.CanvasLayout = Layout
+	self.SidebarPane = Sidebar
+
+	if Mobile then
+		pcall(function()
+			if InfoSelector.Instance then
+				InfoSelector.Instance.Visible = false
+			end
+		end)
+		local backRow = Sidebar:Row({ Size = UDim2.new(1, 0, 0, 28) })
+		self:CreateButtons(backRow, {
+			NoTable = true,
+			Buttons = {
+				{
+					Text = "Inspector",
+					Callback = function()
+						pcall(function()
+							if Sidebar.Instance then Sidebar.Instance.Visible = false end
+							if InfoSelector.Instance then InfoSelector.Instance.Visible = true end
+							self._MobileDetail = true
+						end)
+					end,
+				},
+			},
+		})
+		-- Back lives on options too via toast hint
+	end
 
 	self:MakeEditorTab(InfoSelector)
 	self:MakeOptionsTab(InfoSelector)
@@ -946,9 +1023,13 @@ function Ui:MakeOptionsTab(InfoSelector)
 				Text = "Edit Spoofs",
 				Callback = function()
 					self:EditFile("Return spoofs.lua", true, function(Window, Content)
+						-- Save is enough; Apply only if armed (#16)
 						pcall(function()
-							if CommChannel then
+							if Flags:GetFlagValue("ApplySpoofs") and CommChannel then
 								CommChannel:Fire("UpdateSpoofs", Content)
+								self:ShowToast("Spoofs applied")
+							else
+								self:ShowToast("Saved (Apply Spoofs is off)")
 							end
 						end)
 					end)
@@ -966,14 +1047,47 @@ end
 
 function Ui:AddDetailsSection(OptionsTab)
 
-	OptionsTab:Separator({Text="Information"})
+	OptionsTab:Separator({Text="About"})
 	OptionsTab:BulletText({
 		Rows = {
-			"Wyvern Spy - Wyvern Spy",
-			"Wyvern Spy - Wyvern Spy",
-			""
+			"Wyvern Spy by lucsqx",
+			"github.com/Lucsqxxx/spy",
+			"Load: raw Main.luau from that repo",
 		}
 	})
+	local row = OptionsTab:Row()
+	self:CreateButtons(row, {
+		NoTable = true,
+		Buttons = {
+			{
+				Text = "Copy loadstring",
+				Callback = function()
+					self:SetClipboard('loadstring(game:HttpGet("https://raw.githubusercontent.com/Lucsqxxx/spy/main/Main.luau"))()')
+				end,
+			},
+			{
+				Text = "Clear logs",
+				Callback = function()
+					self:ClearLogs()
+					self:ShowToast("Logs cleared")
+				end,
+			},
+		},
+	})
+	pcall(function()
+		if self.ParserLimited then
+			OptionsTab:Label({
+				Text = "Parser: limited fallback (script formatting reduced)",
+				TextColor3 = Color3.fromRGB(255, 180, 80),
+			})
+		end
+		if (self.DroppedLogs or 0) > 0 then
+			OptionsTab:Label({
+				Text = "Dropped log events: " .. tostring(self.DroppedLogs),
+				TextColor3 = Color3.fromRGB(255, 140, 100),
+			})
+		end
+	end)
 end
 
 local function MakeActiveDataCallback(Name)
@@ -1005,7 +1119,57 @@ function Ui:MakeEditorTab(InfoSelector)
 		Text = Default
 	})
 
-	
+	-- Sticky build actions (#10)
+	local BuildRow = EditorTab:Row({
+		Size = UDim2.new(1, 0, 0, 30),
+	})
+	self:CreateButtons(BuildRow, {
+		NoTable = true,
+		Buttons = {
+			{
+				Text = "Call",
+				Callback = MakeActiveDataCallback("RepeatCall"),
+			},
+			{
+				Text = "Copy",
+				Callback = function()
+					local Script = CodeEditor:GetText()
+					self:SetClipboard(Script)
+				end,
+			},
+			{
+				Text = "Spam",
+				Callback = function()
+					if ActiveData and ActiveData.MakeScript then
+						ActiveData:MakeScript("Spam")
+					end
+				end,
+			},
+			{
+				Text = "Stop",
+				Callback = function()
+					self:StopSpam()
+				end,
+			},
+			{
+				Text = "Block",
+				Callback = function()
+					if not ActiveData then
+						self:ShowToast("Select a remote first")
+						return
+					end
+					pcall(function()
+						local id = ActiveData.Id
+						local rd = Process:GetRemoteData(id)
+						rd.Blocked = true
+						Process:UpdateRemoteData(id, rd)
+						self:ShowToast("Blocked")
+					end)
+				end,
+			},
+		},
+	})
+
 	local ButtonsRow = EditorTab:Row({
 		Size = UDim2.new(1, 0, 0, 32),
 	})
@@ -2022,13 +2186,28 @@ end
 function Ui:ProcessLogQueue()
 
 	local Queue = self.LogQueue
-    if #Queue <= 0 then return end
+	if not Queue or #Queue <= 0 then return end
 
-	
-    for Index, Data in next, Queue do
-        self:CreateLog(Data)
-        table.remove(Queue, Index)
-    end
+	local limit = self.LogsPerFrame or 12
+	local n = 0
+	while #Queue > 0 and n < limit do
+		local Data = table.remove(Queue, 1)
+		if Data then
+			local ok, err = pcall(function()
+				self:CreateLog(Data)
+			end)
+			if not ok then
+				self.DroppedLogs = (self.DroppedLogs or 0) + 1
+				pcall(warn, "[Wyvern Spy] CreateLog error:", err)
+			end
+		end
+		n += 1
+	end
+	-- overflow protection: hard-cap queue length
+	while #Queue > 400 do
+		table.remove(Queue, 1)
+		self.DroppedLogs = (self.DroppedLogs or 0) + 1
+	end
 end
 
 function Ui:BeginLogService()
