@@ -803,23 +803,46 @@ function Ui:CreateWindowContent(Window)
 				InfoSelector.Instance.Visible = false
 			end
 		end)
-		local backRow = Sidebar:Row({ Size = UDim2.new(1, 0, 0, 28) })
-		self:CreateButtons(backRow, {
+		self._MobileShowList = function()
+			pcall(function()
+				if Sidebar.Instance then Sidebar.Instance.Visible = true end
+				if InfoSelector.Instance then InfoSelector.Instance.Visible = false end
+				self._MobileDetail = false
+			end)
+		end
+		self._MobileShowDetail = function()
+			pcall(function()
+				if Sidebar.Instance then Sidebar.Instance.Visible = false end
+				if InfoSelector.Instance then InfoSelector.Instance.Visible = true end
+				self._MobileDetail = true
+			end)
+		end
+		local navRow = Sidebar:Row({ Size = UDim2.new(1, 0, 0, 28) })
+		self:CreateButtons(navRow, {
 			NoTable = true,
 			Buttons = {
 				{
-					Text = "Inspector",
+					Text = "Open inspector",
 					Callback = function()
-						pcall(function()
-							if Sidebar.Instance then Sidebar.Instance.Visible = false end
-							if InfoSelector.Instance then InfoSelector.Instance.Visible = true end
-							self._MobileDetail = true
-						end)
+						self._MobileShowDetail()
 					end,
 				},
 			},
 		})
-		-- Back lives on options too via toast hint
+		pcall(function()
+			local br = InfoSelector:Row({ Size = UDim2.new(1, 0, 0, 28) })
+			self:CreateButtons(br, {
+				NoTable = true,
+				Buttons = {
+					{
+						Text = "← Remotes",
+						Callback = function()
+							self._MobileShowList()
+						end,
+					},
+				},
+			})
+		end)
 	end
 
 	self:MakeEditorTab(InfoSelector)
@@ -1572,6 +1595,12 @@ function Ui:DisplayTable(Parent, Config)
 end
 
 function Ui:SetFocusedRemote(Data)
+	pcall(function()
+		if self.IsMobileUi and self._MobileShowDetail then
+			self._MobileShowDetail()
+		end
+	end)
+
 
 	
 	local Remote = Data.Remote
