@@ -78,6 +78,7 @@ pcall(function()
 	Scripts.ReturnSpoofs = Files:GetModule(Configuration.FolderName .. "/Return spoofs", "Return Spoofs")
 end)
 
+local Missing = {}
 for Name, Path in ModuleMap do
 	Out("loading", Name)
 	local src = HttpGet(Base .. Path)
@@ -85,7 +86,25 @@ for Name, Path in ModuleMap do
 		Scripts[Name] = src
 	else
 		Out("missing", Name)
+		table.insert(Missing, Name .. " (" .. Path .. ")")
 	end
+end
+
+local Required = { "Process", "Hook", "Ui", "Communication", "Flags", "Generation" }
+for _, Name in Required do
+	if not Scripts[Name] then
+		if not table.find(Missing, Name) then
+			-- already listed
+		end
+	end
+end
+if #Missing > 0 then
+	Out("FATAL missing modules:")
+	for _, line in Missing do
+		Out(" -", line)
+	end
+	Out("Check RepoUrl / network, then rejoin and retry.")
+	return
 end
 
 Out("loading assets")
@@ -135,7 +154,8 @@ local Process, Hook, Ui, Generation, Communication, Config =
 	Modules.Process, Modules.Hook, Modules.Ui, Modules.Generation, Modules.Communication, Modules.Config
 
 if not (Process and Hook and Ui and Communication) then
-	Out("FATAL modules")
+	Out("FATAL modules failed to compile/return")
+	Out("Process", Process and "ok" or "nil", "Hook", Hook and "ok" or "nil", "Ui", Ui and "ok" or "nil", "Communication", Communication and "ok" or "nil")
 	return
 end
 
