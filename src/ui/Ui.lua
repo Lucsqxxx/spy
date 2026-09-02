@@ -744,8 +744,8 @@ function Ui:CreateWindowContent(Window)
 	pcall(function()
 		local inst = Sidebar.Instance
 		if inst then
-			inst.BackgroundColor3 = Color3.fromRGB(28, 30, 42)
-			inst.BackgroundTransparency = 0.52
+			inst.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+			inst.BackgroundTransparency = 0
 			local c = inst:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
 			c.CornerRadius = UDim.new(0, 12)
 			c.Parent = inst
@@ -801,8 +801,8 @@ function Ui:CreateWindowContent(Window)
 			inst.ScrollBarThickness = 4
 			inst.ScrollBarImageColor3 = Color3.fromRGB(62, 64, 78)
 			inst.ScrollingDirection = Enum.ScrollingDirection.Y
-			inst.BackgroundColor3 = Color3.fromRGB(24, 26, 38)
-			inst.BackgroundTransparency = 0.50
+			inst.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+			inst.BackgroundTransparency = 0
 		end
 	end)
 	self.RemotesListEmpty = self.RemotesList:Label({
