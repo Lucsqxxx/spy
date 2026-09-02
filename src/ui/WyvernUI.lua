@@ -87,42 +87,58 @@ local function mergeTheme(target, src)
 end
 
 local C = {
-	-- Frosted dark shell (reference design language)
-	Bg = Color3.fromRGB(28, 30, 36),
-	BgDark = Color3.fromRGB(22, 24, 30),
-	Title = Color3.fromRGB(32, 34, 42),
+	-- Premium dark + soft glass (reference-inspired, not feature copy)
+	Bg = Color3.fromRGB(24, 26, 32),
+	BgDark = Color3.fromRGB(18, 20, 26),
+	BgGlass = Color3.fromRGB(32, 34, 42),
+	Title = Color3.fromRGB(30, 32, 40),
 	TitleBot = Color3.fromRGB(26, 28, 34),
-	Panel = Color3.fromRGB(34, 36, 44),
-	Input = Color3.fromRGB(40, 42, 52),
-	Border = Color3.fromRGB(58, 60, 72),
-	Text = Color3.fromRGB(228, 230, 238),
-	TextDim = Color3.fromRGB(150, 152, 165),
+	Panel = Color3.fromRGB(36, 38, 48),
+	PanelAlt = Color3.fromRGB(42, 44, 56),
+	Input = Color3.fromRGB(44, 46, 58),
+	Border = Color3.fromRGB(62, 64, 78),
+	BorderSoft = Color3.fromRGB(50, 52, 64),
+	Text = Color3.fromRGB(232, 234, 242),
+	TextDim = Color3.fromRGB(148, 150, 165),
+	TextMute = Color3.fromRGB(110, 112, 128),
 	Accent = Color3.fromRGB(186, 190, 230),
-	AccentDim = Color3.fromRGB(120, 124, 170),
-	AccentSoft = Color3.fromRGB(70, 72, 95),
-	RowAlt = Color3.fromRGB(32, 34, 42),
-	Danger = Color3.fromRGB(220, 100, 110),
+	AccentDim = Color3.fromRGB(130, 134, 180),
+	AccentSoft = Color3.fromRGB(70, 72, 100),
+	AccentGlow = Color3.fromRGB(200, 204, 240),
+	RowAlt = Color3.fromRGB(30, 32, 40),
+	RowHover = Color3.fromRGB(48, 50, 64),
+	Danger = Color3.fromRGB(220, 105, 115),
 	Warn = Color3.fromRGB(230, 190, 100),
 	Green = Color3.fromRGB(120, 210, 160),
 	Yellow = Color3.fromRGB(230, 200, 100),
 	TabActive = Color3.fromRGB(186, 190, 230),
-	TabIdle = Color3.fromRGB(40, 42, 52),
-	TabTextActive = Color3.fromRGB(28, 30, 40),
-	TabTextIdle = Color3.fromRGB(170, 172, 185),
-	Btn = Color3.fromRGB(48, 50, 62),
-	BtnHover = Color3.fromRGB(58, 60, 74),
-	Select = Color3.fromRGB(50, 52, 68),
-	SelectActive = Color3.fromRGB(70, 72, 95),
+	TabIdle = Color3.fromRGB(40, 42, 54),
+	TabTextActive = Color3.fromRGB(24, 26, 34),
+	TabTextIdle = Color3.fromRGB(168, 170, 185),
+	Btn = Color3.fromRGB(48, 50, 64),
+	BtnHover = Color3.fromRGB(58, 60, 76),
+	BtnPress = Color3.fromRGB(40, 42, 54),
+	Select = Color3.fromRGB(52, 54, 72),
+	SelectActive = Color3.fromRGB(72, 74, 100),
 	Check = Color3.fromRGB(186, 190, 230),
-	LineNum = Color3.fromRGB(110, 112, 125),
-	Gutter = Color3.fromRGB(24, 26, 32),
-	ShellTransparency = 0.08,
-	PanelTransparency = 0.12,
-	CornerWindow = 14,
-	CornerPanel = 10,
+	CheckOff = Color3.fromRGB(48, 50, 62),
+	LineNum = Color3.fromRGB(100, 102, 118),
+	Gutter = Color3.fromRGB(20, 22, 28),
+	Rail = Color3.fromRGB(20, 22, 28),
+	RailActive = Color3.fromRGB(48, 50, 68),
+	ShellTransparency = 0.05,
+	PanelTransparency = 0.1,
+	GlassTransparency = 0.12,
+	CornerWindow = 16,
+	CornerPanel = 12,
 	CornerControl = 8,
-	CornerPill = 9,
+	CornerPill = 10,
+	CornerRail = 10,
+	SpaceOuter = 10,
+	SpacePanel = 8,
+	SpaceControl = 6,
 }
+
 
 
 
@@ -183,7 +199,7 @@ local function stroke(parent, color, thickness)
 	local s = Instance.new("UIStroke")
 	s.Color = color or C.Border
 	s.Thickness = thickness or 1
-	s.Transparency = 0.35
+	s.Transparency = 0.42
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	s.Parent = parent
 	return s
@@ -514,7 +530,7 @@ function Element:_create(class, config)
 			el._selected = not not v
 			if el._selected then
 				btn.BackgroundTransparency = 0
-				btn.BackgroundColor3 = C.SelectActive
+				btn.BackgroundColor3 = C.SelectActive or C.AccentSoft
 			else
 				btn.BackgroundTransparency = 1
 			end
@@ -557,7 +573,7 @@ function Element:_create(class, config)
 
 		local box = Instance.new("TextButton")
 		box.Size = UDim2.fromOffset(16, 16)
-		box.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
+		box.BackgroundColor3 = C.Input
 		box.Text = ""
 		box.TextColor3 = Color3.fromRGB(235, 235, 240)
 		box.TextSize = 12
@@ -587,7 +603,7 @@ function Element:_create(class, config)
 				box.BackgroundTransparency = 0
 				box.Text = "✓"
 			else
-				box.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
+				box.BackgroundColor3 = C.Input
 				box.BackgroundTransparency = 0
 				box.Text = ""
 			end
@@ -731,7 +747,7 @@ function Element:_create(class, config)
 		else
 			scroll.Size = config.Size or UDim2.new(1, 0, 0, 160)
 		end
-		scroll.BackgroundColor3 = (typeof(colors.Background) == "Color3" and colors.Background) or C.Input
+		scroll.BackgroundColor3 = (typeof(colors.Background) == "Color3" and colors.Background) or C.BgDark
 		scroll.BorderSizePixel = 0
 		scroll.ScrollBarThickness = 8
 		scroll.ScrollBarImageColor3 = Color3.fromRGB(70, 74, 88)
@@ -1103,8 +1119,8 @@ function Element:_create(class, config)
 		local tabBar = Instance.new("Frame")
 		tabBar.Name = "PillNav"
 		tabBar.Size = UDim2.new(1, 0, 0, 36)
-		tabBar.BackgroundColor3 = C.BgDark
-		tabBar.BackgroundTransparency = 0.15
+		tabBar.BackgroundColor3 = C.BgGlass or C.BgDark
+		tabBar.BackgroundTransparency = C.GlassTransparency or 0.12
 		tabBar.BorderSizePixel = 0
 		tabBar.Parent = root
 		corner(tabBar, C.CornerPanel or 10)
@@ -1122,7 +1138,7 @@ function Element:_create(class, config)
 		body.Position = UDim2.fromOffset(0, 42)
 		body.Size = UDim2.new(1, 0, 1, -42)
 		body.BackgroundColor3 = C.Panel or C.BgDark
-		body.BackgroundTransparency = 0.08
+		body.BackgroundTransparency = C.PanelTransparency or 0.1
 		body.BorderSizePixel = 0
 		body.ClipsDescendants = true
 		body.Parent = root
@@ -1290,7 +1306,7 @@ function Element:_create(class, config)
 		local box = Instance.new("TextBox")
 		box.Size = UDim2.new(0.4, 0, 0, 20)
 		box.Position = UDim2.new(0.58, 0, 0, 2)
-		box.BackgroundColor3 = C.Input
+		box.BackgroundColor3 = C.CheckOff or C.Input
 		box.TextColor3 = C.Text
 		box.Text = tostring(config.Value or 0)
 		box.Font = Enum.Font.BuilderSans
@@ -1610,28 +1626,37 @@ function WyvernUI:Window(config)
 		frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.12, 0)
 	end
 	frame.BackgroundColor3 = C.Bg
-	frame.BackgroundTransparency = 0.04
+	frame.BackgroundTransparency = C.ShellTransparency or 0.05
 	frame.BorderSizePixel = 0
 	frame.Active = true
 	frame.Draggable = false 
 	frame.Parent = screen
-	corner(frame, 16)
+	corner(frame, C.CornerWindow or 16)
 	do
-		local s = stroke(frame, C.Border, 1.5)
-		if s then s.Transparency = 0.4 end
+		local s = stroke(frame, C.Border, 1)
+		if s then s.Transparency = 0.35 end
+		-- soft highlight top edge
+		local hi = Instance.new("Frame")
+		hi.Name = "GlassHighlight"
+		hi.Size = UDim2.new(1, -24, 0, 1)
+		hi.Position = UDim2.fromOffset(12, 1)
+		hi.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		hi.BackgroundTransparency = 0.88
+		hi.BorderSizePixel = 0
+		hi.ZIndex = 3
+		hi.Parent = frame
 	end
-	-- depth layer under shell
 	pcall(function()
 		local depth = Instance.new("Frame")
 		depth.Name = "Depth"
-		depth.Size = UDim2.new(1, 8, 1, 8)
-		depth.Position = UDim2.fromOffset(-4, -2)
+		depth.Size = UDim2.new(1, 10, 1, 10)
+		depth.Position = UDim2.fromOffset(-5, -3)
 		depth.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		depth.BackgroundTransparency = 0.65
+		depth.BackgroundTransparency = 0.7
 		depth.BorderSizePixel = 0
 		depth.ZIndex = 0
 		depth.Parent = frame
-		corner(depth, 18)
+		corner(depth, (C.CornerWindow or 16) + 2)
 		frame.ZIndex = 1
 	end)
 	frame.ClipsDescendants = true
@@ -1641,7 +1666,7 @@ function WyvernUI:Window(config)
 	titleBar.Name = "TitleBar"
 	titleBar.Size = UDim2.new(1, 0, 0, 40)
 	titleBar.BackgroundColor3 = C.Title
-	titleBar.BackgroundTransparency = 0.12
+	titleBar.BackgroundTransparency = 0.08
 	titleBar.BorderSizePixel = 0
 	titleBar.Active = true
 	titleBar.Parent = frame
@@ -1746,8 +1771,8 @@ function WyvernUI:Window(config)
 
 	local minBtn = Instance.new("TextButton")
 	minBtn.Name = "Minimize"
-	minBtn.Size = UDim2.fromOffset(36, 28)
-	minBtn.Position = UDim2.new(1, -84, 0, 6)
+	minBtn.Size = UDim2.fromOffset(34, 26)
+	minBtn.Position = UDim2.new(1, -82, 0, 8)
 	minBtn.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
 	minBtn.BackgroundTransparency = 0.35
 	minBtn.Text = "─"
