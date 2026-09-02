@@ -718,7 +718,7 @@ function Ui:CreateWindowContent(Window)
 
 	
 	local Layout = Window:List({
-		UiPadding = 10,
+		UiPadding = 12,
 		HorizontalFlex = Enum.UIFlexAlignment.Fill,
 		VerticalFlex = Enum.UIFlexAlignment.Fill,
 		FillDirection = Enum.FillDirection.Horizontal,
@@ -730,29 +730,33 @@ function Ui:CreateWindowContent(Window)
 		Mobile = WyvernUI:IsMobileDevice() == true
 	end)
 	self.IsMobileUi = Mobile
-	local sideW = Mobile and 168 or 220
+	local sideW = Mobile and 160 or 210
 	local searchH = Mobile and 32 or 30
 
-	-- Distinct sidebar column (grouped surface)
+	-- SIDEBAR: glass column for remotes (project nav content, not reference icons)
 	local Sidebar = Layout:List({
-		UiPadding = 8,
+		UiPadding = 10,
 		FillDirection = Enum.FillDirection.Vertical,
 		Size = UDim2.new(0, sideW, 1, 0),
 		HorizontalFlex = Enum.UIFlexAlignment.Fill,
 		Border = true,
-		BackgroundTransparency = 0.05,
 	})
 	pcall(function()
 		local inst = Sidebar.Instance
 		if inst then
-			inst.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
-			inst.BackgroundTransparency = 0.05
-			local c = inst:FindFirstChildOfClass("UICorner")
-			if not c then
-				c = Instance.new("UICorner")
-				c.Parent = inst
-			end
+			inst.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
+			inst.BackgroundTransparency = 0.08
+			local c = inst:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
 			c.CornerRadius = UDim.new(0, 12)
+			c.Parent = inst
+			local st = inst:FindFirstChildOfClass("UIStroke")
+			if not st then
+				st = Instance.new("UIStroke")
+				st.Parent = inst
+			end
+			st.Color = Color3.fromRGB(62, 64, 78)
+			st.Thickness = 1
+			st.Transparency = 0.45
 		end
 	end)
 
@@ -772,7 +776,7 @@ function Ui:CreateWindowContent(Window)
 
 	self.ParserBadge = Sidebar:Label({
 		Text = "Parser limited — formatting reduced",
-		TextColor3 = Color3.fromRGB(255, 180, 80),
+		TextColor3 = Color3.fromRGB(230, 190, 100),
 		LayoutOrder = 0,
 	})
 	pcall(function()
@@ -788,24 +792,28 @@ function Ui:CreateWindowContent(Window)
 		LayoutOrder = 1,
 		AutomaticSize = Enum.AutomaticSize.None,
 		FlexMode = Enum.UIFlexMode.Fill,
-		Size = UDim2.new(1, 0, 1, -(searchH + 12)),
+		Size = UDim2.new(1, 0, 1, -(searchH + 14)),
 		Border = true,
 	})
 	pcall(function()
 		local inst = self.RemotesList.Instance
 		if inst and inst:IsA("ScrollingFrame") then
-			inst.ScrollBarThickness = Mobile and 8 or 5
+			inst.ScrollBarThickness = 4
+			inst.ScrollBarImageColor3 = Color3.fromRGB(62, 64, 78)
 			inst.ScrollingDirection = Enum.ScrollingDirection.Y
+			inst.BackgroundColor3 = Color3.fromRGB(18, 20, 26)
+			inst.BackgroundTransparency = 0.15
 		end
 	end)
 	self.RemotesListEmpty = self.RemotesList:Label({
 		Text = "No traffic yet",
-		TextColor3 = Color3.fromRGB(120, 120, 130),
+		TextColor3 = Color3.fromRGB(148, 150, 165),
 	})
 
+	-- MAIN: pill tabs + glass body (Editor / Options — Wyvern only)
 	local InfoSelector = Layout:TabSelector({
 		NoAnimation = true,
-		Size = UDim2.new(1, -(sideW + 16), 1, 0),
+		Size = UDim2.new(1, -(sideW + 18), 1, 0),
 	})
 
 	self.InfoSelector = InfoSelector
