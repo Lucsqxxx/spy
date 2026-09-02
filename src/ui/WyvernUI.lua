@@ -87,57 +87,62 @@ local function mergeTheme(target, src)
 end
 
 local C = {
-	-- Premium dark + soft glass (reference-inspired, not feature copy)
-	Bg = Color3.fromRGB(24, 26, 32),
-	BgDark = Color3.fromRGB(18, 20, 26),
-	BgGlass = Color3.fromRGB(32, 34, 42),
-	Title = Color3.fromRGB(30, 32, 40),
-	TitleBot = Color3.fromRGB(26, 28, 34),
-	Panel = Color3.fromRGB(36, 38, 48),
-	PanelAlt = Color3.fromRGB(42, 44, 56),
-	Input = Color3.fromRGB(44, 46, 58),
-	Border = Color3.fromRGB(62, 64, 78),
-	BorderSoft = Color3.fromRGB(50, 52, 64),
-	Text = Color3.fromRGB(232, 234, 242),
-	TextDim = Color3.fromRGB(148, 150, 165),
-	TextMute = Color3.fromRGB(110, 112, 128),
-	Accent = Color3.fromRGB(186, 190, 230),
-	AccentDim = Color3.fromRGB(130, 134, 180),
-	AccentSoft = Color3.fromRGB(70, 72, 100),
-	AccentGlow = Color3.fromRGB(200, 204, 240),
-	RowAlt = Color3.fromRGB(30, 32, 40),
-	RowHover = Color3.fromRGB(48, 50, 64),
-	Danger = Color3.fromRGB(220, 105, 115),
-	Warn = Color3.fromRGB(230, 190, 100),
+	-- Smoked liquid glass (high translucency — game world must show through)
+	Bg = Color3.fromRGB(22, 24, 32),
+	BgDark = Color3.fromRGB(14, 16, 22),
+	BgGlass = Color3.fromRGB(40, 42, 55),
+	Title = Color3.fromRGB(28, 30, 40),
+	TitleBot = Color3.fromRGB(22, 24, 32),
+	Panel = Color3.fromRGB(36, 38, 50),
+	PanelAlt = Color3.fromRGB(48, 50, 64),
+	Input = Color3.fromRGB(50, 52, 68),
+	Border = Color3.fromRGB(160, 165, 190),
+	BorderSoft = Color3.fromRGB(100, 105, 130),
+	Text = Color3.fromRGB(240, 242, 250),
+	TextDim = Color3.fromRGB(170, 174, 190),
+	TextMute = Color3.fromRGB(120, 124, 140),
+	Accent = Color3.fromRGB(198, 202, 240),
+	AccentDim = Color3.fromRGB(140, 145, 190),
+	AccentSoft = Color3.fromRGB(80, 84, 120),
+	AccentGlow = Color3.fromRGB(220, 224, 255),
+	RowAlt = Color3.fromRGB(32, 34, 46),
+	RowHover = Color3.fromRGB(55, 58, 75),
+	Danger = Color3.fromRGB(230, 110, 120),
+	Warn = Color3.fromRGB(235, 195, 110),
 	Green = Color3.fromRGB(120, 210, 160),
 	Yellow = Color3.fromRGB(230, 200, 100),
-	TabActive = Color3.fromRGB(186, 190, 230),
-	TabIdle = Color3.fromRGB(40, 42, 54),
-	TabTextActive = Color3.fromRGB(24, 26, 34),
-	TabTextIdle = Color3.fromRGB(168, 170, 185),
-	Btn = Color3.fromRGB(48, 50, 64),
-	BtnHover = Color3.fromRGB(58, 60, 76),
-	BtnPress = Color3.fromRGB(40, 42, 54),
-	Select = Color3.fromRGB(52, 54, 72),
-	SelectActive = Color3.fromRGB(72, 74, 100),
-	Check = Color3.fromRGB(186, 190, 230),
-	CheckOff = Color3.fromRGB(48, 50, 62),
-	LineNum = Color3.fromRGB(100, 102, 118),
-	Gutter = Color3.fromRGB(20, 22, 28),
-	Rail = Color3.fromRGB(20, 22, 28),
-	RailActive = Color3.fromRGB(48, 50, 68),
-	ShellTransparency = 0.05,
-	PanelTransparency = 0.1,
-	GlassTransparency = 0.12,
-	CornerWindow = 16,
-	CornerPanel = 12,
-	CornerControl = 8,
-	CornerPill = 10,
-	CornerRail = 10,
-	SpaceOuter = 10,
-	SpacePanel = 8,
-	SpaceControl = 6,
+	TabActive = Color3.fromRGB(198, 202, 240),
+	TabIdle = Color3.fromRGB(45, 48, 62),
+	TabTextActive = Color3.fromRGB(20, 22, 30),
+	TabTextIdle = Color3.fromRGB(175, 178, 195),
+	Btn = Color3.fromRGB(55, 58, 75),
+	BtnHover = Color3.fromRGB(70, 74, 95),
+	BtnPress = Color3.fromRGB(40, 42, 55),
+	Select = Color3.fromRGB(55, 58, 78),
+	SelectActive = Color3.fromRGB(85, 88, 120),
+	Check = Color3.fromRGB(198, 202, 240),
+	CheckOff = Color3.fromRGB(50, 52, 66),
+	LineNum = Color3.fromRGB(110, 114, 130),
+	Gutter = Color3.fromRGB(18, 20, 28),
+	Rail = Color3.fromRGB(16, 18, 26),
+	RailActive = Color3.fromRGB(55, 58, 80),
+	-- Material opacities (1 = solid, 0 = invisible) stored as transparency for Roblox
+	ShellTransparency = 0.28,
+	TitleTransparency = 0.35,
+	PanelTransparency = 0.32,
+	GlassTransparency = 0.38,
+	BtnTransparency = 0.25,
+	InputTransparency = 0.2,
+	CornerWindow = 18,
+	CornerPanel = 14,
+	CornerControl = 9,
+	CornerPill = 11,
+	CornerRail = 12,
+	SpaceOuter = 12,
+	SpacePanel = 10,
+	SpaceControl = 7,
 }
+
 
 
 
@@ -195,11 +200,68 @@ local function pad(parent, l, r, t, b)
 	return p
 end
 
+
+-- Liquid glass material helpers (Roblox: translucency + edge light; no native backdrop-blur)
+local function applyGlass(frame, level)
+	level = level or "panel"
+	if level == "shell" then
+		frame.BackgroundColor3 = C.Bg
+		frame.BackgroundTransparency = C.ShellTransparency or 0.28
+	elseif level == "title" then
+		frame.BackgroundColor3 = C.Title
+		frame.BackgroundTransparency = C.TitleTransparency or 0.35
+	elseif level == "panel" then
+		frame.BackgroundColor3 = C.Panel
+		frame.BackgroundTransparency = C.PanelTransparency or 0.32
+	elseif level == "glass" then
+		frame.BackgroundColor3 = C.BgGlass
+		frame.BackgroundTransparency = C.GlassTransparency or 0.38
+	elseif level == "btn" then
+		frame.BackgroundColor3 = C.Btn
+		frame.BackgroundTransparency = C.BtnTransparency or 0.25
+	elseif level == "input" then
+		frame.BackgroundColor3 = C.Input
+		frame.BackgroundTransparency = C.InputTransparency or 0.2
+	end
+	frame.BorderSizePixel = 0
+end
+
+local function glassEdge(parent, topHighlight)
+	local s = Instance.new("UIStroke")
+	s.Color = C.Border
+	s.Thickness = 1
+	s.Transparency = 0.55
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	s.Parent = parent
+	if topHighlight ~= false then
+		local hi = Instance.new("Frame")
+		hi.Name = "GlassEdge"
+		hi.Size = UDim2.new(1, -20, 0, 1)
+		hi.Position = UDim2.fromOffset(10, 1)
+		hi.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		hi.BackgroundTransparency = 0.82
+		hi.BorderSizePixel = 0
+		hi.ZIndex = (parent.ZIndex or 1) + 1
+		hi.Parent = parent
+	end
+	-- soft bottom shade for depth
+	local sh = Instance.new("Frame")
+	sh.Name = "GlassShade"
+	sh.Size = UDim2.new(1, -16, 0, 12)
+	sh.Position = UDim2.new(0, 8, 1, -12)
+	sh.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	sh.BackgroundTransparency = 0.85
+	sh.BorderSizePixel = 0
+	sh.ZIndex = (parent.ZIndex or 1)
+	sh.Parent = parent
+	return s
+end
+
 local function stroke(parent, color, thickness)
 	local s = Instance.new("UIStroke")
 	s.Color = color or C.Border
 	s.Thickness = thickness or 1
-	s.Transparency = 0.42
+	s.Transparency = 0.5
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	s.Parent = parent
 	return s
@@ -270,7 +332,7 @@ function Element:_create(class, config)
 			frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 			frame.CanvasSize = UDim2.new()
 			frame.BackgroundColor3 = C.BgDark
-			frame.BackgroundTransparency = 0
+			frame.BackgroundTransparency = 0.35
 			frame.BorderSizePixel = 0
 			frame.ClipsDescendants = true
 		else
@@ -303,7 +365,7 @@ function Element:_create(class, config)
 	if class == "Table" then
 		local frame = Instance.new("Frame")
 		frame.BackgroundColor3 = C.BgDark
-		frame.BackgroundTransparency = config.Border and 0 or 1
+		frame.BackgroundTransparency = config.Border and 0.35 or 1
 		frame.BorderSizePixel = 0
 		frame.Size = config.Size or UDim2.new(1, 0, 0, 0)
 		frame.AutomaticSize = Enum.AutomaticSize.Y
@@ -459,7 +521,7 @@ function Element:_create(class, config)
 		btn.Size = sz or UDim2.new(0, 96, 0, 22)
 		btn.AutomaticSize = Enum.AutomaticSize.None
 		btn.BackgroundColor3 = C.Btn
-		btn.BackgroundTransparency = 0.05
+		btn.BackgroundTransparency = 0.28
 		btn.TextColor3 = C.Text
 		btn.TextSize = 12
 		btn.Font = Enum.Font.BuilderSansMedium
@@ -748,6 +810,7 @@ function Element:_create(class, config)
 			scroll.Size = config.Size or UDim2.new(1, 0, 0, 160)
 		end
 		scroll.BackgroundColor3 = (typeof(colors.Background) == "Color3" and colors.Background) or C.BgDark
+		scroll.BackgroundTransparency = 0.25
 		scroll.BorderSizePixel = 0
 		scroll.ScrollBarThickness = 8
 		scroll.ScrollBarImageColor3 = Color3.fromRGB(70, 74, 88)
@@ -1120,7 +1183,7 @@ function Element:_create(class, config)
 		tabBar.Name = "PillNav"
 		tabBar.Size = UDim2.new(1, 0, 0, 36)
 		tabBar.BackgroundColor3 = C.BgGlass or C.BgDark
-		tabBar.BackgroundTransparency = C.GlassTransparency or 0.12
+		tabBar.BackgroundTransparency = 0.42
 		tabBar.BorderSizePixel = 0
 		tabBar.Parent = root
 		corner(tabBar, C.CornerPanel or 10)
@@ -1138,7 +1201,7 @@ function Element:_create(class, config)
 		body.Position = UDim2.fromOffset(0, 42)
 		body.Size = UDim2.new(1, 0, 1, -42)
 		body.BackgroundColor3 = C.Panel or C.BgDark
-		body.BackgroundTransparency = C.PanelTransparency or 0.1
+		body.BackgroundTransparency = 0.38
 		body.BorderSizePixel = 0
 		body.ClipsDescendants = true
 		body.Parent = root
@@ -1306,7 +1369,8 @@ function Element:_create(class, config)
 		local box = Instance.new("TextBox")
 		box.Size = UDim2.new(0.4, 0, 0, 20)
 		box.Position = UDim2.new(0.58, 0, 0, 2)
-		box.BackgroundColor3 = C.CheckOff or C.Input
+		box.BackgroundColor3 = C.Input
+		box.BackgroundTransparency = 0.22
 		box.TextColor3 = C.Text
 		box.Text = tostring(config.Value or 0)
 		box.Font = Enum.Font.BuilderSans
@@ -1626,38 +1690,63 @@ function WyvernUI:Window(config)
 		frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.12, 0)
 	end
 	frame.BackgroundColor3 = C.Bg
-	frame.BackgroundTransparency = C.ShellTransparency or 0.05
+	frame.BackgroundTransparency = 0.30
 	frame.BorderSizePixel = 0
 	frame.Active = true
 	frame.Draggable = false 
 	frame.Parent = screen
-	corner(frame, C.CornerWindow or 16)
-	do
-		local s = stroke(frame, C.Border, 1)
-		if s then s.Transparency = 0.35 end
-		-- soft highlight top edge
-		local hi = Instance.new("Frame")
-		hi.Name = "GlassHighlight"
-		hi.Size = UDim2.new(1, -24, 0, 1)
-		hi.Position = UDim2.fromOffset(12, 1)
-		hi.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		hi.BackgroundTransparency = 0.88
-		hi.BorderSizePixel = 0
-		hi.ZIndex = 3
-		hi.Parent = frame
-	end
+	corner(frame, 18)
+	-- outer depth shadow (separate, more transparent)
 	pcall(function()
-		local depth = Instance.new("Frame")
+		local depth = Instance.new("ImageLabel")
 		depth.Name = "Depth"
-		depth.Size = UDim2.new(1, 10, 1, 10)
-		depth.Position = UDim2.fromOffset(-5, -3)
 		depth.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		depth.BackgroundTransparency = 0.7
+		depth.BackgroundTransparency = 0.75
+		depth.Size = UDim2.new(1, 14, 1, 14)
+		depth.Position = UDim2.fromOffset(-7, -4)
 		depth.BorderSizePixel = 0
 		depth.ZIndex = 0
 		depth.Parent = frame
-		corner(depth, (C.CornerWindow or 16) + 2)
-		frame.ZIndex = 1
+		corner(depth, 20)
+		frame.ZIndex = 2
+	end)
+	-- glass edge: luminous border + top catch light
+	do
+		local s = Instance.new("UIStroke")
+		s.Color = Color3.fromRGB(180, 185, 210)
+		s.Thickness = 1.2
+		s.Transparency = 0.55
+		s.Parent = frame
+		local hi = Instance.new("Frame")
+		hi.Name = "GlassTopLight"
+		hi.Size = UDim2.new(1, -28, 0, 2)
+		hi.Position = UDim2.fromOffset(14, 2)
+		hi.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		hi.BackgroundTransparency = 0.78
+		hi.BorderSizePixel = 0
+		hi.ZIndex = 5
+		hi.Parent = frame
+		local hi2 = Instance.new("Frame")
+		hi2.Name = "GlassTopLight2"
+		hi2.Size = UDim2.new(0.4, 0, 0, 1)
+		hi2.Position = UDim2.new(0.3, 0, 0, 3)
+		hi2.BackgroundColor3 = Color3.fromRGB(220, 225, 255)
+		hi2.BackgroundTransparency = 0.7
+		hi2.BorderSizePixel = 0
+		hi2.ZIndex = 5
+		hi2.Parent = frame
+	end
+	-- subtle vertical glass gradient overlay
+	pcall(function()
+		local grad = Instance.new("Frame")
+		grad.Name = "GlassGrad"
+		grad.Size = UDim2.new(1, 0, 0.35, 0)
+		grad.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		grad.BackgroundTransparency = 0.94
+		grad.BorderSizePixel = 0
+		grad.ZIndex = 3
+		grad.Parent = frame
+		corner(grad, 18)
 	end)
 	frame.ClipsDescendants = true
 	frame.AutomaticSize = Enum.AutomaticSize.None
@@ -1666,16 +1755,17 @@ function WyvernUI:Window(config)
 	titleBar.Name = "TitleBar"
 	titleBar.Size = UDim2.new(1, 0, 0, 40)
 	titleBar.BackgroundColor3 = C.Title
-	titleBar.BackgroundTransparency = 0.08
+	titleBar.BackgroundTransparency = 0.40
 	titleBar.BorderSizePixel = 0
 	titleBar.Active = true
 	titleBar.Parent = frame
-	corner(titleBar, C.CornerWindow or 14)
+	corner(titleBar, 18)
 	
 	local titleMask = Instance.new("Frame")
 	titleMask.Size = UDim2.new(1, 0, 0, 12)
 	titleMask.Position = UDim2.new(0, 0, 1, -12)
 	titleMask.BackgroundColor3 = C.Title
+	titleMask.BackgroundTransparency = 0.40
 	titleMask.BorderSizePixel = 0
 	titleMask.Parent = titleBar
 
