@@ -332,7 +332,7 @@ function Element:_create(class, config)
 			frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 			frame.CanvasSize = UDim2.new()
 			frame.BackgroundColor3 = C.BgDark
-			frame.BackgroundTransparency = 0.35
+			frame.BackgroundTransparency = 1
 			frame.BorderSizePixel = 0
 			frame.ClipsDescendants = true
 		else
@@ -364,8 +364,8 @@ function Element:_create(class, config)
 	
 	if class == "Table" then
 		local frame = Instance.new("Frame")
-		frame.BackgroundColor3 = C.BgDark
-		frame.BackgroundTransparency = config.Border and 0.35 or 1
+		frame.BackgroundColor3 = C.BgGlass or C.BgDark
+		frame.BackgroundTransparency = config.Border and 0.50 or 1
 		frame.BorderSizePixel = 0
 		frame.Size = config.Size or UDim2.new(1, 0, 0, 0)
 		frame.AutomaticSize = Enum.AutomaticSize.Y
@@ -394,15 +394,15 @@ function Element:_create(class, config)
 		frame.AutomaticSize = Enum.AutomaticSize.None
 			frame.ClipsDescendants = true
 		if class == "HeaderRow" then
-			frame.BackgroundColor3 = Color3.fromRGB(32, 40, 58)
-			frame.BackgroundTransparency = 0
+			frame.BackgroundColor3 = Color3.fromRGB(40, 44, 60)
+			frame.BackgroundTransparency = 0.45
 		end
 		
 		if self.Class == "Table" and self._rowAlt then
 			self._rowIndex = (self._rowIndex or 0) + 1
 			if self._rowIndex % 2 == 0 then
 				frame.BackgroundColor3 = C.RowAlt
-				frame.BackgroundTransparency = 0
+				frame.BackgroundTransparency = 0.55
 			else
 				frame.BackgroundTransparency = 1
 			end
@@ -521,7 +521,7 @@ function Element:_create(class, config)
 		btn.Size = sz or UDim2.new(0, 96, 0, 22)
 		btn.AutomaticSize = Enum.AutomaticSize.None
 		btn.BackgroundColor3 = C.Btn
-		btn.BackgroundTransparency = 0.28
+		btn.BackgroundTransparency = 0.40
 		btn.TextColor3 = C.Text
 		btn.TextSize = 12
 		btn.Font = Enum.Font.BuilderSansMedium
@@ -591,7 +591,7 @@ function Element:_create(class, config)
 			if not el._alive then return end
 			el._selected = not not v
 			if el._selected then
-				btn.BackgroundTransparency = 0
+				btn.BackgroundTransparency = 0.35
 				btn.BackgroundColor3 = C.SelectActive or C.AccentSoft
 			else
 				btn.BackgroundTransparency = 1
@@ -810,7 +810,7 @@ function Element:_create(class, config)
 			scroll.Size = config.Size or UDim2.new(1, 0, 0, 160)
 		end
 		scroll.BackgroundColor3 = (typeof(colors.Background) == "Color3" and colors.Background) or C.BgDark
-		scroll.BackgroundTransparency = 0.25
+		scroll.BackgroundTransparency = 0.18
 		scroll.BorderSizePixel = 0
 		scroll.ScrollBarThickness = 8
 		scroll.ScrollBarImageColor3 = Color3.fromRGB(70, 74, 88)
@@ -1183,7 +1183,7 @@ function Element:_create(class, config)
 		tabBar.Name = "PillNav"
 		tabBar.Size = UDim2.new(1, 0, 0, 36)
 		tabBar.BackgroundColor3 = C.BgGlass or C.BgDark
-		tabBar.BackgroundTransparency = 0.42
+		tabBar.BackgroundTransparency = 0.50
 		tabBar.BorderSizePixel = 0
 		tabBar.Parent = root
 		corner(tabBar, C.CornerPanel or 10)
@@ -1201,7 +1201,7 @@ function Element:_create(class, config)
 		body.Position = UDim2.fromOffset(0, 42)
 		body.Size = UDim2.new(1, 0, 1, -42)
 		body.BackgroundColor3 = C.Panel or C.BgDark
-		body.BackgroundTransparency = 0.38
+		body.BackgroundTransparency = 0.48
 		body.BorderSizePixel = 0
 		body.ClipsDescendants = true
 		body.Parent = root
@@ -1219,6 +1219,7 @@ function Element:_create(class, config)
 			local btn = Instance.new("TextButton")
 			btn.Size = UDim2.fromOffset(math.clamp(#name * 8 + 28, 72, 160), 26)
 			btn.BackgroundColor3 = C.TabIdle
+			btn.BackgroundTransparency = 0.35
 			btn.Text = name
 			btn.TextColor3 = C.TabTextIdle or C.TextDim
 			btn.TextSize = 13
@@ -1268,6 +1269,7 @@ function Element:_create(class, config)
 				end
 				page.Visible = true
 				btn.BackgroundColor3 = C.TabActive
+				btn.BackgroundTransparency = 0.12
 				btn.TextColor3 = C.TabTextActive or Color3.fromRGB(28, 30, 40)
 				el.ActiveTab = tabEl
 			end
@@ -1370,7 +1372,7 @@ function Element:_create(class, config)
 		box.Size = UDim2.new(0.4, 0, 0, 20)
 		box.Position = UDim2.new(0.58, 0, 0, 2)
 		box.BackgroundColor3 = C.Input
-		box.BackgroundTransparency = 0.22
+		box.BackgroundTransparency = 0.35
 		box.TextColor3 = C.Text
 		box.Text = tostring(config.Value or 0)
 		box.Font = Enum.Font.BuilderSans
@@ -1690,7 +1692,7 @@ function WyvernUI:Window(config)
 		frame.Position = UDim2.new(0.5, -size.X.Offset / 2, 0.12, 0)
 	end
 	frame.BackgroundColor3 = C.Bg
-	frame.BackgroundTransparency = 0.30
+	frame.BackgroundTransparency = 0.48
 	frame.BorderSizePixel = 0
 	frame.Active = true
 	frame.Draggable = false 
@@ -1742,7 +1744,7 @@ function WyvernUI:Window(config)
 		grad.Name = "GlassGrad"
 		grad.Size = UDim2.new(1, 0, 0.35, 0)
 		grad.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		grad.BackgroundTransparency = 0.94
+		grad.BackgroundTransparency = 0.92
 		grad.BorderSizePixel = 0
 		grad.ZIndex = 3
 		grad.Parent = frame
@@ -1755,7 +1757,7 @@ function WyvernUI:Window(config)
 	titleBar.Name = "TitleBar"
 	titleBar.Size = UDim2.new(1, 0, 0, 40)
 	titleBar.BackgroundColor3 = C.Title
-	titleBar.BackgroundTransparency = 0.40
+	titleBar.BackgroundTransparency = 0.55
 	titleBar.BorderSizePixel = 0
 	titleBar.Active = true
 	titleBar.Parent = frame
@@ -1765,7 +1767,7 @@ function WyvernUI:Window(config)
 	titleMask.Size = UDim2.new(1, 0, 0, 12)
 	titleMask.Position = UDim2.new(0, 0, 1, -12)
 	titleMask.BackgroundColor3 = C.Title
-	titleMask.BackgroundTransparency = 0.40
+	titleMask.BackgroundTransparency = 0.55
 	titleMask.BorderSizePixel = 0
 	titleMask.Parent = titleBar
 
@@ -1886,8 +1888,8 @@ function WyvernUI:Window(config)
 	close.Name = "Close"
 	close.Size = UDim2.fromOffset(36, 28)
 	close.Position = UDim2.new(1, -42, 0, 6)
-	close.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
-	close.BackgroundTransparency = 0.35
+	close.BackgroundColor3 = Color3.fromRGB(50, 52, 68)
+	close.BackgroundTransparency = 0.45
 	close.Text = "×"
 	close.TextColor3 = Color3.fromRGB(230, 200, 200)
 	close.Font = Enum.Font.GothamBold
