@@ -1,15 +1,15 @@
--- Wyvern design tokens — premium dark + soft glass
+-- Wyvern solid dark theme
 return {
-	Bg = Color3.fromRGB(24, 26, 32),
-	BgDark = Color3.fromRGB(18, 20, 26),
-	Panel = Color3.fromRGB(36, 38, 48),
-	Input = Color3.fromRGB(44, 46, 58),
-	Border = Color3.fromRGB(62, 64, 78),
-	Text = Color3.fromRGB(232, 234, 242),
-	TextDim = Color3.fromRGB(148, 150, 165),
-	Accent = Color3.fromRGB(186, 190, 230),
-	TabActive = Color3.fromRGB(186, 190, 230),
-	TabIdle = Color3.fromRGB(40, 42, 54),
-	Btn = Color3.fromRGB(48, 50, 64),
-	Check = Color3.fromRGB(186, 190, 230),
+	Bg = Color3.fromRGB(22, 22, 26),
+	BgDark = Color3.fromRGB(16, 16, 20),
+	Panel = Color3.fromRGB(26, 26, 32),
+	Input = Color3.fromRGB(32, 32, 40),
+	Border = Color3.fromRGB(50, 50, 60),
+	Text = Color3.fromRGB(230, 230, 235),
+	TextDim = Color3.fromRGB(140, 140, 150),
+	Accent = Color3.fromRGB(120, 90, 220),
+	TabActive = Color3.fromRGB(120, 90, 220),
+	TabIdle = Color3.fromRGB(32, 32, 40),
+	Btn = Color3.fromRGB(40, 40, 50),
+	Check = Color3.fromRGB(120, 90, 220),
 }
