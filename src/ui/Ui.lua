@@ -31,6 +31,13 @@ local Ui = {
     RandomSeed = Random.new(tick()),
 	Logs = setmetatable({}, {__mode = "k"}),
 	LogQueue = {},
+	-- Overflow policy (DROP OLDEST / keep newest):
+	-- When #LogQueue >= MaxLogQueue, remove from the front before insert.
+	-- Rationale: under spam, recent activity is more useful than stale backlog.
+	-- DroppedLogs counts events discarded by overflow OR CreateLog failures.
+	-- Hook path is unaffected: Process returns before QueueLog when Paused;
+	-- QueueLog only runs after snapshot and is O(1) insert + occasional O(1) remove.
+	MaxLogQueue = 500,
 	LogsPerFrame = 12,
 	DroppedLogs = 0,
 	ParserLimited = false,
@@ -2152,15 +2159,58 @@ function Ui:GetRemoteHeader(Data)
 end
 
 function Ui:ClearLogs()
+	-- Deterministic cleanup (not assuming ClearChildElements alone is enough for Lua state):
+	-- 1) Walk unique headers: Remove Selectables, clear Entries + ByFingerprint, Remove TreeNode
+	-- 2) ClearChildElements destroys any remaining Instance children under the list host
+	-- 3) Clear Logs map + pending LogQueue
+	-- ClearChildElements (WyvernUI): destroys all non-layout children of the host Instance.
+	-- Selectable:Remove: sets _alive=false and Destroy() on the button Instance.
 
 	local Logs = self.Logs
 	local RemotesList = self.RemotesList
+	local seen = {}
+
+	if Logs then
+		for _, Header in pairs(Logs) do
+			if typeof(Header) == "table" and not seen[Header] then
+				seen[Header] = true
+				local entries = Header.Entries
+				if typeof(entries) == "table" then
+					for _, Log in ipairs(entries) do
+						if Log and Log.Selectable and Log.Selectable.Remove then
+							pcall(function()
+								Log.Selectable:Remove()
+							end)
+						end
+					end
+					table.clear(entries)
+				end
+				if typeof(Header.ByFingerprint) == "table" then
+					table.clear(Header.ByFingerprint)
+				end
+				if Header.TreeNode and Header.TreeNode.Remove then
+					pcall(function()
+						Header.TreeNode:Remove()
+					end)
+				end
+			end
+		end
+		table.clear(Logs)
+	end
 
 	RemotesCount = 0
-	RemotesList:ClearChildElements()
-	table.clear(Logs)
+	if RemotesList and RemotesList.ClearChildElements then
+		pcall(function()
+			RemotesList:ClearChildElements()
+		end)
+	end
 
-	
+	if self.LogQueue then
+		table.clear(self.LogQueue)
+	end
+
+	ActiveData = nil
+
 	self.RemotesListEmpty = RemotesList:Label({
 		Text = "No traffic yet",
 		TextColor3 = Color3.fromRGB(120, 120, 130),
@@ -2169,17 +2219,34 @@ function Ui:ClearLogs()
 end
 
 function Ui:QueueLog(Data)
-
+	-- Called from Communication callback (after Hook/Process). Not on the metamethod stack
+	-- when Communication uses task.spawn; still must stay cheap.
 	local LogQueue = self.LogQueue
-	Process:Merge(Data, {
-		Args = Process:DeepCloneTable(Data.Args),
-	})
+	if not LogQueue then
+		LogQueue = {}
+		self.LogQueue = LogQueue
+	end
 
-	if Data.ReturnValues then
-        Data.ReturnValues = Process:DeepCloneTable(Data.ReturnValues)
-    end
-	
-    table.insert(LogQueue, Data)
+	-- Phase B: skip second Args deep-clone when Process already snapshotted.
+	if not Data.ArgsSnapshot then
+		Process:Merge(Data, {
+			Args = Process:DeepCloneTable(Data.Args),
+		})
+	end
+	-- ReturnValues are live returns from the original call; always clone when present
+	-- so later game mutations cannot alter stored log data.
+	if Data.ReturnValues and not Data.ReturnsSnapshotted then
+		Data.ReturnValues = Process:DeepCloneTable(Data.ReturnValues)
+		Data.ReturnsSnapshotted = true
+	end
+
+	-- Phase A: DROP OLDEST when full (preserve newest / most relevant under spam).
+	local maxQ = self.MaxLogQueue or 500
+	while #LogQueue >= maxQ do
+		table.remove(LogQueue, 1)
+		self.DroppedLogs = (self.DroppedLogs or 0) + 1
+	end
+	table.insert(LogQueue, Data)
 end
 
 function Ui:ProcessLogQueue()
@@ -2202,8 +2269,9 @@ function Ui:ProcessLogQueue()
 		end
 		n += 1
 	end
-	-- overflow protection: hard-cap queue length
-	while #Queue > 400 do
+	-- Safety net only: producer (QueueLog) already enforces MaxLogQueue.
+	local maxQ = self.MaxLogQueue or 500
+	while #Queue > maxQ do
 		table.remove(Queue, 1)
 		self.DroppedLogs = (self.DroppedLogs or 0) + 1
 	end
