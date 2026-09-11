@@ -675,11 +675,13 @@ function Ui:UpdateSpamIndicator()
 		if not win then return end
 		local chip = win:FindFirstChild("StatusChip", true)
 		if not chip then return end
-		if active then
+		local content = win:FindFirstChild("Content")
+		local minimized = content and content.Visible == false
+		if active and not minimized then
 			chip.Visible = true
 			chip.BackgroundTransparency = 0
 			chip.BackgroundColor3 = Color3.fromRGB(48, 22, 26)
-			chip.Text = "  SPAM · tap to stop  "
+			chip.Text = "  SPAM · stop  "
 			chip.TextColor3 = Color3.fromRGB(255, 160, 165)
 		else
 			chip.Visible = false
@@ -696,7 +698,17 @@ function Ui:StopSpam()
 	end)
 	self.SpamActive = false
 	self:UpdateSpamIndicator()
-	self:ShowToast("Spam stopped")
+	-- avoid toast clutter when window is minimized
+	local minimized = false
+	pcall(function()
+		local win = self.Window and self.Window.Instance
+		if win and win:FindFirstChild("Content") then
+			minimized = not win.Content.Visible
+		end
+	end)
+	if not minimized then
+		self:ShowToast("Spam stopped")
+	end
 end
 
 function Ui:BeginSpamWatch()
@@ -1124,7 +1136,7 @@ function Ui:MakeEditorTab(InfoSelector)
 		Text = Default
 	})
 
-	-- Sticky build actions (#10)
+	-- Single action row under editor (no extra duplicate row)
 	local BuildRow = EditorTab:Row({
 		Size = UDim2.new(1, 0, 0, 30),
 	})
@@ -1172,108 +1184,67 @@ function Ui:MakeEditorTab(InfoSelector)
 					end)
 				end,
 			},
-		},
-	})
-
-	local ButtonsRow = EditorTab:Row({
-		Size = UDim2.new(1, 0, 0, 32),
-	})
-	self:CreateButtons(ButtonsRow, {
-		NoTable = true,
-		Buttons = {
-			{
-				Text = "Copy",
-				Callback = function()
-					local Script = CodeEditor:GetText()
-					self:SetClipboard(Script)
-				end
-			},
 			{
 				Text = "Run",
 				Callback = function()
 					local Script = CodeEditor:GetText()
 					local Func, Error = loadstring(Script, "WyvernSpy-USERSCRIPT")
 					if not Func then
-						
-						local line = nil
 						local errStr = tostring(Error or "")
-						local a, b = string.match(errStr, "%:(%d+)%s*:")
-						if not a then a = string.match(errStr, "[Ll]ine%s*(%d+)") end
-						line = tonumber(a)
+						local a = string.match(errStr, "%:(%d+)%s*:") or string.match(errStr, "[Ll]ine%s*(%d+)")
+						local line = tonumber(a)
 						local msg = {"Error running script!", errStr}
 						if line then
 							table.insert(msg, "→ Near line " .. tostring(line))
-							pcall(function()
-								if CodeEditor.HighlightLine then
-									CodeEditor:HighlightLine(line)
-								elseif CodeEditor._box then
-									
-								end
-							end)
 						end
 						self:ShowModal(msg)
-						self:ShowToast(line and ("Error line " .. line) or "Script error", 2)
 						return
 					end
-					local ok, runErr = pcall(Func)
+					local ok, err = pcall(Func)
 					if not ok then
-						local errStr = tostring(runErr or "")
-						local a = string.match(errStr, "%:(%d+)%s*:") or string.match(errStr, "[Ll]ine%s*(%d+)")
-						local line = tonumber(a)
-						self:ShowModal({"Runtime error!", errStr, line and ("→ Near line " .. line) or nil})
-						self:ShowToast(line and ("Error line " .. line) or "Runtime error", 2)
+						self:ShowModal({"Runtime error!", tostring(err)})
 					end
-				end
-			},
-			{
-				Text = "Repeat",
-				Callback = MakeActiveDataCallback("RepeatCall")
-			},
-			{
-				Text = "Build",
-				Callback = MakeActiveDataCallback("BuildScript")
+				end,
 			},
 			{
 				Text = "More",
 				Callback = function(Btn)
-					self:MakeButtonMenu(Btn, {}, {
-						["Get return"] = function()
-							if ActiveData then
-								ActiveData:GetReturn()
-							end
-						end,
-						["Script options"] = function()
-							if ActiveData then
-								ActiveData:ScriptOptions(Btn)
-							end
-						end,
-						["Pop-out editor"] = function()
-							local Script = CodeEditor:GetText()
-							local Tile = ActiveData and ActiveData.Task or "Wyvern Spy"
-							self:MakeEditorPopoutWindow(Script, { Title = Tile })
-						end,
-						["Toggle wrap"] = function()
-							
-							pcall(function()
-								if CodeEditor.SetWrapped then
-									local on = not (CodeEditor._wrapped == true)
-									CodeEditor:SetWrapped(on)
-									self:ShowToast(on and "Wrap on" or "Wrap off")
-								elseif CodeEditor._box then
-									CodeEditor._box.TextWrapped = not CodeEditor._box.TextWrapped
-									CodeEditor._wrapped = CodeEditor._box.TextWrapped
-									self:ShowToast(CodeEditor._wrapped and "Wrap on" or "Wrap off")
-								end
-							end)
-						end,
-					})
-				end
+					if ActiveData and ActiveData.ScriptOptions then
+						ActiveData:ScriptOptions(Btn)
+					else
+						self:ShowToast("Select a remote first")
+					end
+				end,
 			},
-		}
+		},
 	})
 
-	
 	self.CodeEditor = CodeEditor
+end
+
+
+function Ui:FocusEditorTab()
+	local InfoSelector = self.InfoSelector
+	local et = self.EditorTab
+	if not InfoSelector or not et then return end
+	if InfoSelector.ActivateTab then
+		InfoSelector:ActivateTab(et)
+		return
+	end
+	-- fallback if ActivateTab missing
+	for _, t in (InfoSelector._tabs or {}) do
+		if t.Instance then t.Instance.Visible = false end
+		if t._button then
+			t._button.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
+			t._button.TextColor3 = Color3.fromRGB(160, 160, 170)
+		end
+	end
+	if et.Instance then et.Instance.Visible = true end
+	if et._button then
+		et._button.BackgroundColor3 = Color3.fromRGB(120, 90, 220)
+		et._button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	end
+	InfoSelector.ActiveTab = et
 end
 
 function Ui:ShouldFocus(Tab)
@@ -1605,10 +1576,11 @@ function Ui:SetFocusedRemote(Data)
 	local ToDisplay = self.DisplayRemoteInfo
 	local InfoSelector = self.InfoSelector
 
-	local TabFocused = self:RemovePreviousTab()
+	self:RemovePreviousTab()
+	-- Detail tab is optional context; never steal focus from Editor
 	local Tab = InfoSelector:CreateTab({
 		Name = self:FilterName(`Remote: {RemoteName}`, 50),
-		Focused = TabFocused
+		Focused = false
 	})
 
 	
@@ -1647,19 +1619,7 @@ function Ui:SetFocusedRemote(Data)
 			end)
 		end
 		
-		pcall(function()
-			local et = self.EditorTab
-			if et and et._button then
-				
-				for _, t in (InfoSelector._tabs or {}) do
-					t.Instance.Visible = false
-					if t._button then t._button.BackgroundColor3 = Color3.fromRGB(48, 56, 78) end
-				end
-				et.Instance.Visible = true
-				et._button.BackgroundColor3 = Color3.fromRGB(55, 95, 160)
-				InfoSelector.ActiveTab = et
-			end
-		end)
+		self:FocusEditorTab()
 	end
 	local function DataConnection(Name, ...)
 
