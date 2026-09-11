@@ -1210,6 +1210,33 @@ function Element:_create(class, config)
 		local el = wrap(root, "TabSelector")
 		el._tabs = {}
 		el.ActiveTab = nil
+
+		function el:CompareTabs(a, b)
+			if a == nil or b == nil then return false end
+			if a == b then return true end
+			local ia = a.Instance or a
+			local ib = b.Instance or b
+			return ia ~= nil and ia == ib
+		end
+
+		function el:ActivateTab(tabEl)
+			if not tabEl then return end
+			for _, t in el._tabs do
+				if t._button then
+					t._button.BackgroundColor3 = C.TabIdle
+					t._button.TextColor3 = C.TabTextIdle or C.TextDim
+				end
+				if t.Instance then t.Instance.Visible = false end
+			end
+			if tabEl.Instance then tabEl.Instance.Visible = true end
+			if tabEl._button then
+				tabEl._button.BackgroundColor3 = C.TabActive
+				tabEl._button.BackgroundTransparency = 0
+				tabEl._button.TextColor3 = C.TabTextActive or Color3.fromRGB(255, 255, 255)
+			end
+			el.ActiveTab = tabEl
+		end
+
 		el._tabBar = tabBar
 
 		function el:CreateTab(cfg)
@@ -1697,58 +1724,13 @@ function WyvernUI:Window(config)
 	frame.Draggable = false 
 	frame.Parent = screen
 	corner(frame, 10)
-	-- outer depth shadow (separate, more transparent)
-	pcall(function()
-		local depth = Instance.new("ImageLabel")
-		depth.Name = "Depth"
-		depth.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		depth.BackgroundTransparency = 0.75
-		depth.Size = UDim2.new(1, 14, 1, 14)
-		depth.Position = UDim2.fromOffset(-7, -4)
-		depth.BorderSizePixel = 0
-		depth.ZIndex = 0
-		depth.Parent = frame
-		corner(depth, 20)
-		frame.ZIndex = 2
-	end)
-	-- glass edge: luminous border + top catch light
 	do
 		local s = Instance.new("UIStroke")
-		s.Color = Color3.fromRGB(180, 185, 210)
-		s.Thickness = 1.2
-		s.Transparency = 0.55
+		s.Color = C.Border or Color3.fromRGB(50, 50, 60)
+		s.Thickness = 1
+		s.Transparency = 0.15
 		s.Parent = frame
-		local hi = Instance.new("Frame")
-		hi.Name = "GlassTopLight"
-		hi.Size = UDim2.new(1, -28, 0, 2)
-		hi.Position = UDim2.fromOffset(14, 2)
-		hi.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		hi.BackgroundTransparency = 0.78
-		hi.BorderSizePixel = 0
-		hi.ZIndex = 5
-		hi.Parent = frame
-		local hi2 = Instance.new("Frame")
-		hi2.Name = "GlassTopLight2"
-		hi2.Size = UDim2.new(0.4, 0, 0, 1)
-		hi2.Position = UDim2.new(0.3, 0, 0, 3)
-		hi2.BackgroundColor3 = Color3.fromRGB(220, 225, 255)
-		hi2.BackgroundTransparency = 0.7
-		hi2.BorderSizePixel = 0
-		hi2.ZIndex = 5
-		hi2.Parent = frame
 	end
-	-- subtle vertical glass gradient overlay
-	pcall(function()
-		local grad = Instance.new("Frame")
-		grad.Name = "GlassGrad"
-		grad.Size = UDim2.new(1, 0, 0.35, 0)
-		grad.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		grad.BackgroundTransparency = 0.92
-		grad.BorderSizePixel = 0
-		grad.ZIndex = 3
-		grad.Parent = frame
-		corner(grad, 18)
-	end)
 	frame.ClipsDescendants = true
 	frame.AutomaticSize = Enum.AutomaticSize.None
 
@@ -1977,6 +1959,13 @@ function WyvernUI:Window(config)
 			if grab then grab.Visible = false end
 			if titleMask then titleMask.Visible = false end
 			titleBar.Size = UDim2.new(1, 0, 1, 0)
+			-- hide spam status chip while minimized (avoids cramped/broken look)
+			pcall(function()
+				local chip = frame:FindFirstChild("StatusChip", true)
+				if chip then
+					chip.Visible = false
+				end
+			end)
 
 			local barH = isMobile and 34 or 40
 			local barW = isMobile and math.clamp(math.floor(curW * 0.5), 150, 260) or math.clamp(curW, 220, 480)
